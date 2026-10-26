@@ -163,7 +163,7 @@ async function main(): Promise<void> {
     for (const row of rows) {
       const data = {
         fullName: row.fullName,
-        phoneE164: row.phoneE164,
+        phoneE164: row.phoneE164 ?? row.phone,
         sex: row.sex,
         birthDate: row.birthDateDate,
         preferredLanguage: row.preferredLanguage,
@@ -174,7 +174,7 @@ async function main(): Promise<void> {
         createdBy: owner?.id ?? 'seed',
       };
       const patient = await prisma.patient.upsert({
-        where: { phoneE164: row.phoneE164 },
+        where: { phoneE164: row.phoneE164 ?? row.phone },
         update: data,
         create: data,
       });
