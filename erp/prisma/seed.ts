@@ -59,7 +59,10 @@ async function main(): Promise<void> {
   // Fail fast on bad/missing env (validated by src/env.ts).
   const { env } = await import('../src/env');
   const { PrismaClient } = await import('@prisma/client');
-  const { seedPatientRows, TAG_NAMES, tagColorFor } = await import('./seed-patients');
+  const { seedPatientRows, TAG_NAMES, tagColorFor } =
+    process.env.SEED_DEMO_DATA === 'true'
+      ? await import('./seed-patients')
+      : { seedPatientRows: () => [], TAG_NAMES: [], tagColorFor: () => '' };
   const { seedServicesAndSales } = await import('./seed-services');
   const { seedHr } = await import('./seed-hr');
   const { seedAppointments } = await import('./seed-appointments');
@@ -99,7 +102,7 @@ async function main(): Promise<void> {
         role: 'OWNER' as const,
         password: env.OWNER_PASSWORD,
         staffId: null,
-        mustChangePassword: false,
+        mustChangePassword: true,
       },
       {
         email: env.RECEPTION_EMAIL.toLowerCase(),
@@ -107,7 +110,7 @@ async function main(): Promise<void> {
         role: 'RECEPTION' as const,
         password: env.RECEPTION_PASSWORD,
         staffId: null,
-        mustChangePassword: false,
+        mustChangePassword: true,
       },
       {
         email: env.STAFF_EMAIL.toLowerCase(),
@@ -115,7 +118,7 @@ async function main(): Promise<void> {
         role: 'STAFF' as const,
         password: env.STAFF_PASSWORD,
         staffId: doctor.id,
-        mustChangePassword: false,
+        mustChangePassword: true,
       },
     ];
 

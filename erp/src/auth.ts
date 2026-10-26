@@ -10,6 +10,8 @@ const SESSION_MAX_AGE = 12 * 60 * 60;
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: 'jwt', maxAge: SESSION_MAX_AGE },
+  // trustHost is required on Vercel because the request host is derived from
+  // forwarded headers; AUTH_URL is set explicitly to avoid host-header spoofing.
   trustHost: true,
   pages: { signIn: loginPath },
   cookies: {

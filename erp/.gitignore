@@ -16,7 +16,11 @@ build/
 *.pem
 *.log
 .env
+.env.*
+!.env.example
 .env.local
+storage/uploads/
+backups/
 
 # prisma
 prisma/tsbuildinfo.ts

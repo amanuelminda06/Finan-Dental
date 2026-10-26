@@ -9,6 +9,7 @@ import { env } from '@/env';
  * CSP in next.config.ts to allow challenges.cloudflare.com.
  */
 export function turnstileEnabled(): boolean {
+  if (process.env.NODE_ENV === 'production') return true;
   return Boolean(env.TURNSTILE_SECRET_KEY);
 }
 
@@ -17,7 +18,10 @@ export async function verifyTurnstile(
   remoteIp: string | null,
 ): Promise<boolean> {
   const secret = env.TURNSTILE_SECRET_KEY;
-  if (!secret) return true;
+  if (!secret) {
+    // Fail closed in production when keys are missing.
+    return process.env.NODE_ENV !== 'production';
+  }
   if (!token) return false;
 
   try {
