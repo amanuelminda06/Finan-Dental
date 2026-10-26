@@ -1,0 +1,36 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# testing
+coverage/
+
+# next.js
+.next/
+out/
+build/
+
+# misc
+.DS_Store
+*.pem
+*.log
+.env
+.env.local
+
+# prisma
+prisma/tsbuildinfo.ts
+*.tsbuildinfo
+next-env.d.ts
+
+# vercel
+.vercel
+
+# local postgres data (embedded-postgres)
+.pgdata/
+
+# turbo
+.turbo/
+
+test-results/
+info:
