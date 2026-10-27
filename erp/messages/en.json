@@ -1,6 +1,6 @@
 {
  "app": {
-  "name": "Vision Eye Clinic",
+  "name": "Finan Speciality Dental Clinic",
   "shortName": "Vision ERP",
   "searchPlaceholder": "Search…",
   "searchEmpty": "No matches",
@@ -1005,22 +1005,22 @@
  },
  "site": {
   "meta": {
-   "homeTitle": "Vision Eye Clinic — Eye care in Addis Ababa",
+   "homeTitle": "Finan Speciality Dental Clinic — Eye care in Addis Ababa",
    "homeDescription": "Comprehensive eye care for your whole family: eye examinations, glasses, diagnostics and specialist treatment. Book an appointment or call us today.",
    "aboutTitle": "About us",
-   "aboutDescription": "Learn about Vision Eye Clinic, our approach to patient-first eye care and the team behind it.",
+   "aboutDescription": "Learn about Finan Speciality Dental Clinic, our approach to patient-first eye care and the team behind it.",
    "servicesTitle": "Eye care services",
-   "servicesDescription": "Eye examinations, refraction, diagnostics, glasses, contact lenses and surgery. See the services we offer at Vision Eye Clinic.",
+   "servicesDescription": "Eye examinations, refraction, diagnostics, glasses, contact lenses and surgery. See the services we offer at Finan Speciality Dental Clinic.",
    "doctorsTitle": "Our doctors",
-   "doctorsDescription": "Meet the eye doctors at Vision Eye Clinic and see who is available now, on leave or next available.",
+   "doctorsDescription": "Meet the eye doctors at Finan Speciality Dental Clinic and see who is available now, on leave or next available.",
    "bookTitle": "Book an appointment",
-   "bookDescription": "Request an appointment at Vision Eye Clinic. Tell us a preferred day and time and our team will call you to confirm.",
+   "bookDescription": "Request an appointment at Finan Speciality Dental Clinic. Tell us a preferred day and time and our team will call you to confirm.",
    "contactTitle": "Contact us",
    "contactDescription": "Find our address, phone, opening hours and directions, or chat with us on WhatsApp and Telegram.",
    "faqTitle": "Frequently asked questions",
-   "faqDescription": "Answers to common questions about visiting Vision Eye Clinic.",
+   "faqDescription": "Answers to common questions about visiting Finan Speciality Dental Clinic.",
    "privacyTitle": "Privacy policy",
-   "privacyDescription": "How Vision Eye Clinic handles the information you share with us."
+   "privacyDescription": "How Finan Speciality Dental Clinic handles the information you share with us."
   },
   "skipToContent": "Skip to main content",
   "navHome": "Home",

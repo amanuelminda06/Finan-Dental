@@ -1,6 +1,6 @@
-# Vision Eye Clinic ERP
+# Finan Speciality Dental Clinic ERP
 
-Single-tenant clinic ERP for Vision Eye Clinic: a bilingual public website
+Single-tenant clinic ERP for Finan Speciality Dental Clinic: a bilingual public website
 (marketing pages, booking, live "on duty" doctors, CMS-lite, SEO) plus lite
 clinic management (users, staff, settings, audit trail, patients, services,
 sales/POS + revenue, HR lite (shifts/schedule, leave approvals, a cached
