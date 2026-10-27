@@ -59,8 +59,8 @@ export const DEFAULT_CONTENT: Record<SiteContentKey, Bilingual> = {
     am: 'በአዲስ አበባ የሚታመን፣ ታካሚን ያማከለ የዓይን ህክምና።',
   },
   home_intro: {
-    en: 'Our experienced ophthalmologists and optometrists provide thorough eye examinations, accurate diagnoses and clear guidance. We take the time to explain every step.',
-    am: 'ልምድ ያላቸው የዓይን ሐኪሞቻችን እና የዓይን ብርጭቆ ባለሙያዎቻችን ጥልቅ ምርመራ፣ ትክክለኛ ምርመራ ውጤት እና ግልጽ ምክር ይሰጣሉ።',
+    en: 'Our experienced dentists provide comprehensive dental care — from routine checkups and cleanings to restorative and cosmetic treatments with a patient-first approach.',
+    am: 'ልምድ ያላቸው የጥርስ ሐኪሞቻችን ሙሉ የጥርስ አገልግሎት ይሰጣሉ — ከመደበኛ ፍተሻ እና ጽዳት ጀምሮ እስከ መልሶ ማቋቋም እና ውብ ህክምናዎች ድረስ።',
   },
   footer_note: {
     en: 'This website is for general information only and does not replace a medical consultation.',
@@ -96,7 +96,7 @@ export const DEFAULT_CONTENT: Record<SiteContentKey, Bilingual> = {
       {
         question: 'What should I bring?',
         answer:
-          'Bring any current glasses or contact lenses, a list of medicines you take, and your previous eye records if you have them.',
+          'Bring any current dental records, a list of medicines you take, and previous treatment details if you have them.',
       },
       {
         question: 'Is an eye exam painful?',
@@ -166,8 +166,8 @@ export const DEFAULT_CONTENT: Record<SiteContentKey, Bilingual> = {
     am: 'https://t.me/visioneyeclinic',
   },
   doctors_intro: {
-    en: 'Meet the team behind your bright view — our ophthalmologists and optometrists combine modern equipment with attentive, personal care.',
-    am: 'PLACEHOLDER — Amharic doctors intro pending native-speaker review.',
+    en: 'Meet our dental team — skilled dentists combining modern equipment with attentive, personal care.',
+    am: 'የጥርስ ቡድናችንን ይገናኙ — ዘመናዊ መሳሪያዎችን በመጠቀም በጥንቃቄ እና በግል እንክብካቤ የሚያገለግሉ ልምድ ያላቸው የጥርስ ሐኪሞች።',
   },
   announcements_items: {
     en: JSON.stringify([

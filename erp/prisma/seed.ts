@@ -25,7 +25,7 @@ loadEnv();
 type SettingSeed = { key: string; value: unknown };
 
 const SETTINGS: SettingSeed[] = [
-  { key: 'clinic_name', value: 'Vision Eye Clinic' },
+  { key: 'clinic_name', value: 'Finan Speciality Dental Clinic' },
   { key: 'currency', value: 'ETB' },
   { key: 'timezone', value: 'Africa/Addis_Ababa' },
   {
