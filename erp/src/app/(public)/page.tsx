@@ -360,15 +360,15 @@ export default async function HomePage() {
               ) : null}
             </div>
           </div>
-          <div className="rounded-2xl bg-brand-900/40 p-6 ring-1 ring-brand-700">
-            <h3 className="text-lg font-semibold">{t('home.locationTitle')}</h3>
-            {address ? <p className="mt-2 text-brand-50">{address}</p> : null}
-            <h3 className="mt-5 text-lg font-semibold">{t('home.hoursTitle')}</h3>
-            <dl className="mt-2 space-y-1 text-sm text-brand-50">
+          <div className="rounded-2xl bg-white p-6 ring-1 ring-brand-200">
+            <h3 className="text-lg font-semibold text-black">{t('home.locationTitle')}</h3>
+            {address ? <p className="mt-2 text-black">{address}</p> : null}
+            <h3 className="mt-5 text-lg font-semibold text-black">{t('home.hoursTitle')}</h3>
+            <dl className="mt-2 space-y-1 text-sm text-black">
               {hoursLines.map((line) => (
                 <div key={line.day} className="flex justify-between">
-                  <dt className="text-brand-50/80">{line.day}</dt>
-                  <dd className="font-medium">{line.value}</dd>
+                  <dt className="text-black/80">{line.day}</dt>
+                  <dd className="font-medium text-black">{line.value}</dd>
                 </div>
               ))}
             </dl>
