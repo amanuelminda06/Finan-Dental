@@ -37,10 +37,10 @@ export default function PublicHeader({ clinicName, phoneHref }: Props) {
         href={link.href}
         onClick={onClick}
         aria-current={isActive(link.href) ? 'page' : undefined}
-        className={`relative rounded-xl px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-600 ${
+        className={`relative rounded-xl px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#129CF4] ${
           isActive(link.href)
-            ? 'after:absolute after:inset-x-3 after:-bottom-0.5 after:h-0.5 after:rounded-full after:bg-orange-600 text-orange-900'
-            : 'text-slate-600 hover:bg-orange-50 hover:text-orange-800'
+            ? 'after:absolute after:inset-x-3 after:-bottom-0.5 after:h-0.5 after:rounded-full after:bg-[#129CF4] text-[#129CF4]'
+            : 'text-slate-600 hover:bg-[#129CF4]/5 hover:text-[#129CF4]'
         } ${className}`}
       >
         {t(link.labelKey as never)}
@@ -57,7 +57,7 @@ export default function PublicHeader({ clinicName, phoneHref }: Props) {
             <SiteLogo height={34} priority />
             <span className="hidden flex-col justify-center leading-tight sm:flex lg:flex">
               <span className="text-sm font-bold tracking-tight text-slate-900">{clinicName}</span>
-              <span className="text-[11px] font-medium text-orange-800">{t('clinicNameAm')}</span>
+              <span className="text-[11px] font-medium text-[#129CF4]">{t('clinicNameAm')}</span>
             </span>
           </Link>
 
@@ -72,21 +72,21 @@ export default function PublicHeader({ clinicName, phoneHref }: Props) {
             {phoneHref ? (
               <a
                 href={phoneHref}
-                className="hidden items-center rounded-xl border border-orange-200 px-3 py-2 text-sm font-medium text-orange-900 transition-colors hover:bg-orange-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-600 md:inline-flex"
+                className="hidden items-center rounded-xl border border-[#129CF4]/20 px-3 py-2 text-sm font-medium text-[#129CF4] transition-colors hover:bg-[#129CF4]/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#129CF4] md:inline-flex"
               >
                 {t('callNow')}
               </a>
             ) : null}
             <Link
               href="/book"
-              className="hidden rounded-xl bg-orange-800 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-orange-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-600 sm:inline-flex"
+              className="hidden rounded-xl bg-[#129CF4] px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#129CF4]/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#129CF4] sm:inline-flex"
             >
               {t('bookAppointment')}
             </Link>
 
             <button
               type="button"
-              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-700 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-600 lg:hidden"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-700 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#129CF4] lg:hidden"
               aria-expanded={open}
               aria-controls="public-mobile-nav"
               aria-label={open ? t('menuClose') : t('menuLabel')}
@@ -119,7 +119,7 @@ export default function PublicHeader({ clinicName, phoneHref }: Props) {
       <div
         className={`overflow-hidden border-t transition-all duration-200 ease-out ${
           open
-            ? 'max-h-96 border-orange-100 opacity-100'
+            ? 'max-h-96 border-[#129CF4]/10 opacity-100'
             : 'invisible max-h-0 border-transparent opacity-0'
         } lg:hidden`}
       >
@@ -132,7 +132,7 @@ export default function PublicHeader({ clinicName, phoneHref }: Props) {
             {phoneHref ? (
               <a
                 href={phoneHref}
-                className="flex-1 rounded-xl border border-orange-200 px-4 py-2 text-center text-sm font-medium text-orange-900"
+                className="flex-1 rounded-xl border border-[#129CF4]/20 px-4 py-2 text-center text-sm font-medium text-[#129CF4]"
               >
                 {t('callNow')}
               </a>
@@ -140,7 +140,7 @@ export default function PublicHeader({ clinicName, phoneHref }: Props) {
             <Link
               href="/book"
               onClick={() => setOpen(false)}
-              className="flex-1 rounded-xl bg-orange-800 px-4 py-2 text-center text-sm font-semibold text-white shadow-sm"
+              className="flex-1 rounded-xl bg-[#129CF4] px-4 py-2 text-center text-sm font-semibold text-white shadow-sm"
             >
               {t('bookAppointment')}
             </Link>

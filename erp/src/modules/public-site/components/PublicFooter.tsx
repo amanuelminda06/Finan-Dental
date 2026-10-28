@@ -47,7 +47,7 @@ export default async function PublicFooter({
   ];
 
   return (
-    <footer className="border-t-2 border-orange-600 bg-slate-50">
+    <footer className="border-t-2 border-[#129CF4] bg-slate-50">
       <div className="mx-auto grid w-full max-w-6xl gap-6 px-4 py-10 sm:px-6 md:grid-cols-3">
         <div>
           <p className="mt-2 text-sm text-slate-600">{t('footerAbout')}</p>
@@ -61,7 +61,7 @@ export default async function PublicFooter({
                   target="_blank"
                   rel="noopener noreferrer"
                   title={link.label}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-300 text-slate-600 hover:bg-orange-50 hover:text-orange-800"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-300 text-slate-600 hover:bg-[#129CF4]/5 hover:text-[#129CF4]"
                 >
                   <SocialIcon platform={link.platform} />
                   <span className="sr-only">{link.label}</span>
@@ -78,7 +78,7 @@ export default async function PublicFooter({
           <ul className="mt-2 space-y-1 text-sm text-slate-600">
             {quickLinks.map((link) => (
               <li key={link.href}>
-                <Link href={link.href} className="hover:text-orange-800">
+                <Link href={link.href} className="hover:text-[#129CF4]">
                   {link.label}
                 </Link>
               </li>
@@ -94,7 +94,7 @@ export default async function PublicFooter({
             {address ? <li>{address}</li> : null}
             {phone && phoneHref ? (
               <li>
-                <a href={phoneHref} className="hover:text-orange-800">
+                <a href={phoneHref} className="hover:text-[#129CF4]">
                   {phone}
                 </a>
               </li>

@@ -101,7 +101,7 @@ export default async function HomePage() {
           className="absolute inset-0 bg-gradient-to-r from-white via-white/80 to-white/20"
           aria-hidden="true"
         />
-        <div className="absolute inset-0 bg-orange-900/10" aria-hidden="true" />
+        <div className="absolute inset-0 bg-[#129CF4]/90/10" aria-hidden="true" />
         <div className="relative mx-auto grid w-full max-w-6xl gap-10 px-4 py-24 sm:px-6 lg:grid-cols-2 lg:items-center lg:py-32">
           <div>
             <div className="flex flex-wrap items-center gap-4">
@@ -113,10 +113,10 @@ export default async function HomePage() {
                 <p className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
                   {profile.name}
                 </p>
-                <p className="text-base font-medium text-orange-800">{t('clinicNameAm')}</p>
+                <p className="text-base font-medium text-[#129CF4]">{t('clinicNameAm')}</p>
               </div>
             </div>
-            <p className="mt-5 inline-flex rounded-full bg-white px-3 py-1 text-sm font-medium text-orange-800 ring-1 ring-orange-100">
+            <p className="mt-5 inline-flex rounded-full bg-white px-3 py-1 text-sm font-medium text-[#129CF4] ring-1 ring-[#129CF4]/10">
               {pick(locale, content.hero_promise)}
             </p>
             <h1 className="mt-5 text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
@@ -128,21 +128,21 @@ export default async function HomePage() {
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
                 href="/book"
-                className="rounded-xl bg-orange-800 px-6 py-3 text-base font-semibold text-white shadow-sm transition-colors hover:bg-orange-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-600"
+                className="rounded-xl bg-[#129CF4] px-6 py-3 text-base font-semibold text-white shadow-sm transition-colors hover:bg-[#129CF4]/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#129CF4]"
               >
                 {t('bookAppointment')}
               </Link>
               {phonePrimaryHref ? (
                 <a
                   href={phonePrimaryHref}
-                  className="rounded-xl border border-orange-300 px-6 py-3 text-base font-semibold text-orange-900 transition-colors hover:bg-orange-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-600"
+                  className="rounded-xl border border-[#129CF4]/30 px-6 py-3 text-base font-semibold text-[#129CF4] transition-colors hover:bg-[#129CF4]/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#129CF4]"
                 >
                   {t('callNow')}
                 </a>
               ) : null}
             </div>
           </div>
-          <Reveal delay={100} className="rounded-3xl bg-white p-8 shadow-md ring-1 ring-orange-100">
+          <Reveal delay={100} className="rounded-3xl bg-white p-8 shadow-md ring-1 ring-[#129CF4]/10">
             <div className="accent-line mb-4" aria-hidden="true" />
             <h2 className="text-lg font-semibold text-slate-900">{t('home.whyTitle')}</h2>
             <ul className="mt-5 space-y-5">
@@ -154,7 +154,7 @@ export default async function HomePage() {
                 ] as const
               ).map(([titleKey, textKey]) => (
                 <li key={titleKey} className="flex gap-4">
-                  <span className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-100 text-orange-800">
+                  <span className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#129CF4]/10 text-[#129CF4]">
                     <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" aria-hidden="true">
                       <path
                         d="M5 10.5 8.5 14 15 6.5"
@@ -200,7 +200,7 @@ export default async function HomePage() {
                     </div>
                   ) : null}
                   <div className="p-6">
-                    <span className="text-xs font-semibold uppercase tracking-wide text-orange-700">
+                    <span className="text-xs font-semibold uppercase tracking-wide text-[#129CF4]">
                       {service.category}
                     </span>
                     <h3 className="mt-2 text-lg font-semibold text-slate-900">
@@ -224,7 +224,7 @@ export default async function HomePage() {
           </p>
         )}
         <div className="mt-8">
-          <Link href="/services" className="font-semibold text-orange-800 hover:text-orange-900">
+          <Link href="/services" className="font-semibold text-[#129CF4] hover:text-[#129CF4]">
             {t('home.viewAllServices')} →
           </Link>
         </div>
@@ -273,7 +273,7 @@ export default async function HomePage() {
             <p className="mt-6 text-slate-600">{t('doctors.empty')}</p>
           )}
           <div className="mt-8">
-            <Link href="/doctors" className="font-semibold text-orange-800 hover:text-orange-900">
+            <Link href="/doctors" className="font-semibold text-[#129CF4] hover:text-[#129CF4]">
               {t('home.viewAllDoctors')} →
             </Link>
           </div>
@@ -361,36 +361,36 @@ export default async function HomePage() {
         </section>
       ) : null}
 
-      <section className="bg-orange-800 text-white">
+      <section className="bg-[#129CF4] text-white">
         <div className="mx-auto grid w-full max-w-6xl gap-8 px-4 py-14 sm:px-6 md:grid-cols-2 md:items-center">
           <div>
             <h2 className="text-2xl font-bold sm:text-3xl">{t('home.ctaTitle')}</h2>
-            <p className="mt-3 max-w-lg text-orange-50">{t('home.ctaText')}</p>
+            <p className="mt-3 max-w-lg text-[#129CF4]">{t('home.ctaText')}</p>
             <div className="mt-6 flex flex-wrap gap-3">
               <Link
                 href="/book"
-                className="rounded-xl bg-white px-6 py-3 text-base font-semibold text-orange-900 transition-colors hover:bg-orange-50"
+                className="rounded-xl bg-white px-6 py-3 text-base font-semibold text-[#129CF4] transition-colors hover:bg-[#129CF4]/5"
               >
                 {t('bookAppointment')}
               </Link>
               {phonePrimaryHref ? (
                 <a
                   href={phonePrimaryHref}
-                  className="rounded-xl border border-orange-200 px-6 py-3 text-base font-semibold text-white transition-colors hover:bg-orange-700"
+                  className="rounded-xl border border-[#129CF4]/20 px-6 py-3 text-base font-semibold text-white transition-colors hover:bg-[#129CF4]"
                 >
                   {phonePrimary}
                 </a>
               ) : null}
             </div>
           </div>
-          <div className="rounded-2xl bg-orange-900/40 p-6 ring-1 ring-orange-700">
+          <div className="rounded-2xl bg-[#129CF4]/90/40 p-6 ring-1 ring-[#129CF4]">
             <h3 className="text-lg font-semibold">{t('home.locationTitle')}</h3>
-            {address ? <p className="mt-2 text-orange-50">{address}</p> : null}
+            {address ? <p className="mt-2 text-[#129CF4]">{address}</p> : null}
             <h3 className="mt-5 text-lg font-semibold">{t('home.hoursTitle')}</h3>
-            <dl className="mt-2 space-y-1 text-sm text-orange-50">
+            <dl className="mt-2 space-y-1 text-sm text-[#129CF4]">
               {hoursLines.map((line) => (
                 <div key={line.day} className="flex justify-between">
-                  <dt className="text-orange-50/80">{line.day}</dt>
+                  <dt className="text-[#129CF4]/80">{line.day}</dt>
                   <dd className="font-medium">{line.value}</dd>
                 </div>
               ))}

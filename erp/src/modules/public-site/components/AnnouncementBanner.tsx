@@ -7,7 +7,7 @@ export default function AnnouncementBanner({ text }: { text: string }) {
   return (
     <div
       id="announcements"
-      className="bg-orange-800 text-white"
+      className="bg-[#129CF4] text-white"
       role="region"
       aria-label="Announcement"
     >

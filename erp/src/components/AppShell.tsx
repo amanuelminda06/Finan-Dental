@@ -104,7 +104,7 @@ function Shell({
   const tc = useTranslations('common');
 
   const linkClass =
-    'block rounded-lg px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-600';
+    'block rounded-lg px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#129CF4]';
 
   return (
     <div className="min-h-screen">

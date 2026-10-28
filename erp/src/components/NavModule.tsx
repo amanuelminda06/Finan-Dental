@@ -35,7 +35,7 @@ export default function NavModule({ module, pathname, className, onNavigate }: P
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
         aria-label={open ? t('collapse') : t('expand')}
-        className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-600"
+        className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#129CF4]"
       >
         {heading}
         <span
@@ -56,8 +56,8 @@ export default function NavModule({ module, pathname, className, onNavigate }: P
               className={
                 className +
                 (pathname === item.href
-                  ? ' bg-orange-100 text-orange-900'
-                  : ' text-slate-600 hover:bg-orange-50 hover:text-orange-900')
+                  ? ' bg-[#129CF4]/10 text-[#129CF4]'
+                  : ' text-slate-600 hover:bg-[#129CF4]/5 hover:text-[#129CF4]')
               }
             >
               {t(item.labelKey as 'dashboard')}

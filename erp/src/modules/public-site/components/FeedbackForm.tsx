@@ -153,7 +153,7 @@ export default function FeedbackForm() {
             placeholder={t('feedback.namePlaceholder')}
             aria-describedby={describedBy('name')}
             aria-invalid={fieldError('name') ? true : undefined}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base focus:border-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-100"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base focus:border-[#129CF4] focus:outline-none focus:ring-2 focus:ring-[#129CF4]/10"
           />
         </Field>
 
@@ -174,7 +174,7 @@ export default function FeedbackForm() {
             placeholder={t('feedback.emailPlaceholder')}
             aria-describedby={describedBy('email')}
             aria-invalid={fieldError('email') ? true : undefined}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base focus:border-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-100"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base focus:border-[#129CF4] focus:outline-none focus:ring-2 focus:ring-[#129CF4]/10"
           />
         </Field>
       </div>
@@ -191,7 +191,7 @@ export default function FeedbackForm() {
           name="rating"
           defaultValue=""
           aria-describedby={describedBy('rating')}
-          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base focus:border-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-100"
+          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base focus:border-[#129CF4] focus:outline-none focus:ring-2 focus:ring-[#129CF4]/10"
         >
           {RATING_KEYS.map((value) => (
             <option key={value} value={value}>
@@ -217,7 +217,7 @@ export default function FeedbackForm() {
           placeholder={t('feedback.messagePlaceholder')}
           aria-describedby={describedBy('message')}
           aria-invalid={fieldError('message') ? true : undefined}
-          className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base focus:border-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-100"
+          className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base focus:border-[#129CF4] focus:outline-none focus:ring-2 focus:ring-[#129CF4]/10"
         />
       </Field>
 
@@ -237,7 +237,7 @@ export default function FeedbackForm() {
           name="consent"
           required
           aria-describedby={describedBy('consent')}
-          className="mt-0.5 h-4 w-4 rounded border-slate-300 text-orange-700 focus:ring-orange-500"
+          className="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#129CF4] focus:ring-[#129CF4]/50"
         />
         <span>
           {t('feedback.consent')}
@@ -253,7 +253,7 @@ export default function FeedbackForm() {
         <button
           type="submit"
           disabled={status === 'submitting'}
-          className="rounded-xl bg-orange-800 px-6 py-3 text-base font-semibold text-white hover:bg-orange-900 disabled:opacity-60"
+          className="rounded-xl bg-[#129CF4] px-6 py-3 text-base font-semibold text-white hover:bg-[#129CF4]/90 disabled:opacity-60"
         >
           {status === 'submitting' ? t('feedback.submitting') : t('feedback.submit')}
         </button>

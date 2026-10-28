@@ -172,7 +172,7 @@ export default function BookingForm({ services, windows, minDate }: Props) {
             placeholder={t('book.namePlaceholder')}
             aria-describedby={describedBy('name')}
             aria-invalid={fieldError('name') ? true : undefined}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base focus:border-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-100"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base focus:border-[#129CF4] focus:outline-none focus:ring-2 focus:ring-[#129CF4]/10"
           />
         </Field>
 
@@ -194,7 +194,7 @@ export default function BookingForm({ services, windows, minDate }: Props) {
             placeholder={t('book.phonePlaceholder')}
             aria-describedby={describedBy('phone')}
             aria-invalid={fieldError('phone') ? true : undefined}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base focus:border-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-100"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base focus:border-[#129CF4] focus:outline-none focus:ring-2 focus:ring-[#129CF4]/10"
           />
         </Field>
 
@@ -213,7 +213,7 @@ export default function BookingForm({ services, windows, minDate }: Props) {
             min={minDate}
             aria-describedby={describedBy('preferredDate')}
             aria-invalid={fieldError('preferredDate') ? true : undefined}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base focus:border-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-100"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base focus:border-[#129CF4] focus:outline-none focus:ring-2 focus:ring-[#129CF4]/10"
           />
         </Field>
 
@@ -227,7 +227,7 @@ export default function BookingForm({ services, windows, minDate }: Props) {
             id="preferredTimeWindow"
             name="preferredTimeWindow"
             defaultValue="any"
-            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base focus:border-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-100"
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base focus:border-[#129CF4] focus:outline-none focus:ring-2 focus:ring-[#129CF4]/10"
           >
             {windows.map((window) => (
               <option key={window} value={window}>
@@ -243,7 +243,7 @@ export default function BookingForm({ services, windows, minDate }: Props) {
           id="serviceInterest"
           name="serviceInterest"
           defaultValue=""
-          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base focus:border-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-100"
+          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base focus:border-[#129CF4] focus:outline-none focus:ring-2 focus:ring-[#129CF4]/10"
         >
           <option value="">{t('book.serviceNone')}</option>
           {services.map((service) => (
@@ -269,7 +269,7 @@ export default function BookingForm({ services, windows, minDate }: Props) {
           maxLength={500}
           placeholder={t('book.messagePlaceholder')}
           aria-describedby={describedBy('message')}
-          className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base focus:border-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-100"
+          className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base focus:border-[#129CF4] focus:outline-none focus:ring-2 focus:ring-[#129CF4]/10"
         />
       </Field>
 
@@ -289,7 +289,7 @@ export default function BookingForm({ services, windows, minDate }: Props) {
           name="consent"
           required
           aria-describedby={describedBy('consent')}
-          className="mt-0.5 h-4 w-4 rounded border-slate-300 text-orange-700 focus:ring-orange-500"
+          className="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#129CF4] focus:ring-[#129CF4]/50"
         />
         <span>
           {t('book.consent')}
@@ -305,7 +305,7 @@ export default function BookingForm({ services, windows, minDate }: Props) {
         <button
           type="submit"
           disabled={status === 'submitting'}
-          className="rounded-xl bg-orange-800 px-6 py-3 text-base font-semibold text-white hover:bg-orange-900 disabled:opacity-60"
+          className="rounded-xl bg-[#129CF4] px-6 py-3 text-base font-semibold text-white hover:bg-[#129CF4]/90 disabled:opacity-60"
         >
           {status === 'submitting' ? t('book.submitting') : t('book.submit')}
         </button>

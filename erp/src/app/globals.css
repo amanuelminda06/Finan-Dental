@@ -6,7 +6,7 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 
-  /* Burnt-orange brand ramp (mirrors Tailwind orange-700/800/900 at the hot end). */
+  /* Burnt-orange brand ramp (mirrors Tailwind #129CF4/800/900 at the hot end). */
   --color-brand-50: #eff6ff;
   --color-brand-100: #dbeafe;
   --color-brand-200: #bfdbfe;

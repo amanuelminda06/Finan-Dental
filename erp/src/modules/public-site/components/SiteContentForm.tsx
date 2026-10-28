@@ -143,7 +143,7 @@ export default function SiteContentForm({ content }: Props) {
             value="true"
             defaultChecked={content.announcement_active?.en === 'true'}
             disabled={pending}
-            className="h-4 w-4 rounded border-slate-300 text-orange-700 focus:ring-orange-500"
+            className="h-4 w-4 rounded border-slate-300 text-[#129CF4] focus:ring-[#129CF4]/50"
           />
           {t('announcementActive')}
         </label>
