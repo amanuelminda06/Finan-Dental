@@ -177,7 +177,6 @@ export default async function PatientsPage({ searchParams }: { searchParams: Sea
               <th className="px-4 py-3 font-medium">{t('phone')}</th>
               <th className="px-4 py-3 font-medium">{t('sex')}</th>
               <th className="px-4 py-3 font-medium">{sortLink('birthDate', t('birthDate'))}</th>
-              <th className="px-4 py-3 font-medium">{t('tagsTitle')}</th>
               <th className="px-4 py-3 font-medium">{tc('status')}</th>
               <th className="px-4 py-3 font-medium">{sortLink('createdAt', t('createdCol'))}</th>
             </tr>
@@ -185,7 +184,7 @@ export default async function PatientsPage({ searchParams }: { searchParams: Sea
           <tbody>
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-4 py-10 text-center text-slate-500">
+                <td colSpan={7} className="px-4 py-10 text-center text-slate-500">
                   {q || dateFrom || dateTo || status ? tc('noResults') : tc('empty')}
                 </td>
               </tr>
@@ -218,19 +217,6 @@ export default async function PatientsPage({ searchParams }: { searchParams: Sea
                   <td className="px-4 py-3 text-slate-600">{sexLabel(row.sex)}</td>
                   <td className="px-4 py-3 text-slate-600">
                     {row.birthDate ? row.birthDate.toISOString().slice(0, 10) : '—'}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="flex flex-wrap gap-1">
-                      {row.tags.map((link) => (
-                        <span
-                          key={link.tagId}
-                          className="rounded-full px-2 py-0.5 text-xs font-medium text-white"
-                          style={{ backgroundColor: link.tag.color }}
-                        >
-                          {link.tag.name}
-                        </span>
-                      ))}
-                    </span>
                   </td>
                   <td className="px-4 py-3">
                     <span

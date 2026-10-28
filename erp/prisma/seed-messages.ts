@@ -37,6 +37,11 @@ export const TEMPLATES: Record<string, Record<Language, string>> = {
     en: 'Hello {name}, it has been a while since your last visit to {clinic}. We would be glad to see you again — call us to book.',
     am: 'ሰላም {name}፣ ከመጨረሻ ጉብኝትዎ በ{clinic} ጊዜ ተቀይሯል። እንደገና ለማግኘት ደስ ይለናል — ለመያዝ ይደውሉ።',
   },
+  GLASSES_READY: {
+    en: 'Hello {name}, your glasses are ready at {clinic}. You can collect them during working hours.',
+    am: 'ሰላም {name}፣ መነጽርዎ በ{clinic} ተዘጋጅቷል። በስራ ሰዓት መውሰድ ይችላሉ።',
+  },
+
   THANK_YOU: {
     en: 'Thank you for visiting {clinic}, {name}. We hope you feel better.\nPlease leave us a review: {review_link}',
     am: 'ስለ ጉብኝትዎ እናመሰግናለን {name}። እንዲሻሻልልዎ ተስፋ እናደርጋለን።\nአስተያየትዎን ይስጡን: {review_link}',

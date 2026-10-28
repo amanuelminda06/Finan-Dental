@@ -70,7 +70,6 @@ const LIST_SELECT = {
   active: true,
   createdAt: true,
   idNo: true,
-  tags: { include: { tag: true }, orderBy: { tag: { name: 'asc' } } },
 } satisfies Prisma.PatientSelect;
 
 export type PatientListRow = Prisma.PatientGetPayload<{ select: typeof LIST_SELECT }>;
