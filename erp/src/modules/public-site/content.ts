@@ -154,12 +154,12 @@ export const DEFAULT_CONTENT: Record<SiteContentKey, Bilingual> = {
     am: 'https://maps.app.goo.gl/Cyye5QKD3qjUWVXA6',
   },
   social_tiktok: {
-    en: '',
-    am: '',
+    en: 'https://tiktok.com/@finandentalclinic',
+    am: 'https://tiktok.com/@finandentalclinic',
   },
   social_instagram: {
-    en: '',
-    am: '',
+    en: 'https://instagram.com/finandentalclinic',
+    am: 'https://instagram.com/finandentalclinic',
   },
   social_telegram: {
     en: `https://t.me/${brand.telegram.slice(1)}`,
