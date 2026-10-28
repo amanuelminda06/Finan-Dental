@@ -65,7 +65,7 @@ check "no session /users → 307" 307 "$code"
 
 # 4. Owner login + pages
 JAR=/tmp/opencode/erp-smoke.jar
-login "$JAR" owner@visioneye.et "$(grep '^OWNER_PASSWORD=' .env | cut -d= -f2- | tr -d '\"')"
+login "$JAR" owner@finandental.com "$(grep '^OWNER_PASSWORD=' .env | cut -d= -f2- | tr -d '\"')"
 if has_session "$JAR"; then PASS=$((PASS+1)); echo "✓ owner login sets session"; else FAIL=$((FAIL+1)); echo "✗ owner login: no session cookie"; fi
 code=$(curl -s -b "$JAR" -o /tmp/opencode/users.html -w '%{http_code}' "$BASE/users")
 check "owner /users → 200" 200 "$code"
@@ -94,29 +94,29 @@ check "traversal key → 404" 404 "$code"
 
 # 7. Reception: forced-change gate first, then 403 for owner-only pages
 JAR2=/tmp/opencode/erp-smoke2.jar
-login "$JAR2" reception@visioneye.et "$(grep '^RECEPTION_PASSWORD=' .env | cut -d= -f2- | tr -d '\"')"
+login "$JAR2" reception@finandental.com "$(grep '^RECEPTION_PASSWORD=' .env | cut -d= -f2- | tr -d '\"')"
 if has_session "$JAR2"; then PASS=$((PASS+1)); echo "✓ reception login sets session"; else FAIL=$((FAIL+1)); echo "✗ reception login: no session cookie"; fi
 code=$(curl -s -b "$JAR2" -o /tmp/opencode/rec-users.html -w '%{http_code}' "$BASE/users")
 check "reception /users → 200 (flight redirect)" 200 "$code"
 contains "reception forced-change redirect" "NEXT_REDIRECT;replace;/change-password" /tmp/opencode/rec-users.html
-if grep -q "owner@visioneye" /tmp/opencode/rec-users.html; then FAIL=$((FAIL+1)); echo "✗ reception /users leaks owner rows"; else PASS=$((PASS+1)); echo "✓ reception /users leaks no data"; fi
+if grep -q "owner@finandental" /tmp/opencode/rec-users.html; then FAIL=$((FAIL+1)); echo "✗ reception /users leaks owner rows"; else PASS=$((PASS+1)); echo "✓ reception /users leaks no data"; fi
 code=$(curl -s -b "$JAR2" -o /tmp/opencode/403.html -w '%{http_code}' "$BASE/403")
 check "/403 renders → 200" 200 "$code"
 contains "403 content" "403" /tmp/opencode/403.html
 # clear reception's forced change, log in fresh (JWT claims are set at login),
 # expect the role redirect to /403 instead
-sql "await p.user.update({ where: { email: 'reception@visioneye.et' }, data: { mustChangePassword: false } }); console.log('reset');"
+sql "await p.user.update({ where: { email: 'reception@finandental.com' }, data: { mustChangePassword: false } }); console.log('reset');"
 JAR2B=/tmp/opencode/erp-smoke2b.jar
-login "$JAR2B" reception@visioneye.et "$(grep '^RECEPTION_PASSWORD=' .env | cut -d= -f2- | tr -d '\"')"
+login "$JAR2B" reception@finandental.com "$(grep '^RECEPTION_PASSWORD=' .env | cut -d= -f2- | tr -d '\"')"
 code=$(curl -s -b "$JAR2B" -o /tmp/opencode/rec-users2.html -w '%{http_code}' "$BASE/users")
 check "reception /users (no force) → 200 (flight redirect)" 200 "$code"
 contains "reception forbidden redirect" "NEXT_REDIRECT;replace;/403" /tmp/opencode/rec-users2.html
-sql "await p.user.update({ where: { email: 'reception@visioneye.et' }, data: { mustChangePassword: true } }); console.log('restored');"
+sql "await p.user.update({ where: { email: 'reception@finandental.com' }, data: { mustChangePassword: true } }); console.log('restored');"
 
 # 8. Staff: forced password change (clean any leftover lockout first)
-sql "await p.user.update({ where: { email: 'doctor@visioneye.et' }, data: { failedLoginCount: 0, lockedUntil: null } }); console.log('unlocked');"
+sql "await p.user.update({ where: { email: 'doctor@finandental.com' }, data: { failedLoginCount: 0, lockedUntil: null } }); console.log('unlocked');"
 JAR3=/tmp/opencode/erp-smoke3.jar
-login "$JAR3" doctor@visioneye.et "$(grep '^STAFF_PASSWORD=' .env | cut -d= -f2- | tr -d '\"')"
+login "$JAR3" doctor@finandental.com "$(grep '^STAFF_PASSWORD=' .env | cut -d= -f2- | tr -d '\"')"
 if has_session "$JAR3"; then PASS=$((PASS+1)); echo "✓ staff login sets session"; else FAIL=$((FAIL+1)); echo "✗ staff login: no session cookie"; fi
 code=$(curl -s -b "$JAR3" -o /tmp/opencode/staff-home.html -w '%{http_code}' "$BASE/")
 check "staff / → 200 (flight redirect)" 200 "$code"
@@ -128,12 +128,12 @@ contains "change password form" "newPassword" /tmp/opencode/chpw.html
 # 9. Lockout after 5 failed attempts (fresh jar → no session until success)
 JAR4=/tmp/opencode/erp-smoke4.jar
 for i in 1 2 3 4 5; do
-  login "$JAR4" doctor@visioneye.et "definitely-wrong-$i"
+  login "$JAR4" doctor@finandental.com "definitely-wrong-$i"
 done
 if has_session "$JAR4"; then FAIL=$((FAIL+1)); echo "✗ wrong passwords must not set session"; else PASS=$((PASS+1)); echo "✓ wrong passwords set no session"; fi
-state=$(sql "const u = await p.user.findUnique({ where: { email: 'doctor@visioneye.et' }, select: { failedLoginCount: true, lockedUntil: true } }); console.log(u.failedLoginCount + ':' + (u.lockedUntil ? 'locked' : 'open'));")
+state=$(sql "const u = await p.user.findUnique({ where: { email: 'doctor@finandental.com' }, select: { failedLoginCount: true, lockedUntil: true } }); console.log(u.failedLoginCount + ':' + (u.lockedUntil ? 'locked' : 'open'));")
 check "5 failures counted + locked" "5:locked" "$state"
-login "$JAR4" doctor@visioneye.et "$(grep '^STAFF_PASSWORD=' .env | cut -d= -f2- | tr -d '\"')"
+login "$JAR4" doctor@finandental.com "$(grep '^STAFF_PASSWORD=' .env | cut -d= -f2- | tr -d '\"')"
 if has_session "$JAR4"; then FAIL=$((FAIL+1)); echo "✗ correct password rejected while locked"; else PASS=$((PASS+1)); echo "✓ correct password rejected while locked"; fi
 
 # 10. Patients module (list, search, detail + VIEW audit, export, role gate)
@@ -176,15 +176,15 @@ code=$(curl -s -o /dev/null -w '%{http_code}' "$BASE/api/patients/export")
 check "export without session → 307 to login" 307 "$code"
 
 # STAFF must be denied the patients module (clear the lockout from section 9 first)
-sql "await p.user.update({ where: { email: 'doctor@visioneye.et' }, data: { mustChangePassword: false, failedLoginCount: 0, lockedUntil: null } }); console.log('ok');"
+sql "await p.user.update({ where: { email: 'doctor@finandental.com' }, data: { mustChangePassword: false, failedLoginCount: 0, lockedUntil: null } }); console.log('ok');"
 JAR5=/tmp/opencode/erp-smoke5.jar
-login "$JAR5" doctor@visioneye.et "$(grep '^STAFF_PASSWORD=' .env | cut -d= -f2- | tr -d '\"')"
+login "$JAR5" doctor@finandental.com "$(grep '^STAFF_PASSWORD=' .env | cut -d= -f2- | tr -d '\"')"
 code=$(curl -s -b "$JAR5" -o /tmp/opencode/staff-patients.html -w '%{http_code}' "$BASE/patients")
 check "staff /patients → 200 (flight redirect)" 200 "$code"
 contains "staff /patients forbidden" "NEXT_REDIRECT;replace;/403" /tmp/opencode/staff-patients.html
 code=$(curl -s -b "$JAR5" -o /dev/null -w '%{http_code}' "$BASE/api/patients/export")
 check "staff CSV export → 403" 403 "$code"
-sql "await p.user.update({ where: { email: 'doctor@visioneye.et' }, data: { mustChangePassword: true } }); console.log('restored');"
+sql "await p.user.update({ where: { email: 'doctor@finandental.com' }, data: { mustChangePassword: true } }); console.log('restored');"
 
 # 11. Services + Sales + Revenue
 code=$(curl -s -b "$JAR" -o /tmp/opencode/services.html -w '%{http_code}' "$BASE/services")
@@ -380,7 +380,7 @@ check "staff /messages → 200 (flight redirect)" 200 "$code"
 contains "staff /messages forbidden" "NEXT_REDIRECT;replace;/403" /tmp/opencode/staff-messages.html
 
 # 12. Cleanup + server still alive
-sql "await p.user.update({ where: { email: 'doctor@visioneye.et' }, data: { failedLoginCount: 0, lockedUntil: null } }); console.log('unlocked');"
+sql "await p.user.update({ where: { email: 'doctor@finandental.com' }, data: { failedLoginCount: 0, lockedUntil: null } }); console.log('unlocked');"
 if ss -ltn | grep -q ":3100"; then PASS=$((PASS+1)); echo "✓ server alive after full run"; else FAIL=$((FAIL+1)); echo "✗ server died during run"; fi
 
 echo

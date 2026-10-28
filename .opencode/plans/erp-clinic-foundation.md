@@ -1,4 +1,4 @@
-# ERP slice: Vision Eye Clinic starter (foundation+auth, patients, sales, appointments)
+# ERP slice: Finan Speciality Dental Clinic starter (foundation+auth, patients, sales, appointments)
 
 Build a **new Next.js app** at `1st 20 service providers/erp/` (inside the existing git repo), per the
 project prompt. Existing Express/Vite public site untouched. Access via secret link

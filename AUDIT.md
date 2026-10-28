@@ -2,8 +2,8 @@
 
 See previous chat for full detailed tables. Summary:
 
-## Vision Eye references
-13 case-insensitive "Vision Eye" matches across 5 files; ~33 additional "visioneye" domain/email/social references.
+## Finan Dental Clinic references
+13 case-insensitive "Finan Dental Clinic" matches across 5 files; ~33 additional "finandental" domain/email/social references.
 
 ## Riskiest findings
 1. Secrets on disk: .env (Neon DB password, AUTH_SECRET, weak seeded passwords) and .env.local (Vercel OIDC token).
@@ -17,7 +17,7 @@ See previous chat for full detailed tables. Summary:
 - Production PUBLIC_BASE_URL value.
 - Whether Neon DB is prod or staging.
 - Backup scheduling/off-site status.
-- Root README "# Finan-Dental" vs erp "Vision Eye Clinic ERP" naming discrepancy.
+- Root README "# Finan-Dental" vs erp "Finan Dental Clinic ERP" naming discrepancy.
 
 ## Key platform notes
 - ORM: Prisma + PostgreSQL, 17 migrations, 24 tables.

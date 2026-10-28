@@ -34,9 +34,9 @@ Seeded accounts (passwords come from `.env`):
 
 | Role      | Email (default)          | First login                 |
 | --------- | ------------------------ | --------------------------- |
-| OWNER     | `owner@visioneye.et`     | already changed in dev seed |
-| RECEPTION | `reception@visioneye.et` | forced password change      |
-| STAFF     | `doctor@visioneye.et`    | forced password change      |
+| OWNER     | `owner@finandental.com`     | already changed in dev seed |
+| RECEPTION | `reception@finandental.com` | forced password change      |
+| STAFF     | `doctor@finandental.com`    | forced password change      |
 
 ## Commands
 
@@ -350,7 +350,7 @@ group-chat batch flow runs on the `mobile` project (`e2e/group-batch.spec.ts`).
     with consent **false** unless the file explicitly says `yes`; duplicates
     inside the file or already in the DB are reported, never silently
     overwritten.
-19. STAFF (`doctor@visioneye.et`): `/patients` → `/403`, direct
+19. STAFF (`doctor@finandental.com`): `/patients` → `/403`, direct
     `/api/patients/export` → 403.
 20. Services (OWNER): create/edit with bad category or non-numeric price
     rejected; changing a price writes a price-history row and leaves existing
