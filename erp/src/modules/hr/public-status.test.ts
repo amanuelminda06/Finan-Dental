@@ -100,7 +100,7 @@ describe('public doctor status', () => {
     const raw = {
       ...doctor,
       phone: '+251911223344',
-      email: 'doctor@visioneye.et',
+      email: 'doctor@finandental.com',
       annualLeaveDays: 20,
       jobTitle: 'Ophthalmologist',
       createdAt: new Date('2026-01-01T00:00:00Z'),
@@ -129,7 +129,7 @@ describe('public doctor status', () => {
       'phone',
       '+251911223344',
       'email',
-      'doctor@visioneye.et',
+      'doctor@finandental.com',
       'annualLeaveDays',
       'jobTitle',
       'secret',

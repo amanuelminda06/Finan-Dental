@@ -46,7 +46,7 @@ export const SAMPLE_DATA: TemplateSample = {
   time: '10:00',
   doctor: 'Dr. Abebe Kebede',
   clinic: 'Finan Speciality Dental Clinic',
-  review_link: 'https://g.page/vision-eye-clinic/review',
+  review_link: 'https://g.page/finan-dental-clinic/review',
   reopen_date: 'Mon 19 Oct',
 };
 

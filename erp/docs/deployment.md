@@ -56,7 +56,7 @@ npm start              # or a process manager (systemd/pm2) on :3000
 Terminate TLS and forward to `127.0.0.1:3000`. Example (Caddy):
 
 ```
-erp.visioneye.et {
+erp.finandental.com {
   reverse_proxy 127.0.0.1:3000
   encode zstd gzip
 }
@@ -71,7 +71,7 @@ Messages no longer require a server (manual-link mode), but the daily job that
 expires/creates tasks and the optional daily summary email should run:
 
 ```cron
-*/15 * * * * curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" https://erp.visioneye.et/api/jobs/messages
+*/15 * * * * curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" https://erp.finandental.com/api/jobs/messages
 ```
 
 ## 5. Health & smoke

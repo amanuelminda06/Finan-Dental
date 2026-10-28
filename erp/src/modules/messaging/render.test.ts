@@ -58,7 +58,7 @@ describe('renderVariables', () => {
   const base: Parameters<typeof renderVariables>[0] = {
     patientName: 'Abebe',
     language: 'en',
-    clinicName: 'Vision Eye',
+    clinicName: 'Finan Dental Clinic',
     reviewLink: 'https://review.example/x',
     timeZone: 'Africa/Addis_Ababa',
   };
@@ -66,7 +66,7 @@ describe('renderVariables', () => {
   it('renders static variables and date/time when startsAt is present', () => {
     const vars = renderVariables({ ...base, startsAt: new Date('2026-10-12T09:00:00.000Z') });
     expect(vars.name).toBe('Abebe');
-    expect(vars.clinic).toBe('Vision Eye');
+    expect(vars.clinic).toBe('Finan Dental Clinic');
     expect(vars.review_link).toBe('https://review.example/x');
     expect(vars.date).toBeDefined();
     expect(vars.time).toBe('12:00');

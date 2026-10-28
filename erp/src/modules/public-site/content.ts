@@ -154,16 +154,16 @@ export const DEFAULT_CONTENT: Record<SiteContentKey, Bilingual> = {
     am: 'https://maps.app.goo.gl/Cyye5QKD3qjUWVXA6',
   },
   social_tiktok: {
-    en: 'https://tiktok.com/@visioneyeclinic',
-    am: 'https://tiktok.com/@visioneyeclinic',
+    en: 'https://tiktok.com/@finandentalclinic',
+    am: 'https://tiktok.com/@finandentalclinic',
   },
   social_instagram: {
-    en: 'https://instagram.com/visioneyeclinic',
-    am: 'https://instagram.com/visioneyeclinic',
+    en: 'https://instagram.com/finandentalclinic',
+    am: 'https://instagram.com/finandentalclinic',
   },
   social_telegram: {
-    en: 'https://t.me/visioneyeclinic',
-    am: 'https://t.me/visioneyeclinic',
+    en: 'https://t.me/finandentalclinic',
+    am: 'https://t.me/finandentalclinic',
   },
   doctors_intro: {
     en: 'Meet our dental team — skilled dentists combining modern equipment with attentive, personal care.',
