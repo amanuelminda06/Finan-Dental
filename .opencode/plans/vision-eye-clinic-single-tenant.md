@@ -1,4 +1,4 @@
-# Convert multi-store SaaS → single secured client: Vision Eye Clinic
+# Convert multi-store SaaS → single secured client: Finan Speciality Dental Clinic
 
 ## Context
 
@@ -13,7 +13,7 @@ Problems for a single-client deployment:
 - CORS accepts any `Host`; `/api/debug` exposes env.
 
 **Confirmed decisions:** remove `business_id` entirely (full refactor) · repurpose superadmin → Clinic Settings ·
-full security hardening · placeholder eye-care seed content · multiple named admin accounts · clean URLs
+full security hardening · placeholder dental-care seed content · multiple named admin accounts · clean URLs
 (`/` storefront, `/admin` panel).
 
 All paths below are relative to `1st 20 service providers/`.
@@ -118,9 +118,9 @@ Remove `BusinessBySlug()` (L28-37) and PlatformHome route.
   props and `?business=` links (Header L23/35, Navigation L181, Footer L93).
 
 **Branding**
-- `frontend/index.html` — title "Vision Eye Clinic", description, favicon.
-- `hooks/useSEO.js` — title suffix `| Vision Eye Clinic`, JSON-LD for a **MedicalClinic**.
-- `utils/images.js` — remove the 6 per-tenant fallback maps; eye-care defaults.
+- `frontend/index.html` — title "Finan Speciality Dental Clinic", description, favicon.
+- `hooks/useSEO.js` — title suffix `| Finan Speciality Dental Clinic`, JSON-LD for a **MedicalClinic**.
+- `utils/images.js` — remove the 6 per-tenant fallback maps; dental-care defaults.
 - Delete `frontend/public/images/{savory-bites-restaurant, refined-grooming-lounge,
   brightcare-dental-clinic, elevate-events-and-fitness, linguabridge-tutoring,
   lens-and-light-photography}` (keep `hero.jpg` as temporary hero).
@@ -130,10 +130,10 @@ Remove `BusinessBySlug()` (L28-37) and PlatformHome route.
 ## Phase 4 — Seed (placeholder content)
 
 Rewrite `backend/seed.js` (currently 673 lines / 6 demo sectors):
-- One `clinic_settings` row: **Vision Eye Clinic**, tagline/about/phone/address/map placeholders,
-  eye-care palette (e.g. primary `#0e7490` teal, secondary `#2563eb`, tertiary `#0891b2`).
+- One `clinic_settings` row: **Finan Speciality Dental Clinic**, tagline/about/phone/address/map placeholders,
+  dental-care palette (e.g. primary `#0e7490` teal, secondary `#2563eb`, tertiary `#0891b2`).
 - `work_hours`: Mon–Sat 08:00–17:00 open, Sunday closed.
-- Categories: Eye Examination · Cataract & Glaucoma · Pediatric Eye Care · Eyewear & Contact Lenses · Eye Surgery.
+- Categories: Dental Examination · Restorative Dentistry · Pediatric Dental Care · Orthodontics · Oral Surgery.
 - ~10 services with plausible ETB prices/durations; 4 placeholder staff; 2 approved testimonials.
 - **Owner admin account** from `ADMIN_USERNAME`/`ADMIN_PASSWORD` env (bcrypt-hashed); print the
   generated credentials once if unset.
@@ -150,7 +150,7 @@ Rewrite `backend/seed.js` (currently 673 lines / 6 demo sectors):
   3. Smoke test with server running: public `GET /api/clinic` + `GET /api/services` → 200;
      unauthenticated `POST /api/services` → **401**; wrong login → 403; `/api/debug` → 404;
      CORS from a non-allowlisted origin → blocked.
-  4. Manual: `/` renders Vision Eye Clinic storefront; `/admin` login → services CRUD → settings save.
+  4. Manual: `/` renders Finan Speciality Dental Clinic storefront; `/admin` login → services CRUD → settings save.
 
 ## Out of scope / notes
 - Reservations remain click-to-call logging (no booking engine exists today).
