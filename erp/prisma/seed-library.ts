@@ -26,14 +26,14 @@ export const LIBRARY_PAIRS: {
         'እባክዎ ከቀጠሮው ከ15 ደቂቃ በፊት ይምጡ። ለማስተላለፍ ክሊኒኩን ያነጋግሩ።',
     },
     {
-      id: 'lib-reminder-glasses',
+      id: 'lib-reminder-documents',
       category: 'REMINDER',
-      title: 'Glasses / documents reminder',
+      title: 'Documents reminder',
       bodyEn:
-        'Dear {name}, please remember to bring your glasses and any previous prescriptions ' +
+        'Dear {name}, please remember to bring any previous dental records and prescriptions ' +
         'when you visit {clinic} on {date}.',
       bodyAm:
-        'ውድ {name}፣ በ{date} ወደ {clinic} ሲመጡ ማንጻቂያ መነጽርዎንና የቀድሞ ሐኪም ትዕዛዝዎችን ' +
+        'ውድ {name}፣ በ{date} ወደ {clinic} ሲመጡ የቀድሞ የጥርስ መዝገብዎን እና የሐኪም ትዕዛዝዎችን ' +
         'ማምጣትዎን ያስታውሱ።',
     },
     {

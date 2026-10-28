@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
 
   const csv = toCsv(
     [...IMPORT_COLUMNS],
-    [['Example Patient', '0912345678', 'MALE', '1990-01-15', 'glasses', 'true', 'en']],
+    [['Example Patient', '0912345678', 'MALE', '1990-01-15', 'braces', 'true', 'en']],
   );
 
   return new Response(csv, {

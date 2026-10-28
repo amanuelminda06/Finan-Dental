@@ -220,7 +220,7 @@ export async function seedAppointments(prisma: PrismaClient): Promise<void> {
       id: 'seed-followup-2',
       patientId: patientList[1].id,
       dueDate: followUpAt(dateKeyAdd(todayKey, -5)),
-      reason: 'Glasses follow-up',
+      reason: 'Follow-up',
       status: 'OPEN',
       createdFromAppointmentId: null,
     },

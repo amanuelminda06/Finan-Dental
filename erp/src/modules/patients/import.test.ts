@@ -36,11 +36,11 @@ describe('parseImport — structure', () => {
   });
 
   it('handles BOM, quoted cells and CRLF line endings', () => {
-    const text = `﻿${HEADER}\r\n"Almaz, Tesfaye",0911223344,FEMALE,1985-03-12,"glasses; follow-up",en\r\n`;
+    const text = `﻿${HEADER}\r\n"Almaz, Tesfaye",0911223344,FEMALE,1985-03-12,"braces; follow-up",en\r\n`;
     const result = parseImport(text, ctx());
     expect(result.rows).toHaveLength(1);
     expect(result.rows[0].values?.fullName).toBe('Almaz, Tesfaye');
-    expect(result.rows[0].values?.tags).toEqual(['glasses', 'follow-up']);
+    expect(result.rows[0].values?.tags).toEqual(['braces', 'follow-up']);
   });
 });
 
@@ -129,7 +129,7 @@ describe('parseImport — field validation', () => {
     const result = parseImport(
       csv(
         HEADER,
-        'Almaz,0911223344,FEMALE,1985-03-12,glasses,en',
+        'Almaz,0911223344,FEMALE,1985-03-12,braces,en',
         ',0911223345',
         'Bekele,not-a-phone',
         'Tigist,0911223346,FEMALE,1992-07-25,,am',

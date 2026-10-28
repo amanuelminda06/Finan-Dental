@@ -211,15 +211,15 @@ describe('appointment scheduling (Africa/Addis_Ababa)', () => {
 describe('campaign filters', () => {
   it('matches tags with ANY/ALL and other criteria', () => {
     const c = candidate({
-      tags: ['glasses', 'vip'],
+      tags: ['braces', 'vip'],
       lastVisitAt: addis('2026-01-01', '09:00'),
-      categories: ['glasses'],
+      categories: ['consultation'],
     });
     expect(matchesFilter(c, { ...emptyFilter, tags: ['vip'], tagMode: 'ANY' })).toBe(true);
     expect(matchesFilter(c, { ...emptyFilter, tags: ['vip', 'surgery'], tagMode: 'ALL' })).toBe(
       false,
     );
-    expect(matchesFilter(c, { ...emptyFilter, serviceCategory: 'glasses' })).toBe(true);
+    expect(matchesFilter(c, { ...emptyFilter, serviceCategory: 'consultation' })).toBe(true);
     expect(matchesFilter(c, { ...emptyFilter, serviceCategory: 'surgery' })).toBe(false);
     expect(
       matchesFilter(c, { ...emptyFilter, lastVisitFrom: '2025-01-01', lastVisitTo: '2025-12-31' }),

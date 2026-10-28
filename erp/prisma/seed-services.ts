@@ -47,6 +47,16 @@ export async function seedServicesAndSales(prisma: PrismaClient): Promise<void> 
   }
 
   const finanNames = SERVICES.map((service) => service.nameEn);
+  // Remove leftover (e.g. optical/eye) services that are no longer in the catalog.
+  const obsolete = await prisma.service.findMany({
+    where: { nameEn: { notIn: finanNames } },
+    select: { id: true },
+  });
+  if (obsolete.length) {
+    const obsoleteIds = obsolete.map((s) => s.id);
+    await prisma.saleLine.deleteMany({ where: { serviceId: { in: obsoleteIds } } });
+    await prisma.service.deleteMany({ where: { id: { in: obsoleteIds } } });
+  }
   await prisma.service.updateMany({
     where: { nameEn: { notIn: finanNames } },
     data: { active: false, isPublic: false },
