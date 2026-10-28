@@ -47,15 +47,15 @@ export type Bilingual = { en: string; am: string };
 
 export const DEFAULT_CONTENT: Record<SiteContentKey, Bilingual> = {
   hero_title: {
-    en: 'Clear vision for every stage of life',
+    en: 'Finan Speciality Dental Clinic',
     am: 'ለሁሉም የህይወት ደረጃ ግልጽ እይታ',
   },
   hero_subtitle: {
-    en: 'Comprehensive eye care for your whole family — from routine exams to specialist treatment.',
+    en: 'Comprehensive dental care for your whole family — from routine checkups to specialist treatment.',
     am: 'ለመላው ቤተሰብዎ ሙሉ የዓይን ህክምና — ከመደበኛ ምርመራ እስከ ልዩ ባለሙያ ህክምና።',
   },
   hero_promise: {
-    en: 'Trusted, patient-first eye care in Addis Ababa.',
+    en: 'Trusted, patient-first dental care in Addis Ababa.',
     am: 'በአዲስ አበባ የሚታመን፣ ታካሚን ያማከለ የዓይን ህክምና።',
   },
   home_intro: {
@@ -196,7 +196,7 @@ city: {
     am: 'PLACEHOLDER — medical specialty',
   },
   og_title: {
-    en: 'Clear vision for every stage of life',
+    en: 'Finan Speciality Dental Clinic',
     am: 'PLACEHOLDER — open-graph title',
   },
   og_subtitle: {

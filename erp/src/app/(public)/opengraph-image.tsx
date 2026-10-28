@@ -1,6 +1,6 @@
 import { ImageResponse } from 'next/og';
 
-export const alt = 'Finan Speciality Dental Clinic — patient-first eye care in Addis Ababa';
+export const alt = 'Finan Speciality Dental Clinic — patient-first dental care in Addis Ababa';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
@@ -37,16 +37,16 @@ export default function OpengraphImage() {
             fontSize: 44,
           }}
         >
-          👁
+          🦷
         </div>
         <div style={{ fontSize: 34, fontWeight: 600 }}>Finan Speciality Dental Clinic</div>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
         <div style={{ fontSize: 68, fontWeight: 700, lineHeight: 1.05 }}>
-          Clear vision for every stage of life
+          Finan Speciality Dental Clinic
         </div>
         <div style={{ fontSize: 30, opacity: 0.92 }}>
-          Eye examinations · Glasses · Diagnostics · Specialist care
+          Dental exams · Cleanings · Restorative · Specialist care
         </div>
       </div>
       <div style={{ fontSize: 26, opacity: 0.9 }}>Addis Ababa, Ethiopia</div>
