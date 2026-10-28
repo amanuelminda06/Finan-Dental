@@ -15,7 +15,7 @@ export default function SiteLogo({
 }: SiteLogoProps) {
   return (
     <Image
-      src="/vision-logo.png"
+      src="/finan-logo.png"
       alt="Finan Speciality Dental Clinic"
       width={Math.round(height * 1.924)}
       height={height}
@@ -35,7 +35,7 @@ type SiteLogoDarkProps = {
 export function SiteLogoDark({ height = 40, className = '' }: SiteLogoDarkProps) {
   return (
     <Image
-      src="/vision-logo-dark.png"
+      src="/finan-logo-dark.png"
       alt="Finan Speciality Dental Clinic"
       width={Math.round(height * 1.376)}
       height={height}

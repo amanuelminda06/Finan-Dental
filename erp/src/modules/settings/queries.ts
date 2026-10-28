@@ -1,3 +1,4 @@
+import { brand } from '@/config/brand';
 import { prisma } from '@/lib/prisma';
 import { DEFAULT_TIMEZONE } from '@/lib/datetime';
 import { WEEKDAYS, type SettingsFormValues } from './schemas';
@@ -53,7 +54,7 @@ export function settingsFromMap(map: Record<string, unknown>): SettingsFormValue
   ) as SettingsFormValues['working_hours'];
 
   return {
-    clinic_name: str(map.clinic_name, 'Finan Speciality Dental Clinic'),
+    clinic_name: str(map.clinic_name, brand.clinicName),
     currency: str(map.currency, 'ETB'),
     timezone: str(map.timezone, DEFAULT_TIMEZONE),
     working_hours,

@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { clinicDateKey } from '@/lib/datetime';
+import { SERVICES } from '@/config/services';
 import {
   BOOKING_WINDOWS,
   getClinicProfile,
-  getPublicServices,
   pageMetadata,
 } from '@/modules/public-site';
 import BookingForm from '@/modules/public-site/components/BookingForm';
@@ -20,7 +20,8 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function BookPage() {
   const t = await getTranslations('site');
-  const [services, profile] = await Promise.all([getPublicServices(), getClinicProfile()]);
+  const profile = await getClinicProfile();
+  const services = SERVICES;
   const minDate = clinicDateKey(new Date(), profile.timezone);
 
   return (

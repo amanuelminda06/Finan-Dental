@@ -4,7 +4,7 @@ import { pageMetadata, siteBaseUrl } from './seo';
 const original = process.env.PUBLIC_BASE_URL;
 
 beforeAll(() => {
-  process.env.PUBLIC_BASE_URL = 'https://vision.example.com/';
+  process.env.PUBLIC_BASE_URL = 'https://finan.example.com/';
 });
 
 afterAll(() => {
@@ -14,7 +14,7 @@ afterAll(() => {
 
 describe('siteBaseUrl', () => {
   it('strips a trailing slash from the configured origin', () => {
-    expect(siteBaseUrl()).toBe('https://vision.example.com');
+    expect(siteBaseUrl()).toBe('https://finan.example.com');
   });
 
   it('falls back to localhost when unset', () => {
@@ -38,7 +38,7 @@ describe('pageMetadata', () => {
       am: '/about?lang=am',
       'x-default': '/about',
     });
-    expect(meta.openGraph?.url).toBe('https://vision.example.com/about');
+    expect(meta.openGraph?.url).toBe('https://finan.example.com/about');
     expect(meta.twitter && 'card' in meta.twitter ? meta.twitter.card : undefined).toBe(
       'summary_large_image',
     );
@@ -52,7 +52,7 @@ describe('pageMetadata', () => {
       path: '/',
       isHome: true,
     });
-    expect(meta.title).toEqual({ absolute: 'Finan Speciality Dental Clinic — Eye care' });
-    expect(meta.openGraph?.url).toBe('https://vision.example.com');
+    expect(meta.title).toEqual({ absolute: 'Finan Speciality Dental Clinic' });
+    expect(meta.openGraph?.url).toBe('https://finan.example.com');
   });
 });

@@ -122,7 +122,7 @@ export default async function ServicesPage({ searchParams }: { searchParams: Sea
                   </td>
                   <td className="px-4 py-3 text-slate-600">{categoryLabel(row.category)}</td>
                   <td className="px-4 py-3 font-medium text-slate-900">
-                    {formatMoney(row.currentPrice)}
+                    {row.currentPrice ? formatMoney(row.currentPrice) : '—'}
                   </td>
                   <td className="px-4 py-3">
                     <span

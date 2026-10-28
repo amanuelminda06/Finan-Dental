@@ -1,4 +1,4 @@
-# Finan Speciality Dental Clinic ERP
+# Finan-Dental
 
 Single-tenant clinic ERP for Finan Speciality Dental Clinic: a bilingual public website
 (marketing pages, booking, live "on duty" doctors, CMS-lite, SEO) plus lite
@@ -86,7 +86,7 @@ erp/
 │   ├── migrations/            # init + timestamptz + patients + services_sales + hr_lite + appointments + messaging
 │   ├── seed.ts                # settings, staff, users, tags, patients, services, sales, HR + appointments + messages seed
 │   ├── seed-patients.ts       # 20 Ethiopian patients, mixed phone formats (idempotent)
-│   ├── seed-services.ts       # 12 services + 40 sales over 60 days (deterministic, idempotent)
+│   ├── seed-services.ts       # 9 bilingual services; services are priced only after clinic input.  9 bilingual clinic services; unset fees stay unpriced (deterministic, idempotent)
 │   ├── seed-hr.ts             # 6 staff + 4 templates + 72 shifts + 2 leave requests (deterministic, idempotent)
 │   ├── seed-appointments.ts   # 20 appointments + 5 website requests + 5 follow-ups (deterministic, idempotent)
 │   ├── seed-messages.ts       # 13 template keys × en/am (26 rows, idempotent upsert)

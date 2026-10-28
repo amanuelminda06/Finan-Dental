@@ -16,12 +16,12 @@ describe('public projection allow-lists', () => {
   it('maps a DB service row to the public shape and drops the price', () => {
     const row = {
       id: 'svc-1',
-      name: 'Eye examination',
-      nameEn: 'Eye examination',
-      nameAm: 'የዓይን ምርመራ',
+      name: 'Dental filling',
+      nameEn: 'Dental filling',
+      nameAm: 'የጥርስ መሙላት',
       category: 'consultation',
       displayOrder: 2,
-      imageUrl: '/services/eye-examination-glasses.png',
+      imageUrl: '/services/dental-filling.png',
       publicDescriptionEn: 'A thorough exam.',
       publicDescriptionAm: 'ጥልቅ ምርመራ።',
       // Extra private columns that must never survive the projection:

@@ -87,7 +87,7 @@ export async function createServiceAction(
         name: created.name,
         nameAm: created.nameAm,
         category: created.category,
-        currentPrice: toDecimalString(created.currentPrice),
+        currentPrice: created.currentPrice ? toDecimalString(created.currentPrice) : null,
         active: created.active,
         isPublic: created.isPublic,
       },
@@ -109,7 +109,7 @@ export async function updateServiceAction(
     const before = await prisma.service.findUnique({ where: { id } });
     if (!before) return fail('unknownError');
 
-    const beforePrice = toDecimalString(before.currentPrice);
+    const beforePrice = before.currentPrice ? toDecimalString(before.currentPrice) : null;
 
     const imageUrl = image
       ? await storeServiceImage(image)
@@ -156,7 +156,7 @@ export async function updateServiceAction(
         name: updated.name,
         nameAm: updated.nameAm,
         category: updated.category,
-        currentPrice: toDecimalString(updated.currentPrice),
+        currentPrice: updated.currentPrice ? toDecimalString(updated.currentPrice) : null,
         isPublic: updated.isPublic,
       },
     });
@@ -164,11 +164,13 @@ export async function updateServiceAction(
     // Price changes are recorded historically AND audited on their own
     // (rule: changing a price never touches existing sales — they keep their
     // own line snapshots).
-    const newPrice = toDecimalString(updated.currentPrice);
+    const newPrice = updated.currentPrice ? toDecimalString(updated.currentPrice) : null;
     if (beforePrice !== newPrice) {
-      await prisma.servicePriceHistory.create({
-        data: { serviceId: id, oldPrice: beforePrice, newPrice, changedBy: actor.id },
-      });
+      if (beforePrice !== null && newPrice !== null) {
+        await prisma.servicePriceHistory.create({
+          data: { serviceId: id, oldPrice: beforePrice, newPrice, changedBy: actor.id },
+        });
+      }
       await writeAudit({
         user: actor,
         entity: 'Service',

@@ -73,7 +73,7 @@ export async function createSaleAction(
     const snapshots: ServiceSnapshot[] = services.map((service) => ({
       id: service.id,
       name: service.name,
-      currentPrice: toDecimalString(service.currentPrice),
+      currentPrice: service.currentPrice ? toDecimalString(service.currentPrice) : null,
       active: service.active,
     }));
 

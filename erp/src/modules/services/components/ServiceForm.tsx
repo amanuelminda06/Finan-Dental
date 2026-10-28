@@ -14,7 +14,7 @@ type Values = {
   nameEn: string;
   nameAm: string | null;
   category: string;
-  currentPrice: string;
+  currentPrice: string | null;
   isPublic: boolean;
   publicDescriptionEn: string | null;
   publicDescriptionAm: string | null;
@@ -146,7 +146,6 @@ export default function ServiceForm({ mode, service, route }: Props) {
             type="text"
             inputMode="decimal"
             placeholder="0.00"
-            required
             autoComplete="off"
             defaultValue={service?.currentPrice ?? ''}
             disabled={pending}
@@ -240,7 +239,7 @@ export default function ServiceForm({ mode, service, route }: Props) {
             checked={isPublic}
             onChange={(event) => setIsPublic(event.target.checked)}
             disabled={pending}
-            className="mt-0.5 h-4 w-4 rounded border-slate-300 text-orange-700 focus:ring-orange-500"
+            className="mt-0.5 h-4 w-4 rounded border-slate-300 text-brand-700 focus:ring-brand-500"
           />
           <span>
             {t('publicLabel')}

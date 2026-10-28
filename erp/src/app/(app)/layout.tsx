@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
+import { brand } from '@/config/brand';
 import { auth, loginPath } from '@/auth';
 import AppShell from '@/components/AppShell';
 import { countDueTasks } from '@/modules/messaging/queries';
@@ -28,8 +29,9 @@ export default async function ProtectedLayout({ children }: { children: React.Re
       }}
       loginUrl={loginPath}
       messageCount={messageCount}
+      trialBanner={brand.trialBanner}
     >
-      {canSeeMessages ? <MessagesTicker baseTitle={t('name')} /> : null}
+      {canSeeMessages ? <MessagesTicker baseTitle={brand.clinicName} /> : null}
       {children}
     </AppShell>
   );

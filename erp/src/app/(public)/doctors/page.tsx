@@ -85,7 +85,7 @@ export default async function DoctorsPage() {
               <div className="flex gap-3">
                 <Link
                   href="/book"
-                  className="rounded-xl bg-orange-800 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-900"
+                  className="rounded-xl bg-brand-800 px-4 py-2 text-sm font-semibold text-brand-primary-contrast hover:bg-brand-900"
                 >
                   {t('bookAppointment')}
                 </Link>

@@ -58,7 +58,7 @@ export default function DoctorAvatar({
   return (
     <span
       aria-hidden="true"
-      className={`flex items-center justify-center rounded-full bg-orange-100 font-semibold text-orange-800 ${className}`}
+      className={`flex items-center justify-center rounded-full bg-brand-100 font-semibold text-brand-900 ${className}`}
       style={{ width: size, height: size, fontSize: Math.round(size / 3) }}
     >
       {initials || '?'}

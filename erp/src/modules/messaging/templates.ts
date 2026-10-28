@@ -1,3 +1,4 @@
+import { brand } from '@/config/brand';
 import {
   GSM7_BASIC,
   GSM7_EXTENSION,
@@ -45,8 +46,8 @@ export const SAMPLE_DATA: TemplateSample = {
   date: 'Mon 12 Oct',
   time: '10:00',
   doctor: 'Dr. Abebe Kebede',
-  clinic: 'Finan Speciality Dental Clinic',
-  review_link: 'https://g.page/vision-eye-clinic/review',
+  clinic: brand.clinicName,
+  review_link: '',
   reopen_date: 'Mon 19 Oct',
 };
 

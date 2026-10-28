@@ -78,7 +78,7 @@ export default function PatientIdPhotoCapture({ patientId, existingUrl }: Props)
               capture="environment"
               disabled={pending}
               onChange={onFileChange}
-              className="text-xs text-slate-600 file:mr-2 file:rounded-md file:border-0 file:bg-orange-50 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-orange-700 hover:file:bg-orange-100"
+              className="text-xs text-slate-600 file:mr-2 file:rounded-md file:border-0 file:bg-brand-50 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-brand-700 hover:file:bg-brand-100"
             />
             <div className="flex flex-wrap gap-2">
               <button

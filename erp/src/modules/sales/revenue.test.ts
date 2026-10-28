@@ -19,7 +19,7 @@ function sale(
     doctorName: null,
     lines: [
       {
-        serviceName: 'Eye Consultation',
+        serviceName: 'Dental Consultation',
         category: 'consultation',
         qty: 1,
         lineTotal: overrides.total,
@@ -58,7 +58,7 @@ describe('buildRevenueReport', () => {
           paymentMethod: 'CARD',
           doctorName: 'Dr. Abebe',
           lines: [
-            { serviceName: 'OCT Scan', category: 'diagnostics', qty: 1, lineTotal: '1000.00' },
+            { serviceName: 'Dental Imaging', category: 'diagnostics', qty: 1, lineTotal: '1000.00' },
           ],
         }),
         sale({
@@ -69,7 +69,7 @@ describe('buildRevenueReport', () => {
           doctorName: 'Dr. Abebe',
           lines: [
             {
-              serviceName: 'Eye Consultation',
+              serviceName: 'Dental Consultation',
               category: 'consultation',
               qty: 1,
               lineTotal: '300.00',
@@ -80,7 +80,7 @@ describe('buildRevenueReport', () => {
       TZ,
     );
 
-    expect(report.byService.map((bucket) => bucket.key)).toEqual(['OCT Scan', 'Eye Consultation']);
+    expect(report.byService.map((bucket) => bucket.key)).toEqual(['Dental Imaging', 'Dental Consultation']);
     expect(report.byService[0].total).toBe('1000.00');
     expect(report.byCategory.find((bucket) => bucket.key === 'consultation')?.total).toBe('300.00');
     expect(report.byDoctor[0]).toMatchObject({ key: 'Dr. Abebe', total: '1300.00', count: 2 });

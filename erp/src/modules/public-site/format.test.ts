@@ -29,9 +29,9 @@ describe('contact links', () => {
   });
 
   it('builds Telegram links from handles or URLs', () => {
-    expect(telegramHref('@visioneye')).toBe('https://t.me/visioneye');
-    expect(telegramHref('visioneye')).toBe('https://t.me/visioneye');
-    expect(telegramHref('https://t.me/visioneye')).toBe('https://t.me/visioneye');
+    expect(telegramHref('@finan8')).toBe('https://t.me/finan8');
+    expect(telegramHref('finan8')).toBe('https://t.me/finan8');
+    expect(telegramHref('https://t.me/finan8')).toBe('https://t.me/finan8');
     expect(telegramHref('')).toBeNull();
   });
 });

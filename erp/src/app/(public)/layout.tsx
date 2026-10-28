@@ -1,15 +1,16 @@
 import type { Metadata } from 'next';
 import { getLocale, getTranslations } from 'next-intl/server';
+import { brand } from '@/config/brand';
+import { SERVICES } from '@/config/services';
 import { clinicDateKey } from '@/lib/datetime';
 import {
   getClinicProfile,
-  getPublicServices,
   getSiteContent,
   isAnnouncementVisible,
   pick,
   siteBaseUrl,
 } from '@/modules/public-site';
-import { telHref } from '@/modules/public-site/format';
+import { telLink } from '@/config/brand';
 import PublicHeader from '@/modules/public-site/components/PublicHeader';
 import PublicFooter from '@/modules/public-site/components/PublicFooter';
 import AnnouncementBanner from '@/modules/public-site/components/AnnouncementBanner';
@@ -32,33 +33,22 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function PublicLayout({ children }: { children: React.ReactNode }) {
-  const [content, profile, services] = await Promise.all([
-    getSiteContent(),
-    getClinicProfile(),
-    getPublicServices(),
-  ]);
+  const [content, profile] = await Promise.all([getSiteContent(), getClinicProfile()]);
+  const services = SERVICES;
   const locale = await getLocale();
   const t = await getTranslations('site');
 
-  const clinicName = profile.name;
-  const address = pick(locale, content.contact_address) || null;
-  const phonePrimary = pick(locale, content.contact_phone_primary) || null;
-  const phoneHref = telHref(phonePrimary);
+  const clinicName = brand.clinicName;
+  const address = brand.address;
+  const phonePrimary = brand.phones[0];
+  const phoneHref = telLink(phonePrimary);
   const hoursText = null;
   const footerNote = pick(locale, content.footer_note) || null;
   const announcementText = pick(locale, content.announcement_text);
 
   const socials = [
-    pick(locale, content.social_tiktok)
-      ? { href: pick(locale, content.social_tiktok), label: 'TikTok', platform: 'tiktok' as const }
-      : null,
-    pick(locale, content.social_instagram)
-      ? { href: pick(locale, content.social_instagram), label: 'Instagram', platform: 'instagram' as const }
-      : null,
-    pick(locale, content.social_telegram)
-      ? { href: pick(locale, content.social_telegram), label: 'Telegram', platform: 'telegram' as const }
-      : null,
-  ].filter((link): link is NonNullable<typeof link> => !!link);
+    { href: `https://t.me/${brand.telegram.slice(1)}`, label: 'Telegram', platform: 'telegram' as const },
+  ];
 
   const showAnnouncement = isAnnouncementVisible(
     content,
@@ -72,7 +62,8 @@ export default async function PublicLayout({ children }: { children: React.React
     '@type': 'MedicalClinic',
     name: clinicName,
     url: siteBaseUrl(),
-    ...(phonePrimary ? { telephone: phonePrimary } : {}),
+    telephone: `+251${phonePrimary.slice(1)}`,
+    email: brand.email,
     ...(address
       ? {
           address: {
@@ -84,12 +75,12 @@ export default async function PublicLayout({ children }: { children: React.React
         }
       : {}),
     ...(hoursText ? { openingHours: hoursText } : {}),
-    medicalSpecialty: pick(locale, content.specialty),
+    medicalSpecialty: 'Dentistry',
     ...(services.length
       ? {
           availableService: services.map((service) => ({
             '@type': 'MedicalProcedure',
-            name: locale === 'am' ? service.nameAm || service.name : service.name,
+            name: locale === 'am' ? service.nameAm : service.nameEn,
           })),
         }
       : {}),
@@ -99,7 +90,7 @@ export default async function PublicLayout({ children }: { children: React.React
     <div className="flex min-h-screen flex-col bg-white text-slate-900">
       <a
         href="#main"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-orange-800 focus:px-4 focus:py-2 focus:text-white"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-brand-800 focus:px-4 focus:py-2 focus:text-brand-primary-contrast"
       >
         {t('skipToContent')}
       </a>

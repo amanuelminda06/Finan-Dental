@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import type { PublicService } from '../projection';
+import type { Service } from '@/config/services';
 
 const SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
@@ -21,7 +21,7 @@ function errorLabel(code: string | undefined): ErrorCode | null {
 }
 
 type Props = {
-  services: PublicService[];
+  services: Service[];
   windows: string[];
   /** Clinic-local "today" (YYYY-MM-DD) so the date picker cannot go backwards. */
   minDate: string;
@@ -172,7 +172,7 @@ export default function BookingForm({ services, windows, minDate }: Props) {
             placeholder={t('book.namePlaceholder')}
             aria-describedby={describedBy('name')}
             aria-invalid={fieldError('name') ? true : undefined}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base focus:border-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-100"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-100"
           />
         </Field>
 
@@ -194,7 +194,7 @@ export default function BookingForm({ services, windows, minDate }: Props) {
             placeholder={t('book.phonePlaceholder')}
             aria-describedby={describedBy('phone')}
             aria-invalid={fieldError('phone') ? true : undefined}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base focus:border-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-100"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-100"
           />
         </Field>
 
@@ -213,7 +213,7 @@ export default function BookingForm({ services, windows, minDate }: Props) {
             min={minDate}
             aria-describedby={describedBy('preferredDate')}
             aria-invalid={fieldError('preferredDate') ? true : undefined}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base focus:border-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-100"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-100"
           />
         </Field>
 
@@ -227,7 +227,7 @@ export default function BookingForm({ services, windows, minDate }: Props) {
             id="preferredTimeWindow"
             name="preferredTimeWindow"
             defaultValue="any"
-            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base focus:border-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-100"
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-100"
           >
             {windows.map((window) => (
               <option key={window} value={window}>
@@ -243,12 +243,12 @@ export default function BookingForm({ services, windows, minDate }: Props) {
           id="serviceInterest"
           name="serviceInterest"
           defaultValue=""
-          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base focus:border-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-100"
+          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-base focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-100"
         >
           <option value="">{t('book.serviceNone')}</option>
           {services.map((service) => (
-            <option key={service.id} value={service.name}>
-              {service.name}
+            <option key={service.nameEn} value={service.nameEn}>
+              {locale === 'am' ? service.nameAm : service.nameEn}
             </option>
           ))}
         </select>
@@ -269,7 +269,7 @@ export default function BookingForm({ services, windows, minDate }: Props) {
           maxLength={500}
           placeholder={t('book.messagePlaceholder')}
           aria-describedby={describedBy('message')}
-          className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base focus:border-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-100"
+          className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-100"
         />
       </Field>
 
@@ -289,7 +289,7 @@ export default function BookingForm({ services, windows, minDate }: Props) {
           name="consent"
           required
           aria-describedby={describedBy('consent')}
-          className="mt-0.5 h-4 w-4 rounded border-slate-300 text-orange-700 focus:ring-orange-500"
+          className="mt-0.5 h-4 w-4 rounded border-slate-300 text-brand-700 focus:ring-brand-500"
         />
         <span>
           {t('book.consent')}
@@ -305,7 +305,7 @@ export default function BookingForm({ services, windows, minDate }: Props) {
         <button
           type="submit"
           disabled={status === 'submitting'}
-          className="rounded-xl bg-orange-800 px-6 py-3 text-base font-semibold text-white hover:bg-orange-900 disabled:opacity-60"
+          className="rounded-xl bg-brand-800 px-6 py-3 text-base font-semibold text-brand-primary-contrast hover:bg-brand-900 disabled:opacity-60"
         >
           {status === 'submitting' ? t('book.submitting') : t('book.submit')}
         </button>

@@ -7,14 +7,14 @@ export const brand = {
   phones: ["0948023831", "0911055655"],
   email: "shalomwordi@gmail.com",
   telegram: "@finan8",
-  smsSenderName: process.env.SMS_SENDER_NAME ?? "FinanDental",
+  smsSenderName: process.env.SMS_SENDER_NAME ?? 'FinanDental',
   currency: "ETB",
   timezone: "Africa/Addis_Ababa",
   locales: ["en", "am"] as const,
   colors: {
-    primary: "#129cf4",
-    secondary: "#0070cc",
-    accent: "#80bd08",
+    primary: "#129CF4",
+    secondary: "#80BD08",
+    accent: "#FFFFFF",
   },
   trialBanner: process.env.NEXT_PUBLIC_TRIAL_BANNER === "true",
 } as const;

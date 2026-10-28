@@ -1,5 +1,6 @@
 'use server';
 
+import { brand } from '@/config/brand';
 import { withAuth, ok, type ActionResult } from '@/lib/action';
 import { writeAudit } from '@/lib/audit';
 import { clinicDateKey } from '@/lib/datetime';
@@ -43,7 +44,7 @@ export async function sendDailySummaryEmailAction(
         clinicName:
           typeof settings.clinic_name === 'string' && settings.clinic_name
             ? settings.clinic_name
-            : 'Finan Speciality Dental Clinic',
+            : brand.clinicName,
         currency: typeof settings.currency === 'string' ? settings.currency : 'ETB',
         sentAt: new Date(),
       }),

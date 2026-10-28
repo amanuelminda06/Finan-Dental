@@ -1,3 +1,4 @@
+import { brand } from '@/config/brand';
 import { prisma } from '@/lib/prisma';
 import { clinicDateKey } from '@/lib/datetime';
 import { getSettingsMap, timezoneFrom } from '@/modules/settings';
@@ -198,7 +199,7 @@ export async function materializeCampaign(params: {
   if (preview.overCap) return { eligible: eligible.length, created: 0, overCap: true, batches: 0 };
 
   const bodies = await loadTemplateBodies();
-  const clinicName = typeof map.clinic_name === 'string' ? map.clinic_name : 'Finan Speciality Dental Clinic';
+  const clinicName = typeof map.clinic_name === 'string' ? map.clinic_name : brand.clinicName;
   const reviewLink = typeof map.review_link === 'string' ? map.review_link : '';
 
   const batchSize =

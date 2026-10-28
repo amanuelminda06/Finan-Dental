@@ -18,7 +18,7 @@ type ServiceOption = {
   name: string;
   nameEn: string;
   nameAm: string | null;
-  currentPrice: string;
+  currentPrice: string | null;
 };
 type DoctorOption = { id: string; fullName: string };
 
@@ -52,7 +52,7 @@ function initialLines(
             locale === 'am' && line.nameAm
               ? line.nameAm
               : line.nameEn || line.name,
-          unitPrice: line.currentPrice,
+          unitPrice: line.currentPrice ?? '0.00',
           qty: 1,
         },
       ]
@@ -89,8 +89,7 @@ export default function NewSaleForm({ services, doctors, locale, prefill }: Prop
 
   const suggestions = useMemo(() => {
     const q = serviceQuery.trim().toLowerCase();
-    if (!q) return [];
-    return services
+    if (!q) return [];      return services
       .filter(
         (service) =>
           service.nameEn.toLowerCase().includes(q) ||
@@ -139,7 +138,7 @@ export default function NewSaleForm({ services, doctors, locale, prefill }: Prop
             locale === 'am' && service.nameAm
               ? service.nameAm
               : service.nameEn || service.name,
-          unitPrice: service.currentPrice,
+          unitPrice: service.currentPrice ?? '0.00',
           qty: 1,
         },
       ];
@@ -267,7 +266,7 @@ export default function NewSaleForm({ services, doctors, locale, prefill }: Prop
                     >
                       <span className="font-medium text-slate-900">{service.nameEn || service.name}</span>
                       <span className="text-xs text-slate-500">
-                        {formatMoney(service.currentPrice)}
+                        {service.currentPrice === '0' || service.currentPrice === '0.00' ? formatMoney('0') : service.currentPrice ? formatMoney(service.currentPrice) : tc('notSet')}
                       </span>
                     </button>
                   </li>

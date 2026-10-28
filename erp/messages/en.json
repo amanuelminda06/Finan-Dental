@@ -1,7 +1,7 @@
 {
  "app": {
   "name": "Finan Speciality Dental Clinic",
-  "shortName": "Vision ERP",
+  "shortName": "Finan",
   "searchPlaceholder": "Search…",
   "searchEmpty": "No matches",
   "searchSearching": "Searching…",
@@ -64,6 +64,7 @@
   "idPhotoInvalidType": "ID photo must be PNG, JPG or WebP.",
   "idPhotoTooLarge": "ID photo must be 2 MB or smaller.",
   "patientRequired": "Choose or create a patient.",
+  "notSet": "To be provided",
   "fixFields": "Fix the highlighted fields."
  },
  "nav": {
@@ -319,6 +320,7 @@
   "imageTooLarge": "Image must be 2 MB or smaller",
   "serviceInactive": "This service is inactive and cannot be added to a new sale.",
   "serviceMissing": "This service no longer exists.",
+  "serviceUnpriced": "Set a price for this service before recording a sale.",
   "quantityTooHigh": "The quantity is too high.",
   "noLines": "Add at least one service.",
   "tooManyLines": "Too many services on one sale.",
@@ -327,6 +329,7 @@
   "endBeforeStart": "The end must not be before the start.",
   "rangeTooLong": "The range is too long.",
   "patientRequired": "Choose or create a patient.",
+  "notSet": "To be provided",
   "doctorRequired": "Choose a doctor.",
   "invalidDuration": "Choose a valid duration.",
   "invalidStatus": "Choose a valid status.",
@@ -405,6 +408,7 @@
   "notFound": "Appointment not found.",
   "terminalLocked": "This appointment is finished and can only be changed by the owner.",
   "invalidTransition": "This status change is not allowed.",
+  "requestAlreadyConverted": "This request has already been converted.",
   "patientInactive": "This patient is deactivated."
  },
  "followups": {
@@ -1005,14 +1009,14 @@
  },
  "site": {
   "meta": {
-   "homeTitle": "Finan Speciality Dental Clinic — Eye care in Addis Ababa",
-   "homeDescription": "Comprehensive eye care for your whole family: eye examinations, glasses, diagnostics and specialist treatment. Book an appointment or call us today.",
+   "homeTitle": "Finan Speciality Dental Clinic",
+   "homeDescription": "Dental care for your family in Addis Ababa. Explore consultations, cleaning, fillings and specialist dental services.",
    "aboutTitle": "About us",
-   "aboutDescription": "Learn about Finan Speciality Dental Clinic, our approach to patient-first eye care and the team behind it.",
-   "servicesTitle": "Eye care services",
-   "servicesDescription": "Dental checkups, cleanings, fillings, extractions, and specialist dental treatments. See the services we offer at Finan Speciality Dental Clinic.",
+   "aboutDescription": "Learn about Finan Speciality Dental Clinic, our patient-first approach to dental care and the team behind it.",
+   "servicesTitle": "Dental services",
+   "servicesDescription": "Explore dental consultations, cleaning, fillings, extraction and specialist treatments at Finan Speciality Dental Clinic.",
    "doctorsTitle": "Our doctors",
-   "doctorsDescription": "Meet the eye doctors at Finan Speciality Dental Clinic and see who is available now, on leave or next available.",
+   "doctorsDescription": "Meet the dentists at Finan Speciality Dental Clinic and see their availability.",
    "bookTitle": "Book an appointment",
    "bookDescription": "Request an appointment at Finan Speciality Dental Clinic. Tell us a preferred day and time and our team will call you to confirm.",
    "contactTitle": "Contact us",
@@ -1030,7 +1034,7 @@
   "navContact": "Contact",
   "navFaq": "FAQ",
   "bookAppointment": "Book an appointment",
-  "clinicNameAm": "ቪዥን የዓይን ህክምና ክሊኒክ",
+  "clinicNameAm": "ፊናን ስፔሻሊቲ የጥርስ ክሊኒክ",
   "callNow": "Call now",
   "phonePending": "Phone number coming soon",
   "phoneBackupLabel": "Backup: {number}",
@@ -1040,7 +1044,7 @@
   "english": "English",
   "amharic": "አማርኛ",
   "announcementLabel": "Announcement",
-  "footerAbout": "Trusted, patient-first eye care in Addis Ababa.",
+  "footerAbout": "Comfortable, patient-first dental care in Addis Ababa.",
   "footerQuickLinks": "Quick links",
   "footerContact": "Contact",
   "footerHours": "Opening hours",
@@ -1054,7 +1058,7 @@
    "servicesIntro": "A selection of the care we provide. Every visit starts with listening to you.",
    "viewAllServices": "View all services",
    "doctorsTitle": "Doctors on duty today",
-   "doctorsIntro": "Live availability of our eye doctors.",
+   "doctorsIntro": "Meet our dental care team.",
    "viewAllDoctors": "Meet our doctors",
    "testimonialsTitle": "What our patients say",
    "testimonialsIntro": "Real words from the people we care for.",
@@ -1063,28 +1067,28 @@
    "hoursTitle": "Opening hours",
    "whyTitle": "Why patients trust us",
    "why1Title": "Experienced specialists",
-   "why1Text": "Thorough examinations and clear explanations from doctors who focus on eyes.",
+   "why1Text": "Thoughtful dental care from an experienced team.",
    "why2Title": "Modern equipment",
-   "why2Text": "Reliable diagnostics that help us find problems early.",
+   "why2Text": "Modern equipment for comfortable dental visits.",
    "why3Title": "Care for the whole family",
-   "why3Text": "From children to grandparents, we look after every stage of life.",
-   "ctaTitle": "Ready to see clearly again?",
-   "ctaText": "Book a visit and our team will call you to confirm a time that suits you.",
+   "why3Text": "Friendly care for every member of your family.",
+   "ctaTitle": "Ready for a healthier smile?",
+   "ctaText": "Book a visit and our team will contact you to confirm a convenient time.",
    "announcementsTitle": "Announcements",
    "ratingAria": "{rating} out of {max} stars"
   },
   "services": {
-   "title": "Eye care services",
-   "intro": "The services below are provided by our clinic. Prices are not shown online — ask us for a clear estimate during your visit.",
-   "category": "Category",
+   "title": "Dental services",
+   "intro": "Explore our dental services. Contact us for details about each treatment.",
+   "category": "Service",
    "empty": "Service information is being updated. Please contact us for details.",
-   "bookService": "Book this service",
+   "bookService": "Book a consultation",
    "details": "Details"
   },
   "doctors": {
-   "title": "Our eye doctors",
-   "intro": "Meet the team who will look after your eyes.",
-   "empty": "Doctor profiles are being updated. Please contact us to speak with a doctor.",
+   "title": "Our dental team",
+   "intro": "Meet the team who will care for your smile.",
+   "empty": "Our dental team profiles are being updated. Please contact us to book a visit.",
    "availableNow": "Available now",
    "onLeave": "On leave",
    "nextAvailable": "Next available {when}",
@@ -1094,7 +1098,7 @@
   },
   "book": {
    "title": "Book an appointment",
-   "intro": "Tell us when suits you and your appointment is confirmed straight away — we look forward to seeing you.",
+   "intro": "Request a dental appointment and our team will contact you to confirm.",
    "name": "Your name",
    "namePlaceholder": "Full name",
    "phone": "Phone number",
@@ -1120,9 +1124,9 @@
    "submit": "Book my appointment",
    "submitting": "Booking…",
    "requiredNote": "Fields marked * are required.",
-   "successTitle": "Your appointment is approved!",
-   "successBody": "See you on {date} at {time} with {doctor}. We look forward to seeing you — a confirmation SMS is on its way.",
-   "successBodyGeneric": "We look forward to seeing you — a confirmation SMS is on its way.",
+   "successTitle": "Your request has been received.",
+   "successBody": "Your appointment request is confirmed for {date} at {time} with {doctor}. We look forward to seeing you.",
+   "successBodyGeneric": "Our team will contact you to confirm a convenient time.",
    "successAgain": "Book another appointment",
    "errorGeneric": "Something went wrong. Please try again or call us.",
    "errorRateLimited": "Too many booking attempts from this device. Please try again later or call us.",
@@ -1138,7 +1142,7 @@
   },
   "contact": {
    "title": "Contact us",
-   "intro": "We are happy to help. Call, message or visit us.",
+   "intro": "Call, message or visit Finan Speciality Dental Clinic.",
    "address": "Address",
    "phone": "Phone",
    "hours": "Opening hours",
@@ -1150,7 +1154,7 @@
    "visitTitle": "Visit the clinic",
    "messageTitle": "Message us",
    "mapTitle": "Map",
-   "pending": "Details coming soon."
+   "pending": "Contact details coming soon."
   },
   "feedback": {
    "title": "Share your feedback",
@@ -1191,7 +1195,7 @@
   },
   "faq": {
    "title": "Frequently asked questions",
-   "intro": "Answers to the questions we hear most. If yours is not here, please contact us.",
+   "intro": "Answers to common questions about visiting our dental clinic.",
    "empty": "FAQ content is being prepared. Please contact us with your questions."
   },
   "privacy": {
@@ -1272,5 +1276,6 @@
  "contact": {
   "openInMaps": "Open in Maps",
   "mapEmbedAlt": "Clinic location map"
- }
+ },
+ "name": "finan-dental"
 }

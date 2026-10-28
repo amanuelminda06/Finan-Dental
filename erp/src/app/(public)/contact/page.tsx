@@ -11,6 +11,7 @@ import {
 } from '@/modules/public-site';
 import { telHref, telegramHref, whatsappHref } from '@/modules/public-site/format';
 import Map from '@/modules/public-site/components/MapLazy';
+import { brand, telLink } from '@/config/brand';
 
 const DAY_KEYS: Record<keyof WorkingHours, string> = {
   mon: 'dayMon',
@@ -37,16 +38,16 @@ export default async function ContactPage() {
   const locale = await getLocale();
   const [content, profile] = await Promise.all([getSiteContent(), getClinicProfile()]);
 
-  const address = pick(locale, content.contact_address);
-  const phonePrimary = pick(locale, content.contact_phone_primary);
-  const phonePrimaryHref = telHref(phonePrimary);
-  const phoneBackup = pick(locale, content.contact_phone_backup);
-  const mapUrl = pick(locale, content.contact_map_url);
+  const address = brand.address;
+  const phonePrimary = brand.phones[0];
+  const phonePrimaryHref = telLink(phonePrimary);
+  const phoneBackup = brand.phones[1];
+  const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(brand.address)}`;
   const mapLat = pick(locale, content.map_lat);
   const mapLng = pick(locale, content.map_lng);
   const mapZoom = pick(locale, content.map_zoom);
   const whatsapp = whatsappHref(phonePrimary);
-  const telegram = telegramHref(phonePrimary);
+  const telegram = telegramHref(brand.telegram);
   const hours = workingHoursLines(
     profile.workingHours,
     (day) => ts(DAY_KEYS[day] as never),
@@ -69,7 +70,7 @@ export default async function ContactPage() {
               href={mapUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-4 inline-flex items-center gap-2 rounded-lg bg-orange-800 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-900"
+              className="mt-4 inline-flex items-center gap-2 rounded-lg bg-brand-800 px-4 py-2 text-sm font-semibold text-brand-primary-contrast hover:bg-brand-900"
             >
               {/maps\.app\.goo\.gl/i.test(mapUrl) ? 'View on Google Maps' : t('contact.directions')} →
             </a>
@@ -80,11 +81,11 @@ export default async function ContactPage() {
           <h2 className="text-lg font-semibold text-slate-900">{t('contact.phone')}</h2>
           {phonePrimary && phonePrimaryHref ? (
             <>
-              <a href={phonePrimaryHref} className="mt-3 block text-lg font-semibold text-orange-800">
-                {phonePrimary}
+              <a href={phonePrimaryHref} className="mt-3 block text-lg font-semibold text-brand-900">
+                +251 {phonePrimary.slice(1, 3)} {phonePrimary.slice(3, 6)} {phonePrimary.slice(6)}
               </a>
               {phoneBackup ? (
-                <p className="mt-2 text-sm text-slate-600">{t('phoneBackupLabel', { number: phoneBackup })}</p>
+                <p className="mt-2 text-sm text-slate-600"><a href={telLink(phoneBackup)}>{t('phoneBackupLabel', { number: `+251 ${phoneBackup.slice(1, 3)} ${phoneBackup.slice(3, 6)} ${phoneBackup.slice(6)}` })}</a></p>
               ) : null}
             </>
           ) : (
@@ -149,7 +150,7 @@ export default async function ContactPage() {
             />
             <p className="mt-2">
               <a
-                href={`https://maps.app.goo.gl/Cyye5QKD3qjUWVXA6`}
+                href={mapUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-900 hover:bg-slate-50"

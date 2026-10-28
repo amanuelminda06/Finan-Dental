@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { brand } from '@/config/brand';
 
 /**
  * Public website SEO helpers. `PUBLIC_BASE_URL` is the canonical origin — it is
@@ -29,7 +30,7 @@ export type PageMetaInput = {
 export function pageMetadata({ title, description, path, isHome }: PageMetaInput): Metadata {
   const url = `${siteBaseUrl()}${path === '/' ? '' : path}`;
   return {
-    title: isHome ? { absolute: title } : title,
+    title: isHome ? { absolute: brand.clinicName } : title,
     description,
     alternates: {
       canonical: path,
@@ -41,7 +42,7 @@ export function pageMetadata({ title, description, path, isHome }: PageMetaInput
     },
     openGraph: {
       type: 'website',
-      siteName: 'Finan Speciality Dental Clinic',
+      siteName: brand.clinicName,
       title,
       description,
       url,

@@ -1,7 +1,7 @@
 {
  "app": {
-  "name": "ቪሽን የአይን ክሊኒክ",
-  "shortName": "ቪሽን ERP",
+  "name": "ፊናን ስፔሻሊቲ የጥርስ ክሊኒክ",
+  "shortName": "ፊናን",
   "searchPlaceholder": "ፈልግ…",
   "searchEmpty": "ምንም አልተገኘም",
   "searchSearching": "በመፈለግ ላይ…",
@@ -64,6 +64,7 @@
   "idPhotoInvalidType": "ID photo must be PNG, JPG or WebP.",
   "idPhotoTooLarge": "ID photo must be 2 MB or smaller.",
   "patientRequired": "ተወን ይምርጡ ወይም ይፍጠርక",
+  "notSet": "በኋላ ይሞላል",
   "fixFields": "Fix the highlighted fields."
  },
  "nav": {
@@ -319,6 +320,7 @@
   "imageTooLarge": "ምስል 2 MB ወይም ከዚያ በታች መሆን አለበት",
   "serviceInactive": "ይህ አገልግሎት ተሰናክሏል፤ ለአዲስ ሽያጭ ሊጨመር አይችልም።",
   "serviceMissing": "ይህ አገልግሎት ከእንግዲህ የለም።",
+  "serviceUnpriced": "ሽያጭ ከመመዝገብዎ በፊት ለዚህ አገልግሎት ዋጋ ያስገቡ።",
   "quantityTooHigh": "ብዛቱ በጣም ከፍተኛ ነው።",
   "noLines": "ቢያንስ አንድ አገልግሎት ይጨምሩ።",
   "tooManyLines": "በአንድ ሽያጭ ላይ በጣም ብዙ አገልግሎቶች አሉ።",
@@ -327,6 +329,7 @@
   "endBeforeStart": "መጨረሻው ከመጀመሪያው በፊት መሆን አይችልም።",
   "rangeTooLong": "የቀን ክልሉ በጣም ረጅም ነው።",
   "patientRequired": "ታካሚ ይምረጡ ወይም ይፍጠሩ።",
+  "notSet": "በኋላ ይሞላል",
   "doctorRequired": "ዶክተር ይምረጡ።",
   "invalidDuration": "ትክክለኛ ቆይታ ይምረጡ።",
   "invalidStatus": "ትክክለኛ ሁኔታ ይምረጡ።",
@@ -1006,14 +1009,14 @@
  },
  "site": {
   "meta": {
-   "homeTitle": "የቪዥን የዓይን ክሊኒክ — በአዲስ አበባ የዓይን ህክምና",
-   "homeDescription": "ለመላው ቤተሰብዎ ሙሉ የዓይን ህክምና፡ የዓይን ምርመራ፣ ብርጭቆ፣ ምርመራ እና ልዩ ህክምና። ቀጠሮ ይያዙ ወይም ዛሬ ይደውሉልን።",
+   "homeTitle": "የፊናን ስፔሻሊቲ የጥርስ ክሊኒክ",
+   "homeDescription": "በአዲስ አበባ ለቤተሰብዎ የጥርስ እንክብካቤ። ምክር፣ ጽዳት፣ ሙሌትና ልዩ አገልግሎቶችን ይመልከቱ።",
    "aboutTitle": "ስለ እኛ",
-   "aboutDescription": "ስለ ቪዥን የዓይን ክሊኒክ፣ ታካሚን ያማከለ አቀራረባችንን እና ቡድናችንን ይወቁ።",
-   "servicesTitle": "የዓይን ህክምና አገልግሎቶች",
-   "servicesDescription": "የዓይን ምርመራ፣ ማዘዣ መለኪያ፣ ምርመራ፣ ብርጭቆ፣ የዓይን ሌንሶች እና ቀዶ ጥገና። በቪዥን የዓይን ክሊኒክ የምንሰጣቸውን አገልግሎቶች ይመልከቱ።",
+   "aboutDescription": "ስለ ፊናን ስፔሻሊቲ የጥርስ ክሊኒክ፣ ታካሚን ስለሚያማክለው የጥርስ እንክብካቤ አቀራረባችንና ቡድናችን ይወቁ።",
+   "servicesTitle": "የጥርስ አገልግሎቶች",
+   "servicesDescription": "በፊናን ስፔሻሊቲ የጥርስ ክሊኒክ የሚሰጡ የጥርስ ምክር፣ ጽዳት፣ ሙሌትና ልዩ ሕክምናዎችን ይመልከቱ።",
    "doctorsTitle": "ሐኪሞቻችን",
-   "doctorsDescription": "በቪዥን የዓይን ክሊኒክ የዓይን ሐኪሞችን ያግኙ፤ አሁን ያለ፣ በፈቃድ ላይ ያለ ወይም በቀጣይ የሚገኘውን ይመልከቱ።",
+   "doctorsDescription": "የፊናን ስፔሻሊቲ የጥርስ ክሊኒክ የጥርስ ሐኪሞችን ይገናኙ።",
    "bookTitle": "ቀጠሮ ይያዙ",
    "bookDescription": "በቪዥን የዓይን ክሊኒክ ቀጠሮ ይጠይቁ። የሚፈልጉትን ቀንና ሰዓት ይንገሩን፤ ቡድናችን ለማረጋገጥ ይደውልልዎታል።",
    "contactTitle": "ያግኙን",
@@ -1031,7 +1034,7 @@
   "navContact": "አግኙን",
   "navFaq": "ጥያቄዎች",
   "bookAppointment": "ቀጠሮ ይያዙ",
-  "clinicNameAm": "ቪዥን የዓይን ህክምና ክሊኒክ",
+  "clinicNameAm": "ፊናን ስፔሻሊቲ የጥርስ ክሊኒክ",
   "callNow": "ዛሬ ይደውሉ",
   "phonePending": "የስልክ ቁጥር በቅርቡ",
   "phoneBackupLabel": "ቁልፍ: {number}",
@@ -1041,7 +1044,7 @@
   "english": "English",
   "amharic": "አማርኛ",
   "announcementLabel": "ማስታወሻ",
-  "footerAbout": "በአዲስ አበባ የሚታመን፣ ታካሚን ያማከለ የዓይን ህክምና።",
+  "footerAbout": "በአዲስ አበባ ታካሚን ያማከለ ምቹ የጥርስ እንክብካቤ።",
   "footerQuickLinks": "ፈጣን አገናኞች",
   "footerContact": "አግኙን",
   "footerHours": "የስራ ሰዓት",
@@ -1055,7 +1058,7 @@
    "servicesIntro": "ከምንሰጣቸው አገልግሎቶች የተመረጡ። ማንኛውም ጉብኝት እርስዎን በማዳመጥ ይጀምራል።",
    "viewAllServices": "ሁሉንም አገልግሎቶች ይመልከቱ",
    "doctorsTitle": "ዛሬ በተግባር ላይ ያሉ ሐኪሞች",
-   "doctorsIntro": "የዓይን ሐኪሞቻችን ወቅታዊ ዝግጁነት።",
+   "doctorsIntro": "የጥርስ እንክብካቤ ቡድናችንን ይገናኙ።",
    "viewAllDoctors": "ሐኪሞቻችንን ያግኙ",
    "testimonialsTitle": "ታካሚዎቻችን ምን ይላሉ",
    "testimonialsIntro": "ከምንንከባከባቸው ሰዎች እውነተኛ ቃላት።",
@@ -1064,28 +1067,28 @@
    "hoursTitle": "የስራ ሰዓት",
    "whyTitle": "ታካሚዎች ለምን ያምኑናል",
    "why1Title": "ልምድ ያላቸው ስፔሻሊስቶች",
-   "why1Text": "በዓይን ላይ ያተኮሩ ሐኪሞች ጥልቅ ምርመራና ግልጽ ማብራሪያ ይሰጣሉ።",
+   "why1Text": "ልምድ ባለው ቡድን በጥንቃቄ የሚሰጥ የጥርስ እንክብካቤ።",
    "why2Title": "ዘመናዊ መሳሪያዎች",
-   "why2Text": "ችግሮችን ቀድመን ለማወቅ የሚረዱ አስተማማኝ ምርመራዎች።",
+   "why2Text": "ለምቹ የጥርስ ጉብኝት ዘመናዊ መሣሪያዎች።",
    "why3Title": "ለመላው ቤተሰብ እንክብካቤ",
-   "why3Text": "ከልጆች እስከ አያቶች፣ የህይወትን ሁሉንም ደረጃ እንንከባከባለን።",
-   "ctaTitle": "እንደገና በግልጽ ለማየት ተዘጋጅተዋል?",
-   "ctaText": "ጉብኝት ይያዙ፤ ቡድናችን ለእርስዎ የሚስማማውን ሰዓት ለማረጋገጥ ይደውልልዎታል።",
+   "why3Text": "ለቤተሰብዎ ሁሉ ወዳጃዊ እንክብካቤ።",
+   "ctaTitle": "ጤናማ ፈገግታ ይፈልጋሉ?",
+   "ctaText": "ቀጠሮ ይጠይቁ፤ ቡድናችን ምቹ ጊዜ ለማረጋገጥ ያነጋግርዎታል።",
    "announcementsTitle": "ማስታወቂያዎች",
    "ratingAria": "ከ {max} ኮከቦች {rating}"
   },
   "services": {
-   "title": "የዓይን ህክምና አገልግሎቶች",
-   "intro": "ከታች ያሉት አገልግሎቶች በክሊኒካችን ይሰጣሉ። ዋጋ በመስመር ላይ አይታይም — በጉብኝትዎ ወቅት ግልጽ ግምት ይጠይቁን።",
-   "category": "ምድብ",
+   "title": "የጥርስ አገልግሎቶች",
+   "intro": "የምንሰጣቸውን የጥርስ አገልግሎቶች ይመልከቱ። ለዝርዝር መረጃ ያነጋግሩን።",
+   "category": "አገልግሎት",
    "empty": "የአገልግሎት መረጃ በመዘመን ላይ ነው። ለዝርዝር አግኙን።",
-   "bookService": "ይህን አገልግሎት ይያዙ",
+   "bookService": "ምክር ይያዙ",
    "details": "ዝርዝር"
   },
   "doctors": {
-   "title": "የዓይን ሐኪሞቻችን",
-   "intro": "ዓይንዎን የሚንከባከበውን ቡድን ያግኙ።",
-   "empty": "የሐኪም መግለጫዎች በመዘመን ላይ ናቸው። ከሐኪም ለመነጋገር አግኙን።",
+   "title": "የጥርስ ሕክምና ቡድናችን",
+   "intro": "ፈገግታዎን የሚንከባከበውን ቡድን ይገናኙ።",
+   "empty": "የቡድናችን መረጃ እየተዘጋጀ ነው። ቀጠሮ ለመያዝ ያነጋግሩን።",
    "availableNow": "አሁን ይገኛል",
    "onLeave": "በፈቃድ ላይ",
    "nextAvailable": "በቀጣይ የሚገኘው {when}",
@@ -1095,7 +1098,7 @@
   },
   "book": {
    "title": "ቀጠሮ ይያዙ",
-   "intro": "የሚስማማዎትን ጊዜ ይንገሩን፤ ቀጠሮዎ ወዲያውኑ ይረጋገጣል — ስለምናየዎት በደስታ ነው።",
+   "intro": "የጥርስ ቀጠሮ ይጠይቁ፤ ቡድናችን ለማረጋገጥ ያነጋግርዎታል።",
    "name": "ስምዎ",
    "namePlaceholder": "ሙሉ ስም",
    "phone": "የስልክ ቁጥር",
@@ -1121,9 +1124,9 @@
    "submit": "ቀጠሮዬን ያረጋግጡ",
    "submitting": "በማረጋገጥ ላይ…",
    "requiredNote": "* የተደረገባቸው መስኮች ያስፈልጋሉ።",
-   "successTitle": "ቀጠሮዎ ተረጋግጧል!",
-   "successBody": "በ{date} ቀን {time} ሰዓት ከ{doctor} ጋር እናገኝዎታለን። ስለምናየዎት በደስታ ነው — የማረጋገጫ ኤስኤምኤስ በመላክ ላይ ነው።",
-   "successBodyGeneric": "ስለምናየዎት በደስታ ነው — የማረጋገጫ ኤስኤምኤስ በመላክ ላይ ነው።",
+   "successTitle": "ጥያቄዎ ደርሶናል።",
+   "successBody": "ቀጠሮዎ ለ{date} በ{time} ከ{doctor} ጋር ተረጋግጧል።",
+   "successBodyGeneric": "ቡድናችን ምቹ ጊዜ ለማረጋገጥ ያነጋግርዎታል።",
    "successAgain": "ሌላ ቀጠሮ ይያዙ",
    "errorGeneric": "የተሳሳተ ነገር ተከስቷል። እንደገና ይሞክሩ ወይም ይደውሉልን።",
    "errorRateLimited": "ከዚህ መሳሪያ ብዙ የቀጠሮ ሙከራዎች ተደርገዋል። ቆይተው ይሞክሩ ወይም ይደውሉልን።",
@@ -1192,7 +1195,7 @@
   },
   "faq": {
    "title": "በተደጋጋሚ የሚጠየቁ ጥያቄዎች",
-   "intro": "በብዛት የሚሰሙ ጥያቄዎች መልስ። የእርስዎ ካልተካተተ አግኙን።",
+   "intro": "የጥርስ ክሊኒካችንን ስለመጎብኘት ለሚነሱ ጥያቄዎች መልሶች።",
    "empty": "የጥያቄዎች ይዘት በመዘጋጀት ላይ ነው። ጥያቄዎን አምጥተው አግኙን።"
   },
   "privacy": {
@@ -1273,5 +1276,6 @@
  "contact": {
   "openInMaps": "በካርታ ክፈት",
   "mapEmbedAlt": "የክሊኒክ አድራሻ ካርታ"
- }
+ },
+ "name": "finan-dental"
 }

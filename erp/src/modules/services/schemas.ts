@@ -29,8 +29,12 @@ export const serviceFormSchema = z.object({
   currentPrice: z
     .string()
     .trim()
-    .min(1, 'required')
-    .refine((value) => PRICE_RE.test(value) && isMoneyInRange(value), 'invalidPrice'),
+    .optional()
+    .transform((value) => value || null)
+    .refine(
+      (value) => value === null || (PRICE_RE.test(value) && isMoneyInRange(value)),
+      'invalidPrice',
+    ),
   /** Shown on the public website. The price is never published. */
   isPublic: z
     .string()

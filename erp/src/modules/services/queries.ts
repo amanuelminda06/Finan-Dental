@@ -36,8 +36,8 @@ export type ServiceRow = {
   nameEn: string;
   nameAm: string | null;
   category: string;
-  /** Decimal serialized as a string (safe across the RSC boundary). */
-  currentPrice: string;
+  /** Decimal serialized as a string, or null when no price has been supplied. */
+  currentPrice: string | null;
   active: boolean;
   isPublic: boolean;
   publicDescriptionEn: string | null;
@@ -56,7 +56,7 @@ type ServiceDbRow = {
   nameEn: string;
   nameAm: string | null;
   category: string;
-  currentPrice: Decimal;
+  currentPrice: Decimal | null;
   active: boolean;
   isPublic: boolean;
   publicDescriptionEn: string | null;
@@ -76,7 +76,7 @@ function serialize(row: ServiceDbRow): ServiceRow {
     nameEn: row.nameEn,
     nameAm: row.nameAm,
     category: row.category,
-    currentPrice: toDecimalString(row.currentPrice),
+    currentPrice: row.currentPrice ? toDecimalString(row.currentPrice) : null,
     active: row.active,
     isPublic: row.isPublic,
     publicDescriptionEn: row.publicDescriptionEn,

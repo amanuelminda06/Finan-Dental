@@ -14,7 +14,7 @@ import { MAX_QTY } from './constants';
 export type ServiceSnapshot = {
   id: string;
   name: string;
-  currentPrice: string;
+  currentPrice: string | null;
   active: boolean;
 };
 
@@ -28,7 +28,7 @@ export type ComputedLine = {
   lineTotal: string;
 };
 
-export type ComputeError = 'serviceMissing' | 'serviceInactive' | 'quantityTooHigh';
+export type ComputeError = 'serviceMissing' | 'serviceInactive' | 'serviceUnpriced' | 'quantityTooHigh';
 
 export type ComputeSaleLinesResult =
   | { ok: true; lines: ComputedLine[]; total: string }
@@ -52,6 +52,7 @@ export function computeSaleLines(
 
   const missing: string[] = [];
   const inactive: string[] = [];
+  const unpriced: string[] = [];
   const lines: ComputedLine[] = [];
 
   for (const requestedLine of merged) {
@@ -62,6 +63,10 @@ export function computeSaleLines(
     }
     if (!service.active) {
       inactive.push(service.name);
+      continue;
+    }
+    if (service.currentPrice === null) {
+      unpriced.push(service.name);
       continue;
     }
     if (requestedLine.qty < 1 || requestedLine.qty > MAX_QTY) {
@@ -77,6 +82,7 @@ export function computeSaleLines(
   }
 
   if (inactive.length > 0) return { ok: false, error: 'serviceInactive', serviceNames: inactive };
+  if (unpriced.length > 0) return { ok: false, error: 'serviceUnpriced', serviceNames: unpriced };
   if (missing.length > 0) return { ok: false, error: 'serviceMissing', serviceNames: missing };
   if (lines.length === 0) return { ok: false, error: 'serviceMissing', serviceNames: [] };
 

@@ -1,0 +1,2 @@
+ALTER TABLE "Service" ALTER COLUMN "currentPrice" DROP NOT NULL;
+ALTER TABLE "Service" ALTER COLUMN "currentPrice" DROP DEFAULT;

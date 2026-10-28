@@ -1,4 +1,5 @@
 import type { Locale } from '@/i18n/config';
+import { brand } from '@/config/brand';
 
 /**
  * CMS-lite content keys. Values live in the `SiteContent` table (bilingual) and
@@ -47,16 +48,16 @@ export type Bilingual = { en: string; am: string };
 
 export const DEFAULT_CONTENT: Record<SiteContentKey, Bilingual> = {
   hero_title: {
-    en: 'Clear vision for every stage of life',
-    am: 'ለሁሉም የህይወት ደረጃ ግልጽ እይታ',
+    en: 'A healthier smile starts here',
+    am: 'ጤናማ ፈገግታ እዚህ ይጀምራል',
   },
   hero_subtitle: {
-    en: 'Comprehensive eye care for your whole family — from routine exams to specialist treatment.',
-    am: 'ለመላው ቤተሰብዎ ሙሉ የዓይን ህክምና — ከመደበኛ ምርመራ እስከ ልዩ ባለሙያ ህክምና።',
+    en: 'Thoughtful dental care for your family, from preventive visits to advanced treatments.',
+    am: 'ከመከላከያ ምርመራ እስከ ዘመናዊ ሕክምና፣ ለቤተሰብዎ በጥንቃቄ የሚሰጥ የጥርስ እንክብካቤ።',
   },
   hero_promise: {
-    en: 'Trusted, patient-first eye care in Addis Ababa.',
-    am: 'በአዲስ አበባ የሚታመን፣ ታካሚን ያማከለ የዓይን ህክምና።',
+    en: 'Comfortable, patient-first dental care in Addis Ababa.',
+    am: 'በአዲስ አበባ ታካሚን ያማከለና ምቹ የጥርስ እንክብካቤ።',
   },
   home_intro: {
     en: 'Our experienced dentists provide comprehensive dental care — from routine checkups and cleanings to restorative and cosmetic treatments with a patient-first approach.',
@@ -67,8 +68,8 @@ export const DEFAULT_CONTENT: Record<SiteContentKey, Bilingual> = {
     am: 'ይህ ድህረ ገጽ ለአጠቃላይ መረጃ ብቻ ነው፤ የህክምና ምክርን አይተካም።',
   },
   privacy_body: {
-    en: 'PLACEHOLDER — This privacy policy has not been finalised. Finan Speciality Dental Clinic collects the information you submit through the appointment request form (your name, phone number, preferred date and time) only to contact you about your request. We do not ask for or store medical details on this website. The clinic must replace this text with its reviewed privacy policy before launch.',
-    am: 'ጊዜያዊ — ይህ የግላዊነት ፖሊሲ አልተጠናቀቀም። ቪዥን የዓይን ክሊኒክ በቀጠሮ ጥያቄ ቅጽ የሚያስገቡትን መረጃ (ስምዎን፣ ስልክ ቁጥርዎን፣ የሚፈልጉትን ቀንና ሰዓት) ስለ ጥያቄዎ ለማግኘት ብቻ ይሰበስባል። በዚህ ድህረ ገጽ የህክምና ዝርዝር አንጠይቅም አናከማችም። ክሊኒኩ ከመጀመሩ በፊት ይህን ጽሑፍ በተገመገመ የግላዊነት ፖሊሲ መተካት አለበት።',
+    en: `PLACEHOLDER — This privacy policy has not been finalised. ${brand.clinicName} collects the information you submit through the appointment request form (your name, phone number, preferred date and time) only to contact you about your request. We do not ask for or store medical details on this website. The clinic must replace this text with its reviewed privacy policy before launch.`,
+    am: 'ጊዜያዊ — ይህ የግላዊነት ፖሊሲ አልተጠናቀቀም። ፊናን ስፔሻሊቲ የጥርስ ክሊኒክ በቀጠሮ ጥያቄ ቅጽ የሚያስገቡትን መረጃ (ስምዎን፣ ስልክ ቁጥርዎን፣ የሚፈልጉትን ቀንና ሰዓት) ስለ ጥያቄዎ ለማግኘት ብቻ ይሰበስባል። በዚህ ድህረ ገጽ የህክምና ዝርዝር አንጠይቅም አናከማችም። ክሊኒኩ ከመጀመሩ በፊት ይህን ጽሑፍ በተገመገመ የግላዊነት ፖሊሲ መተካት አለበት።',
   },
   announcement_text: {
     en: '',
@@ -99,9 +100,9 @@ export const DEFAULT_CONTENT: Record<SiteContentKey, Bilingual> = {
           'Bring any current dental records, a list of medicines you take, and previous treatment details if you have them.',
       },
       {
-        question: 'Is an eye exam painful?',
+        question: 'Is dental treatment painful?',
         answer:
-          'No. The exam is comfortable and non-invasive. Some tests use eye drops that briefly blur your vision, so you may wish to avoid driving afterwards.',
+          'We aim to keep your visit comfortable. Your dentist will explain what to expect before treatment begins.',
       },
     ]),
     am: JSON.stringify([
@@ -115,9 +116,8 @@ export const DEFAULT_CONTENT: Record<SiteContentKey, Bilingual> = {
         answer: 'ያለዎትን ብርጭቆ ወይም የዓይን ሌንስ፣ የሚወስዱትን መድሃኒት ዝርዝር እና ቀድሞ የነበረዎትን የዓይን መዝገብ ይዘው ይምጡ።',
       },
       {
-        question: 'የዓይን ምርመራ ያማል?',
-        answer:
-          'አያማም። ምርመራው ምቹ እና ህዝቃዜ የለውም። አንዳንድ ምርመራዎች ለጥቂት ጊዜ እይታን የሚያደበዝዙ ጠብታዎችን ይጠቀማሉ፤ ስለዚህ ከምርመራ በኋላ መንዳት ይቀርቡ።',
+        question: 'የጥርስ ሕክምና ያማል?',
+        answer: 'ጉብኝትዎ ምቹ እንዲሆን እንጥራለን። ሕክምናው ከመጀመሩ በፊት የጥርስ ሐኪምዎ ምን እንደሚጠብቁ ያብራራል።',
       },
     ]),
   },
@@ -138,32 +138,32 @@ export const DEFAULT_CONTENT: Record<SiteContentKey, Bilingual> = {
     ]),
   },
   contact_address: {
-    en: 'Kaliti Farid Building, 2nd floor, Addis Ababa, Ethiopia',
-    am: '',
+    en: brand.address,
+    am: brand.address,
   },
   contact_phone_primary: {
-    en: '+251900000000',
-    am: '+251900000000',
+    en: brand.phones[0],
+    am: brand.phones[0],
   },
   contact_phone_backup: {
-    en: '',
-    am: '',
+    en: brand.phones[1],
+    am: brand.phones[1],
   },
   contact_map_url: {
     en: 'https://maps.app.goo.gl/Cyye5QKD3qjUWVXA6',
     am: 'https://maps.app.goo.gl/Cyye5QKD3qjUWVXA6',
   },
   social_tiktok: {
-    en: 'https://tiktok.com/@visioneyeclinic',
-    am: 'https://tiktok.com/@visioneyeclinic',
+    en: '',
+    am: '',
   },
   social_instagram: {
-    en: 'https://instagram.com/visioneyeclinic',
-    am: 'https://instagram.com/visioneyeclinic',
+    en: '',
+    am: '',
   },
   social_telegram: {
-    en: 'https://t.me/visioneyeclinic',
-    am: 'https://t.me/visioneyeclinic',
+    en: `https://t.me/${brand.telegram.slice(1)}`,
+    am: `https://t.me/${brand.telegram.slice(1)}`,
   },
   doctors_intro: {
     en: 'Meet our dental team — skilled dentists combining modern equipment with attentive, personal care.',
@@ -172,14 +172,14 @@ export const DEFAULT_CONTENT: Record<SiteContentKey, Bilingual> = {
   announcements_items: {
     en: JSON.stringify([
       {
-        title: 'Free vision screening this Saturday',
-        message: 'Bring your family for a quick eye check. No appointment needed.',
+        title: 'Book a dental visit',
+        message: 'Contact our team to find a convenient time for your dental visit.',
       },
     ]),
     am: JSON.stringify([
       {
-        title: ' PLACEHOLDER Amharic announcement title',
-        message: 'PLACEHOLDER Amharic announcement message.',
+        title: 'ቀጠሮ ይያዙ',
+        message: 'ለጥርስ ጉብኝትዎ ምቹ ጊዜ ለመምረጥ ቡድናችንን ያነጋግሩ።',
       },
     ]),
   },
@@ -192,16 +192,16 @@ city: {
     am: 'PLACEHOLDER — country',
   },
   specialty: {
-    en: 'Ophthalmology',
-    am: 'PLACEHOLDER — medical specialty',
+    en: 'Dentistry',
+    am: 'የጥርስ ሕክምና',
   },
   og_title: {
-    en: 'Clear vision for every stage of life',
-    am: 'PLACEHOLDER — open-graph title',
+    en: 'Dental care for every smile',
+    am: 'ለሁሉም ፈገግታ የጥርስ እንክብካቤ',
   },
   og_subtitle: {
-    en: 'Eye examinations · Glasses · Diagnostics · Specialist care',
-    am: 'PLACEHOLDER — open-graph subtitle',
+    en: 'Consultations · Cleaning · Restorative and specialist dental care',
+    am: 'ምክር · ጽዳት · የጥርስ ጥገናና ልዩ እንክብካቤ',
   },
   og_city: {
     en: 'Addis Ababa, Ethiopia',

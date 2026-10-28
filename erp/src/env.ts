@@ -43,6 +43,8 @@ const schema = z.object({
   /** Optional Cloudflare Turnstile — disabled when blank. */
   TURNSTILE_SECRET_KEY: z.string().min(1).optional(),
   NEXT_PUBLIC_TURNSTILE_SITE_KEY: z.string().min(1).optional(),
+  NEXT_PUBLIC_TRIAL_BANNER: z.enum(['true', 'false']).optional(),
+  SMS_SENDER_NAME: z.string().min(1).max(11).optional(),
 });
 
 const result = schema.safeParse(process.env);

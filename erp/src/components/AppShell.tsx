@@ -11,12 +11,14 @@ import LocaleSwitcher from '@/components/LocaleSwitcher';
 import GlobalSearch from '@/components/GlobalSearch';
 import NavModule from '@/components/NavModule';
 import { NAV_MODULES, type NavModule as NavModuleDef } from '@/modules/nav';
+import { brand } from '@/config/brand';
 
 type Props = {
   user: { name: string; email: string; role: Role; mustChangePassword: boolean };
   loginUrl: string;
   /** Messages due now or overdue → shown as a badge on /messages. */
   messageCount?: number;
+  trialBanner?: boolean;
   children: React.ReactNode;
 };
 
@@ -24,6 +26,7 @@ export default function AppShell({
   user,
   loginUrl,
   messageCount = 0,
+  trialBanner = false,
   children,
 }: Props) {
   const pathname = usePathname();
@@ -63,6 +66,7 @@ export default function AppShell({
       <Shell
         user={user}
         loginUrl={loginUrl}
+        trialBanner={trialBanner}
         modules={modules}
         forced={forced}
         drawerOpen={drawerOpen}
@@ -79,6 +83,7 @@ export default function AppShell({
 
 type ShellProps = Props & {
   modules: NavModuleDef[];
+  trialBanner: boolean;
   forced: boolean;
   drawerOpen: boolean;
   setDrawerOpen: (fn: (open: boolean) => boolean) => void;
@@ -91,6 +96,7 @@ function Shell({
   user,
   loginUrl,
   modules,
+  trialBanner,
   forced,
   drawerOpen,
   setDrawerOpen,
@@ -104,10 +110,15 @@ function Shell({
   const tc = useTranslations('common');
 
   const linkClass =
-    'block rounded-lg px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-600';
+    'block rounded-lg px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600';
 
   return (
     <div className="min-h-screen">
+      {trialBanner ? (
+        <div role="status" className="bg-amber-100 px-4 py-1 text-center text-xs font-semibold text-slate-900">
+          Trial / Demo data
+        </div>
+      ) : null}
       <header className="sticky top-0 z-30 border-b border-slate-200 bg-white">
         <div className="flex h-14 items-center gap-3 px-4">
           <button
@@ -125,7 +136,7 @@ function Shell({
             className="flex items-center gap-2 text-sm font-semibold text-slate-900"
           >
             <SiteLogo height={28} className="rounded-md" />
-            <span className="hidden sm:inline">{t('shortName')}</span>
+            <span className="hidden sm:inline">{brand.shortName}</span>
           </Link>
 
           {user.role !== 'STAFF' ? (
@@ -216,7 +227,7 @@ function Shell({
           />
           <nav className="absolute left-0 top-0 h-full w-64 bg-white p-3 shadow-xl">
             <div className="mb-3 flex items-center justify-between px-2">
-              <span className="text-sm font-semibold">{t('shortName')}</span>
+              <span className="text-sm font-semibold">{brand.shortName}</span>
               <button
                 type="button"
                 className="btn-secondary"

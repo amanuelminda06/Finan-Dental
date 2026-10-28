@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { REAL_SERVICES } from '../../../prisma/seed-services';
+import { SERVICES } from '../../config/services';
 import { TEMPLATES } from '../../../prisma/seed-messages';
 import { LIBRARY_PAIRS } from '../../../prisma/seed-library';
 
@@ -20,7 +20,7 @@ describe('SMS seed contentment', () => {
   const bodies = smsBodies();
 
   it('never mentions a service name (English or Amharic)', () => {
-    const forbidden = REAL_SERVICES.flatMap((s) => [s.nameEn, s.nameAm ?? '']).filter(Boolean);
+    const forbidden = SERVICES.flatMap((s) => [s.nameEn, s.nameAm]).filter(Boolean);
     for (const body of bodies) {
       const lowered = body.toLowerCase();
       for (const name of forbidden) {

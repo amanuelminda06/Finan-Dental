@@ -35,7 +35,7 @@ export default function PatientSickLeaveList({ rows, timeZone, route }: Props) {
         <p>{t('sickEmpty')}</p>
         <Link
           href={`${route}?tab=sick`}
-          className="mt-2 inline-block text-xs font-medium text-orange-700 hover:underline"
+          className="mt-2 inline-block text-xs font-medium text-brand-700 hover:underline"
         >
           {t('sickAddFirst')}
         </Link>
@@ -86,7 +86,7 @@ export default function PatientSickLeaveList({ rows, timeZone, route }: Props) {
                 <div className="flex justify-end gap-2">
                   <Link
                     href={`${route}?tab=sick&edit=${row.id}`}
-                    className="text-xs font-medium text-orange-700 hover:underline"
+                    className="text-xs font-medium text-brand-700 hover:underline"
                   >
                     {tc('edit')}
                   </Link>

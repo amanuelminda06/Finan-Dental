@@ -36,7 +36,7 @@ export default function FeedbackWebsiteToggle({ feedbackId, name, showOnWebsite 
         disabled={pending}
         aria-label={t('showOnWebsiteFor', { name })}
         onChange={(event) => event.currentTarget.form?.requestSubmit()}
-        className="h-4 w-4 rounded border-slate-300 text-orange-700 focus:ring-orange-500"
+        className="h-4 w-4 rounded border-slate-300 text-brand-700 focus:ring-brand-500"
       />
       <ActionError error={state && !state.ok ? state.error : undefined} />
     </form>
