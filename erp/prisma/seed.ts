@@ -102,7 +102,7 @@ async function main(): Promise<void> {
         role: 'OWNER' as const,
         password: env.OWNER_PASSWORD,
         staffId: null,
-        mustChangePassword: true,
+        mustChangePassword: false,
       },
       {
         email: env.RECEPTION_EMAIL.toLowerCase(),
@@ -110,7 +110,7 @@ async function main(): Promise<void> {
         role: 'RECEPTION' as const,
         password: env.RECEPTION_PASSWORD,
         staffId: null,
-        mustChangePassword: true,
+        mustChangePassword: false,
       },
       {
         email: env.STAFF_EMAIL.toLowerCase(),
@@ -118,7 +118,7 @@ async function main(): Promise<void> {
         role: 'STAFF' as const,
         password: env.STAFF_PASSWORD,
         staffId: doctor.id,
-        mustChangePassword: true,
+        mustChangePassword: false,
       },
     ];
 
