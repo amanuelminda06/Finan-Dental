@@ -17,4 +17,3 @@ export const SERVICES: Service[] = [
   { nameEn: 'Modern Teeth Whitening', nameAm: 'ጥርስን በዘመናዊ መሳሪያ ማንጣት', descriptionEn: 'Professional teeth whitening with modern equipment.', descriptionAm: 'በዘመናዊ መሳሪያ ሙያዊ ጥርስ ማንጣት።', price: null },
   { nameEn: 'Bad Breath (Halitosis) Treatment', nameAm: 'መጥፎ የአፍ ሽታ ሕክምና', descriptionEn: 'Diagnosis and treatment of chronic bad breath.', descriptionAm: 'የረጅም ጊዜ የአፍ ሽታ ምርመራ እና ሕክምና።', price: null },
 ];
-EOF
