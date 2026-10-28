@@ -12,9 +12,9 @@ export const brand = {
   timezone: "Africa/Addis_Ababa",
   locales: ["en", "am"] as const,
   colors: {
-    primary: "#2563eb",
-    secondary: "#1e40af",
-    accent: "#60a5fa",
+    primary: "#129cf4",
+    secondary: "#0070cc",
+    accent: "#80bd08",
   },
   trialBanner: process.env.NEXT_PUBLIC_TRIAL_BANNER === "true",
 } as const;
