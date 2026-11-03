@@ -8,6 +8,8 @@ import OutboxBoard from '@/modules/messaging/components/OutboxBoard';
 import RunJobsButton from '@/modules/messaging/components/RunJobsButton';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
 
 export default async function MessagesPage() {
   try {

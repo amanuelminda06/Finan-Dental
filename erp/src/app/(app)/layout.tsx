@@ -7,6 +7,8 @@ import { countDueTasks } from '@/modules/messaging/queries';
 import MessagesTicker from '@/modules/messaging/components/MessagesTicker';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
 
 /**
  * Real authentication gate for every ERP page (rule 2). The proxy only does an
