@@ -77,7 +77,6 @@ export const NAV_MODULES: NavModule[] = [
     labelKey: 'cms',
     items: [
       { href: '/dashboard/services', labelKey: 'services', roles: ['OWNER'] },
-      { href: '/dashboard/feedback', labelKey: 'feedback', roles: ['OWNER'] },
       { href: '/settings', labelKey: 'settings', roles: ['OWNER'] },
     ],
   },
