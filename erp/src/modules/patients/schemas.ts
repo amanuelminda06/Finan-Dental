@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { normalizePhone } from '@/lib/phone';
+import { MAX_AGE_YEARS } from './age';
 
 /** Patient create/edit form payload (tags and status live on the detail page). */
 
@@ -20,10 +21,6 @@ export const SEX_VALUES = ['MALE', 'FEMALE', 'OTHER'] as const;
 export const LANGUAGE_VALUES = ['en', 'am'] as const;
 export const MAX_NOTES_CHARS = 2000;
 
-function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
 export const patientFormSchema = z.object({
   fullName: z.string().trim().min(1, 'required').max(120, 'tooLong'),
   phone: z
@@ -35,18 +32,13 @@ export const patientFormSchema = z.object({
   sex: z
     .union([z.literal(''), z.enum(SEX_VALUES, 'invalidSex')], 'invalidSex')
     .transform((value) => (value === '' ? null : value)),
-  birthDate: z
+  // Age in whole years — stored as an approximate birth date by the action.
+  age: z
     .string()
     .trim()
-    .refine(
-      (value) =>
-        value === '' ||
-        (/^\d{4}-\d{2}-\d{2}$/.test(value) &&
-          !Number.isNaN(Date.parse(`${value}T00:00:00Z`)) &&
-          value <= todayIso()),
-      'invalidDate',
-    )
-    .transform((value) => value || null),
+    .refine((value) => value === '' || /^\d+$/.test(value), 'positive')
+    .refine((value) => value === '' || Number(value) <= MAX_AGE_YEARS, 'tooHigh')
+    .transform((value) => (value === '' ? null : Number(value))),
   // '' → filled from the default_language setting at save time.
   preferredLanguage: z
     .union([z.literal(''), z.enum(LANGUAGE_VALUES, 'invalidLanguage')], 'invalidLanguage')

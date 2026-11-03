@@ -11,6 +11,7 @@ import {
   type PatientListFilters,
   type PatientSort,
   type SortDir,
+  ageInYears,
 } from '@/modules/patients';
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -176,7 +177,7 @@ export default async function PatientsPage({ searchParams }: { searchParams: Sea
               <th className="px-4 py-3 font-medium">{t('idNo')}</th>
               <th className="px-4 py-3 font-medium">{t('phone')}</th>
               <th className="px-4 py-3 font-medium">{t('sex')}</th>
-              <th className="px-4 py-3 font-medium">{sortLink('birthDate', t('birthDate'))}</th>
+              <th className="px-4 py-3 font-medium">{sortLink('birthDate', t('age'))}</th>
               <th className="px-4 py-3 font-medium">{tc('status')}</th>
               <th className="px-4 py-3 font-medium">{sortLink('createdAt', t('createdCol'))}</th>
             </tr>
@@ -216,7 +217,7 @@ export default async function PatientsPage({ searchParams }: { searchParams: Sea
                   </td>
                   <td className="px-4 py-3 text-slate-600">{sexLabel(row.sex)}</td>
                   <td className="px-4 py-3 text-slate-600">
-                    {row.birthDate ? row.birthDate.toISOString().slice(0, 10) : '—'}
+                    {row.birthDate ? ageInYears(row.birthDate) : '—'}
                   </td>
                   <td className="px-4 py-3">
                     <span

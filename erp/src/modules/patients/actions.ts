@@ -10,6 +10,7 @@ import { storage } from '@/lib/storage';
 import { getSettingsMap } from '@/modules/settings/queries';
 import { PATIENT_ROLES } from './roles';
 import { patientFormSchema, idPhotoExtension } from './schemas';
+import { birthDateFromAge } from './age';
 import { findPatientByPhone, findSimilarPatients } from './queries';
 import {
   MAX_IMPORT_BYTES,
@@ -30,7 +31,7 @@ function readPatientForm(formData: FormData) {
     fullName: String(formData.get('fullName') ?? ''),
     phone: String(formData.get('phone') ?? ''),
     sex: String(formData.get('sex') ?? ''),
-    birthDate: String(formData.get('birthDate') ?? ''),
+    age: String(formData.get('age') ?? ''),
     preferredLanguage: String(formData.get('preferredLanguage') ?? ''),
     notesNonClinical: String(formData.get('notesNonClinical') ?? ''),
     idNo: String(formData.get('idNo') ?? ''),
@@ -107,6 +108,7 @@ export async function createPatientAction(
   return withAuth<PatientFormSubmit>(PATIENT_ROLES, async (actor) => {
     const values = validate(patientFormSchema, readPatientForm(formData));
     const confirmed = String(formData.get('confirm') ?? '') === 'true';
+    const birthDate = values.age === null ? null : birthDateFromAge(values.age);
 
     const duplicate = await findPatientByPhone(values.phone);
     if (duplicate) return fail('phoneTaken', undefined, duplicate);
@@ -114,7 +116,7 @@ export async function createPatientAction(
     if (!confirmed) {
       const similar = await findSimilarPatients({
         fullName: values.fullName,
-        birthDate: values.birthDate,
+        birthDate,
       });
       if (similar.length > 0) return ok({ needsConfirm: true, similar });
     }
@@ -129,7 +131,7 @@ export async function createPatientAction(
           fullName: values.fullName,
           phoneE164: values.phone,
           sex: values.sex,
-          birthDate: toDate(values.birthDate),
+          birthDate,
           preferredLanguage: language,
           notesNonClinical: values.notesNonClinical,
           idNo: values.idNo || null,
@@ -166,6 +168,7 @@ export async function updatePatientAction(
     const id = String(formData.get('id') ?? '');
     const values = validate(patientFormSchema, readPatientForm(formData));
     const confirmed = String(formData.get('confirm') ?? '') === 'true';
+    const birthDate = values.age === null ? null : birthDateFromAge(values.age);
 
     const before = await prisma.patient.findUnique({ where: { id } });
     if (!before) return fail('unknownError');
@@ -176,7 +179,7 @@ export async function updatePatientAction(
     if (!confirmed) {
       const similar = await findSimilarPatients({
         fullName: values.fullName,
-        birthDate: values.birthDate,
+        birthDate,
         excludeId: id,
       });
       if (similar.length > 0) return ok({ needsConfirm: true, similar });
@@ -191,7 +194,7 @@ export async function updatePatientAction(
         fullName: values.fullName,
         phoneE164: values.phone,
         sex: values.sex,
-        birthDate: toDate(values.birthDate),
+        birthDate,
         preferredLanguage: language,
         notesNonClinical: values.notesNonClinical,
         idNo: values.idNo || null,

@@ -11,6 +11,7 @@ import {
   type PatientFormSubmit,
 } from '@/modules/patients/actions';
 import { formatPhoneDisplay } from '@/lib/phone';
+import { ageInYears, MAX_AGE_YEARS } from '../age';
 import { resizeImageFile } from '@/lib/image';
 import type { ActionResult } from '@/lib/action';
 
@@ -151,22 +152,27 @@ export default function PatientForm({ mode, patient, route }: Props) {
           </div>
 
           <div>
-            <label className="label" htmlFor="birthDate">
-              {t('birthDate')}
+            <label className="label" htmlFor="age">
+              {t('age')}
             </label>
             <input
               className="input-field"
-              id="birthDate"
-              name="birthDate"
-              type="date"
-              max={new Date().toISOString().slice(0, 10)}
-              defaultValue={patient?.birthDate ?? ''}
+              id="age"
+              name="age"
+              type="number"
+              inputMode="numeric"
+              min="0"
+              max={MAX_AGE_YEARS}
+              placeholder={t('agePlaceholder')}
+              defaultValue={
+                patient?.birthDate ? ageInYears(new Date(patient.birthDate)) : ''
+              }
               disabled={pending}
-              aria-invalid={!!fieldError('birthDate')}
+              aria-invalid={!!fieldError('age')}
             />
-            {fieldError('birthDate') ? (
+            {fieldError('age') ? (
               <p role="alert" className="mt-1 text-xs font-medium text-red-600">
-                {fieldError('birthDate')}
+                {fieldError('age')}
               </p>
             ) : null}
           </div>

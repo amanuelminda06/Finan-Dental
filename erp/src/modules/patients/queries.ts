@@ -150,18 +150,17 @@ export async function findPatientByPhone(
 
 /**
  * Very similar name + exactly the same birth date (never blocks, only warns).
- * `birthDate` is a calendar date (`YYYY-MM-DD`).
  */
 export async function findSimilarPatients(options: {
   fullName: string;
-  birthDate: string | null;
+  birthDate: Date | null;
   excludeId?: string;
   limit?: number;
 }): Promise<Array<{ id: string; fullName: string }>> {
   if (!options.birthDate) return [];
   const candidates = await prisma.patient.findMany({
     where: {
-      birthDate: new Date(`${options.birthDate}T00:00:00Z`),
+      birthDate: options.birthDate,
       ...(options.excludeId ? { id: { not: options.excludeId } } : {}),
     },
     select: { id: true, fullName: true },

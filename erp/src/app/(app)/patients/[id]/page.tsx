@@ -23,6 +23,7 @@ import {
   PatientIdPhotoCapture,
   listPatientSickLeaves,
   PatientSickLeaveTab,
+  ageInYears,
 } from '@/modules/patients';
 
 type Params = Promise<{ id: string }>;
@@ -177,9 +178,9 @@ export default async function PatientDetailPage({
                 <dd className="text-slate-800">{sexLabel}</dd>
               </div>
               <div>
-                <dt className="text-xs uppercase text-slate-500">{t('birthDate')}</dt>
+                <dt className="text-xs uppercase text-slate-500">{t('age')}</dt>
                 <dd className="text-slate-800">
-                  {patient.birthDate ? patient.birthDate.toISOString().slice(0, 10) : '—'}
+                  {patient.birthDate ? ageInYears(patient.birthDate) : '—'}
                 </dd>
               </div>
               <div>
