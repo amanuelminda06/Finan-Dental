@@ -7,6 +7,8 @@ import { listOutbox } from '@/modules/messaging/queries';
 import OutboxBoard from '@/modules/messaging/components/OutboxBoard';
 import RunJobsButton from '@/modules/messaging/components/RunJobsButton';
 
+export const dynamic = 'force-dynamic';
+
 export default async function MessagesPage() {
   try {
     const user = await requirePageRole(MESSAGE_ROLES);
