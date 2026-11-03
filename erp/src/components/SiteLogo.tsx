@@ -1,13 +1,13 @@
 import Image from 'next/image';
 
 type SiteLogoProps = {
-  /** Rendered height in px; width follows the intrinsic ~1.92:1 ratio. */
+  /** Rendered height in px; width follows the square 1:1 emblem ratio. */
   height?: number;
   priority?: boolean;
   className?: string;
 };
 
-/** Official Finan Speciality Dental Clinic logo (light-background lockup). Background removed so it works on any surface. */
+/** Official Finan Speciality Dental Clinic logo (square emblem, transparent background). */
 export default function SiteLogo({
   height = 36,
   priority = false,
@@ -17,7 +17,7 @@ export default function SiteLogo({
     <Image
       src="/finan-logo.png"
       alt="Finan Speciality Dental Clinic"
-      width={Math.round(height * 1.924)}
+      width={height}
       height={height}
       priority={priority}
       className={className}
@@ -26,18 +26,18 @@ export default function SiteLogo({
 }
 
 type SiteLogoDarkProps = {
-  /** Rendered height in px; width follows the intrinsic ~1.38:1 ratio. */
+  /** Rendered height in px; width follows the square 1:1 emblem ratio. */
   height?: number;
   className?: string;
 };
 
-/** Official Finan Speciality Dental Clinic logo, cream on transparent (for dark surfaces). */
+/** Official Finan Speciality Dental Clinic logo (transparent background, safe on dark surfaces). */
 export function SiteLogoDark({ height = 40, className = '' }: SiteLogoDarkProps) {
   return (
     <Image
       src="/finan-logo-dark.png"
       alt="Finan Speciality Dental Clinic"
-      width={Math.round(height * 1.376)}
+      width={height}
       height={height}
       className={className}
     />
