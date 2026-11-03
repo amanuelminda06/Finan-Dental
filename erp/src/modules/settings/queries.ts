@@ -9,10 +9,24 @@ export async function getSettingsMap(): Promise<Record<string, unknown>> {
   return Object.fromEntries(rows.map((row) => [row.key, row.value]));
 }
 
-/** Clinic timezone from settings, falling back to the default. */
+/**
+ * Clinic timezone from settings, falling back to the default. Stored values can
+ * be stale (imported/legacy data), and an unknown zone makes every
+ * `Intl.DateTimeFormat` call throw — which would 500 the whole page.
+ */
 export function timezoneFrom(map: Record<string, unknown>): string {
-  const value = map.timezone;
-  return typeof value === 'string' && value ? value : DEFAULT_TIMEZONE;
+  return safeTimezone(map.timezone);
+}
+
+function safeTimezone(value: unknown): string {
+  if (typeof value !== 'string' || !value) return DEFAULT_TIMEZONE;
+  try {
+    // `supportedValuesOf` omits valid aliases like `UTC`, so probe Intl directly.
+    new Intl.DateTimeFormat('en', { timeZone: value });
+    return value;
+  } catch {
+    return DEFAULT_TIMEZONE;
+  }
 }
 
 /** Matches prisma/seed.ts — used when a setting row is missing. */
@@ -56,7 +70,7 @@ export function settingsFromMap(map: Record<string, unknown>): SettingsFormValue
   return {
     clinic_name: str(map.clinic_name, brand.clinicName),
     currency: str(map.currency, 'ETB'),
-    timezone: str(map.timezone, DEFAULT_TIMEZONE),
+    timezone: safeTimezone(map.timezone),
     working_hours,
     reminder_send_time: str(map.reminder_send_time, '14:00'),
     reminder_send_by_offset_minutes: num(map.reminder_send_by_offset_minutes, 60),
