@@ -89,6 +89,7 @@ enum MessageTemplateKey {
   WELCOME
   CLOSURE_NOTICE
   CUSTOM
+  HAPPY_NEW_YEAR
 }
 
 /// What produced a MessageTask.
