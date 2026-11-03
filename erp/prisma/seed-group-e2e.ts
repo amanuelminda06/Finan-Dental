@@ -32,8 +32,15 @@ const TAG = 'grp-e2e-2026';
 const PATIENT_COUNT = 40;
 
 function phoneFor(index: number): string {
-  const digits = (900000000 + index).toString(); // 900000000..900000039 → +2519…
+  // Dedicated range that cannot collide with the demo patients
+  // (+251900000001…020). Colliding phones previously overwrote real demo
+  // patients' names because the fixture upserted by phoneE164.
+  const digits = (944000000 + index).toString(); // 944000000..944000039
   return `+251${digits}`;
+}
+
+function idFor(index: number): string {
+  return `grp-e2e-${String(index).padStart(3, '0')}`;
 }
 
 async function main(): Promise<void> {
@@ -72,9 +79,9 @@ async function main(): Promise<void> {
           createdBy: 'e2e-seed',
         };
         const patient = await prisma.patient.upsert({
-          where: { phoneE164 },
+          where: { id: idFor(index) },
           update: data,
-          create: { id: `grp-e2e-${String(index).padStart(3, '0')}`, ...data },
+          create: { id: idFor(index), ...data },
         });
         await prisma.patientTag.upsert({
           where: { patientId_tagId: { patientId: patient.id, tagId: tag.id } },

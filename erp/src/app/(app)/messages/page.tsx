@@ -5,9 +5,10 @@ import { getSettingsMap, timezoneFrom } from '@/modules/settings';
 import { MESSAGE_ROLES } from '@/modules/messaging';
 import { listOutbox } from '@/modules/messaging/queries';
 import OutboxBoard from '@/modules/messaging/components/OutboxBoard';
+import RunJobsButton from '@/modules/messaging/components/RunJobsButton';
 
 export default async function MessagesPage() {
-  await requirePageRole(MESSAGE_ROLES);
+  const user = await requirePageRole(MESSAGE_ROLES);
   const t = await getTranslations('messages');
   const [settings, groups] = await Promise.all([getSettingsMap(), listOutbox()]);
   const tz = timezoneFrom(settings);
@@ -23,6 +24,7 @@ export default async function MessagesPage() {
           <Link href="/messages/new" className="btn-primary">
             {t('newMessageLink')}
           </Link>
+          {user.role === 'OWNER' ? <RunJobsButton /> : null}
           <Link href="/messages/templates" className="btn-secondary">
             {t('templatesLink')}
           </Link>

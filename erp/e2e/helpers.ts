@@ -80,8 +80,10 @@ export async function login(page: Page, role: RoleKey = 'OWNER') {
     page
       .waitForURL(/\/(dashboard|change-password)/, { timeout: 20_000 })
       .then(() => 'navigated' as const),
+    // Scope to the form: Next's route announcer is also role="alert" and
+    // appears after every navigation, which would mask a successful sign-in.
     page
-      .getByRole('alert')
+      .locator('form [role="alert"]')
       .waitFor({ timeout: 20_000 })
       .then(() => 'error' as const),
   ]).catch(() => 'timeout' as const);

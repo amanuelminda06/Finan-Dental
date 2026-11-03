@@ -13,7 +13,8 @@ test.describe('smoke', () => {
     await page.fill('#email', process.env.OWNER_EMAIL ?? '');
     await page.fill('#password', 'definitely-wrong-password');
     await page.getByRole('button', { name: /sign in/i }).click();
-    await expect(page.getByRole('alert')).toContainText(/incorrect/i);
+    // Next's route announcer is also role="alert"; scope to the form.
+    await expect(page.locator('form [role="alert"]')).toContainText(/incorrect/i);
   });
 
   test('unknown login path 404s', async ({ page }) => {
