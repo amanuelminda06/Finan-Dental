@@ -22,7 +22,7 @@ export default function OpengraphImage() {
         background: `linear-gradient(135deg, ${brand.colors.primary} 0%, ${brand.colors.secondary} 100%)`,
         padding: '72px',
         color: 'white',
-        fontFamily: 'sans-serif',
+        fontFamily: 'system-ui, -apple-system, sans-serif',
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
@@ -38,7 +38,7 @@ export default function OpengraphImage() {
             fontSize: 44,
           }}
         >
-          ✦
+          *
         </div>
         <div style={{ fontSize: 34, fontWeight: 600 }}>{brand.clinicName}</div>
       </div>
