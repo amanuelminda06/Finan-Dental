@@ -132,17 +132,6 @@ export default async function DailySummaryPage({ searchParams }: { searchParams:
           </h2>
           <BucketTable t={t as never} buckets={report.byService} money={money} />
         </section>
-        <section className="card space-y-3 p-5 md:col-span-2">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-            {t('dayContext')}
-          </h2>
-          <dl className="grid grid-cols-2 gap-3 text-sm lg:grid-cols-4">
-            <div>
-              <dt className="text-xs text-slate-500">{t('appointmentsToday')}</dt>
-              <dd className="text-lg font-semibold text-slate-900">{summary.appointmentsToday}</dd>
-            </div>
-          </dl>
-        </section>
       </div>
     </div>
   );

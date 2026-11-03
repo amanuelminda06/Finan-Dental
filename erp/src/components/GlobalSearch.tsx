@@ -8,7 +8,7 @@ type SearchHit = { id: string; title: string; subtitle: string; href: string };
 type SearchResponse = Record<'patients' | 'sales' | 'appointments', SearchHit[]>;
 type GroupKey = keyof SearchResponse;
 
-const GROUPS: GroupKey[] = ['patients', 'sales', 'appointments'];
+const GROUPS: GroupKey[] = ['patients', 'sales'];
 
 /** Debounced global search in the header (server route is role-gated). */
 export default function GlobalSearch() {
@@ -60,9 +60,7 @@ export default function GlobalSearch() {
   }, [query]);
 
   const hasQuery = query.trim().length >= 2;
-  const total = results
-    ? results.patients.length + results.sales.length + results.appointments.length
-    : 0;
+  const total = results ? results.patients.length + results.sales.length : 0;
   const showDropdown = open && hasQuery && results;
 
   return (

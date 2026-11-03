@@ -1,14 +1,12 @@
 import { countPatientSales } from '@/modules/sales';
-import { countPatientAppointments } from '@/modules/appointments';
 import { countPatientMessages } from '@/modules/messaging';
 import { countPatientSickLeaves } from './sick-leave';
 
-export type PatientTabId = 'overview' | 'sales' | 'appointments' | 'messages' | 'sick';
+export type PatientTabId = 'overview' | 'sales' | 'messages' | 'sick';
 
 export const PATIENT_TABS: readonly PatientTabId[] = [
   'overview',
   'sales',
-  'appointments',
   'messages',
   'sick',
 ];
@@ -38,11 +36,6 @@ const salesLoader: PatientTabLoader = async (patientId) => ({
   count: await countPatientSales(patientId),
 });
 
-const appointmentsLoader: PatientTabLoader = async (patientId) => ({
-  ready: true,
-  count: await countPatientAppointments(patientId),
-});
-
 const messagesLoader: PatientTabLoader = async (patientId) => ({
   ready: true,
   count: await countPatientMessages(patientId),
@@ -56,7 +49,6 @@ const sickLoader: PatientTabLoader = async (patientId) => ({
 export const PATIENT_TAB_LOADERS: Record<PatientTabId, PatientTabLoader> = {
   overview: async () => ({ ready: true, count: 0 }),
   sales: salesLoader,
-  appointments: appointmentsLoader,
   messages: messagesLoader,
   sick: sickLoader,
 };
