@@ -6,6 +6,8 @@ import AppShell from '@/components/AppShell';
 import { countDueTasks } from '@/modules/messaging/queries';
 import MessagesTicker from '@/modules/messaging/components/MessagesTicker';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * Real authentication gate for every ERP page (rule 2). The proxy only does an
  * optimistic cookie sniff; `auth()` verifies the JWT signature here.
