@@ -10,7 +10,7 @@ export const contentType = 'image/png';
  * external asset) so it always matches the brand; localised text is avoided so
  * the image stays cacheable across locales.
  */
-export default function OpengraphImage() {
+export default async function OpengraphImage() {
   return new ImageResponse(
     <div
       style={{
@@ -22,7 +22,7 @@ export default function OpengraphImage() {
         background: `linear-gradient(135deg, ${brand.colors.primary} 0%, ${brand.colors.secondary} 100%)`,
         padding: '72px',
         color: 'white',
-        fontFamily: 'system-ui, -apple-system, sans-serif',
+        fontFamily: 'Arial, sans-serif',
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
@@ -38,7 +38,7 @@ export default function OpengraphImage() {
             fontSize: 44,
           }}
         >
-          *
+          +
         </div>
         <div style={{ fontSize: 34, fontWeight: 600 }}>{brand.clinicName}</div>
       </div>
@@ -50,7 +50,7 @@ export default function OpengraphImage() {
           Consultations · Cleaning · Restorative and specialist dental care
         </div>
       </div>
-      <div style={{ fontSize: 26, opacity: 0.9 }}>Addis Ababa, Ethiopia</div>
+      <div style={{ fontSize: 26, opacity: 0.9 }}>Addis Amhara, Ethiopia</div>
     </div>,
     size,
   );
