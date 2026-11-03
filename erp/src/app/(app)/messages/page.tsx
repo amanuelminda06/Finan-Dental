@@ -5,11 +5,9 @@ import { getSettingsMap, timezoneFrom } from '@/modules/settings';
 import { MESSAGE_ROLES } from '@/modules/messaging';
 import { listOutbox } from '@/modules/messaging/queries';
 import OutboxBoard from '@/modules/messaging/components/OutboxBoard';
-import RunJobsButton from '@/modules/messaging/components/RunJobsButton';
-import ExportLinks from '@/components/ExportLinks';
 
 export default async function MessagesPage() {
-  const user = await requirePageRole(MESSAGE_ROLES);
+  await requirePageRole(MESSAGE_ROLES);
   const t = await getTranslations('messages');
   const [settings, groups] = await Promise.all([getSettingsMap(), listOutbox()]);
   const tz = timezoneFrom(settings);
@@ -25,25 +23,12 @@ export default async function MessagesPage() {
           <Link href="/messages/new" className="btn-primary">
             {t('newMessageLink')}
           </Link>
-          <ExportLinks base="/api/messages/export" />
-          {user.role === 'OWNER' ? <RunJobsButton /> : null}
-          <Link href="/messages/library" className="btn-secondary">
-            {t('libraryLink')}
-          </Link>
-          <Link href="/messages/drafts" className="btn-secondary">
-            {t('draftsLink')}
-          </Link>
           <Link href="/messages/templates" className="btn-secondary">
             {t('templatesLink')}
           </Link>
           <Link href="/messages/campaigns" className="btn-secondary">
             {t('campaignsLink')}
           </Link>
-          {user.role === 'OWNER' ? (
-            <Link href="/messages/reports" className="btn-secondary">
-              {t('reportsLink')}
-            </Link>
-          ) : null}
         </div>
       </div>
 

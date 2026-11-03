@@ -58,11 +58,7 @@ export {
   GROUP_BATCH_HARD_MAX,
 } from './group-plan';
 
-export {
-  messageBodyHash,
-  normalizeMessageBody,
-  titleFromBody,
-} from './message-hash';
+export { messageBodyHash, normalizeMessageBody, titleFromBody } from './message-hash';
 
 export { resolveRecipients, searchPickablePatients, type ResolvedRecipients } from './recipients';
 
@@ -120,5 +116,10 @@ export {
   deleteAudienceAction,
   setCampaignBatchStatusAction,
   searchPatientsAction,
+  findRecipientsAction,
+  prepareMessageAction,
+  markMessageSentAction,
+  sendTaskNowAction,
   type OpenTaskResult,
+  type PreparedRecipient,
 } from './actions';

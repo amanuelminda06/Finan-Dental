@@ -410,28 +410,30 @@ nextShiftStartsAt` + `generatedAt`, has `Cache-Control: public, max-age=60`,
     JSON → 400, bad fields/phone → 422 with field errors, a valid payload → 200
     `{ok:true,id}` and stores only `ipHash`; repeating fast hits the per-IP
     rate limit (429).
-35. Messages outbox (OWNER/RECEPTION): seeded reminders/recalls/birthdays appear
-    under Overdue / Due now / Later today; the sidebar badge and browser-tab
-    count (`/api/messages/count`) match; a BLOCKED row shows the reason
-    (no consent / opted out / invalid phone / inactive / source cancelled).
-36. Send flow: "Send" opens the phone's Messages app pre-filled. **Test on a
-    real Android device** (`sms:+251…?body=…`) **and a real iPhone**
-    (`sms:+251…&body=…`) — the message and number must be correct and nothing
-    is sent until the user taps send in the phone app; returning to the tab
-    opens the "Did you send…?" sheet; Yes → SENT, Not yet → back to pending,
-    Skip requires a reason. "Copy message" / "Copy number" work as fallbacks.
+35. Messages (OWNER/RECEPTION): one simple list of messages to send, plus the
+    blocked and sent-today rows; New message, Templates, and Campaigns sit on
+    the same screen; the sidebar badge and browser-tab count
+    (`/api/messages/count`) match; a BLOCKED row shows the reason (opted out /
+    invalid phone / inactive / source cancelled).
+36. Send flow: "Send" is a real `sms:` link, so the phone's Messages app opens
+    pre-filled with that recipient's number and text. **Test on a real Android
+    device** (`sms:+251…?body=…`) **and a real iPhone** (`sms:+251…&body=…`);
+    nothing is sent until the user taps send in the phone app, and the message
+    is marked SENT automatically when the link is opened (no confirmation).
 37. Templates (OWNER): edit en/am with live preview; unknown `{vars}` are
     flagged; the character/part counter switches GSM-7 (160/153) ↔ Unicode
     (Amharic, 70/67); the "no diagnoses/treatments/specialties/prices" safety
     note is always shown; saving audits and the am drafts are flagged
     "needs native review".
-38. Campaigns (OWNER; RECEPTION only when `reception_can_send_campaigns`):
-    build an audience by tags/language/last-visit/upcoming/category/birthday,
-    preview matched vs excluded counts (noConsent/doNotMessage/invalidPhone/
-    inactive); creating makes one task per eligible patient (never a group
-    message); the progress bar updates as messages are sent; "Copy all numbers"
-    warns about group chats and requires the acknowledgement; the campaign cap
-    from Settings is enforced.
+38. New message (OWNER/RECEPTION): search patients by name/phone or add all
+    patients who visited this month (or another range), pick a template or
+    write a message, then Send shows the final message for confirmation. From
+    there: send one by one (opens each SMS app), open the individual campaign
+    page, or open the group session. Consent/opt-out is re-checked before every
+    send and each send is written to the audit log. Campaigns (OWNER;
+    RECEPTION only when `reception_can_send_campaigns`) make one task per
+    eligible patient (never one group message); group batches warn that every
+    recipient sees the other numbers.
 39. Opt-out: "stop messages" on a patient cancels pending tasks and sets
     `doNotMessage`; re-enabling requires OWNER and both are audited; the send
     flow then refuses that patient.

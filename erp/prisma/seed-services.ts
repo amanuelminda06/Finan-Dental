@@ -2,7 +2,7 @@ import type { PrismaClient } from '@prisma/client';
 import { SERVICES } from '../src/config/services';
 export async function seedServicesAndSales(prisma: PrismaClient): Promise<void> {
   const existing = await prisma.service.findMany({
-    select: { id: true, name: true, nameEn: true, currentPrice: true },
+    select: { id: true, name: true, nameEn: true, currentPrice: true, imageUrl: true },
   });
 
   for (const [index, seed] of SERVICES.entries()) {
@@ -23,7 +23,7 @@ export async function seedServicesAndSales(prisma: PrismaClient): Promise<void> 
           publicDescriptionEn: descriptionEn,
           publicDescriptionAm: descriptionAm,
           displayOrder: index + 1,
-          imageUrl: null,
+          imageUrl: found.imageUrl ?? seed.imageUrl,
           receiptLabelEn: null,
           receiptLabelAm: null,
         },
@@ -41,6 +41,7 @@ export async function seedServicesAndSales(prisma: PrismaClient): Promise<void> 
           publicDescriptionEn: descriptionEn,
           publicDescriptionAm: descriptionAm,
           displayOrder: index + 1,
+          imageUrl: seed.imageUrl,
         },
       });
     }

@@ -72,6 +72,26 @@ export function buildGroupSmsLink(
   return `sms:${recipients.join(',')}${separator}body=${encodeURIComponent(body)}`;
 }
 
+/** Safe variant for rendering: null instead of throwing on an empty body/phone. */
+export function smsHref(
+  phoneE164: string,
+  body: string,
+  platform: Platform = 'android',
+): string | null {
+  if (!phoneE164.trim() || !body.trim()) return null;
+  return buildSmsLink(phoneE164, body, platform);
+}
+
+/** Safe group variant: null when there are no usable recipients/body. */
+export function groupSmsHref(
+  phones: string[],
+  body: string,
+  platform: Platform = 'android',
+): string | null {
+  if (!phones.some((phone) => phone.trim()) || !body.trim()) return null;
+  return buildGroupSmsLink(phones, body, platform);
+}
+
 export class ManualLinkProvider implements SmsProvider {
   readonly mode = 'MANUAL_LINK' as const;
   readonly supportsBulkIndividual = false;

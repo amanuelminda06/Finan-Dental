@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { writeAudit } from '@/lib/audit';
 import { ok, fail, withAuth, type ActionResult } from '@/lib/action';
 import { validate } from '@/lib/errors';
-import { getSettingsMap } from '@/modules/settings';
+import { getSettingsMap, timezoneFrom } from '@/modules/settings';
 import {
   MESSAGE_OWNER_ROLES,
   MESSAGE_ROLES,
@@ -23,10 +23,14 @@ import {
   type RecipientFilterValues,
 } from './schemas';
 import { blockedReason } from './eligibility';
+import type { BlockedReason } from './constants';
 import { generateScheduleChangeTask, runMessageJobs, type JobSummary } from './generate';
 import { previewCampaign, materializeCampaign } from './campaign';
 import { groupAllowed } from './recipient-filter';
-import { searchPickablePatients, type PickablePatient } from './recipients';
+import { resolveRecipients, searchPickablePatients, type PickablePatient } from './recipients';
+import { renderMessage } from './render';
+import { randomUUID } from 'node:crypto';
+import { brand } from '@/config/brand';
 import { messageBodyHash, titleFromBody } from './message-hash';
 import { validateMessageBody, validateTemplateBody } from './templates';
 
@@ -849,7 +853,9 @@ export async function setCampaignBatchStatusAction(
   return withAuth(MESSAGE_ROLES, async (actor) => {
     const batchId = String(formData.get('batchId') ?? '');
     const status = String(formData.get('status') ?? '');
-    const reason = String(formData.get('reason') ?? '').trim().slice(0, 300);
+    const reason = String(formData.get('reason') ?? '')
+      .trim()
+      .slice(0, 300);
 
     const batch = await prisma.campaignBatch.findUnique({
       where: { id: batchId },
@@ -924,5 +930,216 @@ export async function searchPatientsAction(
   return withAuth<PickablePatient[]>(MESSAGE_ROLES, async () => {
     const query = String(formData.get('query') ?? '');
     return ok(await searchPickablePatients(query));
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Simple send flow (Slice 6). The web app never sends SMS: it prepares an
+// `sms:` link per patient so the phone's Messages app opens pre-filled.
+// ---------------------------------------------------------------------------
+
+export type PreparedRecipient = {
+  patientId: string;
+  fullName: string;
+  phoneE164: string;
+  message: string;
+  /** Non-null when consent/opt-out/phone rules block this recipient. */
+  blockedReason: BlockedReason | null;
+};
+
+/** Resolves the current filter into individual patients ("add all matching"). */
+export async function findRecipientsAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult<PickablePatient[]>> {
+  return withAuth<PickablePatient[]>(MESSAGE_ROLES, async () => {
+    const filter = readRecipientFilter(formData);
+    const resolved = await resolveRecipients({
+      ...filter,
+      handPickedIds: [],
+    });
+    if (resolved.preview.overCap) return fail('campaignOverCap');
+    return ok(
+      resolved.eligible.map((candidate) => ({
+        id: candidate.id,
+        fullName: candidate.fullName,
+        phoneE164: candidate.phoneE164,
+        preferredLanguage: candidate.preferredLanguage,
+      })),
+    );
+  });
+}
+
+/**
+ * Renders the message for every chosen patient and re-checks consent/opt-out.
+ * Read-only: nothing is stored until the operator actually sends.
+ */
+export async function prepareMessageAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult<{ recipients: PreparedRecipient[] }>> {
+  return withAuth<{ recipients: PreparedRecipient[] }>(MESSAGE_ROLES, async () => {
+    const ids = [
+      ...new Set(
+        formData
+          .getAll('patientIds')
+          .flatMap((value) => String(value).split(','))
+          .map((value) => value.trim())
+          .filter(Boolean),
+      ),
+    ];
+    if (ids.length === 0) return fail('validationError', { patientIds: 'required' });
+
+    const body = String(formData.get('body') ?? '').trim();
+    const check = validateMessageBody(body);
+    if (!check.ok && check.error) return fail('validationError', { body: check.error });
+
+    const language = String(formData.get('language') ?? 'en');
+    const settings = await getSettingsMap();
+    const clinicName =
+      typeof settings.clinic_name === 'string' ? settings.clinic_name : brand.clinicName;
+    const reviewLink = typeof settings.review_link === 'string' ? settings.review_link : '';
+    const timeZone = timezoneFrom(settings);
+
+    const patients = await prisma.patient.findMany({
+      where: { id: { in: ids } },
+      select: {
+        id: true,
+        fullName: true,
+        phoneE164: true,
+        preferredLanguage: true,
+        active: true,
+        doNotMessage: true,
+      },
+    });
+    const byId = new Map(patients.map((patient) => [patient.id, patient]));
+
+    const recipients: PreparedRecipient[] = [];
+    for (const id of ids) {
+      const patient = byId.get(id);
+      if (!patient) continue;
+      const message = renderMessage(body, {
+        patientName: patient.fullName,
+        language,
+        clinicName,
+        reviewLink,
+        timeZone,
+      });
+      recipients.push({
+        patientId: patient.id,
+        fullName: patient.fullName,
+        phoneE164: patient.phoneE164,
+        message,
+        blockedReason: blockedReason({ patient }),
+      });
+    }
+    return ok({ recipients });
+  });
+}
+
+/**
+ * Records one message as SENT as soon as the SMS app is opened (no follow-up
+ * confirmation). Consent/opt-out is checked again here.
+ */
+export async function markMessageSentAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult<{ id: string }>> {
+  return withAuth<{ id: string }>(MESSAGE_ROLES, async (actor) => {
+    const patientId = String(formData.get('patientId') ?? '');
+    const message = String(formData.get('message') ?? '').trim();
+    if (!patientId || !message) return fail('validationError');
+
+    const patient = await prisma.patient.findUnique({
+      where: { id: patientId },
+      select: {
+        id: true,
+        active: true,
+        doNotMessage: true,
+        phoneE164: true,
+        preferredLanguage: true,
+      },
+    });
+    if (!patient) return fail('notFound');
+    const reason = blockedReason({ patient });
+    if (reason) return fail(reason);
+
+    const now = new Date();
+    const task = await prisma.messageTask.create({
+      data: {
+        patientId: patient.id,
+        templateKey: 'CUSTOM',
+        sourceType: 'MANUAL',
+        sourceId: `manual:${randomUUID()}`,
+        language: patient.preferredLanguage === 'am' ? 'am' : 'en',
+        renderedMessage: message,
+        dueAt: now,
+        status: 'SENT',
+        handledBy: actor.id,
+        handledAt: now,
+      },
+      select: { id: true },
+    });
+    await writeAudit({
+      user: actor,
+      entity: 'MessageTask',
+      entityId: task.id,
+      action: 'MESSAGE_SENT',
+      new: { patientId: patient.id, message, phoneE164: patient.phoneE164 },
+    });
+    return ok({ id: task.id });
+  });
+}
+
+/**
+ * Sends a queued task now: re-checks eligibility, marks it SENT, and audits it.
+ * The client calls this from a plain `sms:` link, so the SMS app opens from a
+ * real user gesture.
+ */
+export async function sendTaskNowAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult<{ status: string }>> {
+  return withAuth<{ status: string }>(MESSAGE_ROLES, async (actor) => {
+    const values = validate(taskSendSchema, { id: formData.get('id') ?? '' });
+    const task = await prisma.messageTask.findUnique({
+      where: { id: values.id },
+      select: {
+        id: true,
+        patientId: true,
+        sourceType: true,
+        sourceId: true,
+        status: true,
+      },
+    });
+    if (!task) return fail('notFound');
+    if (task.status === 'SENT') return ok({ status: 'SENT' });
+    if (task.status === 'SKIPPED' || task.status === 'CANCELLED') {
+      return fail('taskAlreadyHandled');
+    }
+
+    const context = await taskPatient(task);
+    if (!context) return fail('notFound');
+    const reason = blockedReason({ patient: context.patient, sourceStatus: context.sourceStatus });
+    if (reason) {
+      await prisma.messageTask.update({
+        where: { id: task.id },
+        data: { status: 'BLOCKED', blockedReason: reason },
+      });
+      return fail(reason);
+    }
+
+    await prisma.messageTask.update({
+      where: { id: task.id },
+      data: { status: 'SENT', handledBy: actor.id, handledAt: new Date(), blockedReason: null },
+    });
+    await writeAudit({
+      user: actor,
+      entity: 'MessageTask',
+      entityId: task.id,
+      action: 'MESSAGE_SENT',
+      new: { patientId: task.patientId },
+    });
+    return ok({ status: 'SENT' });
   });
 }

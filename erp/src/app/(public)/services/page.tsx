@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Image from 'next/image';
 import Link from 'next/link';
 import { getLocale, getTranslations } from 'next-intl/server';
 import Reveal from '@/components/Reveal';
@@ -32,12 +33,23 @@ export default async function ServicesPage() {
           const description = locale === 'am' ? service.descriptionAm : service.descriptionEn;
           return (
             <Reveal delay={index * 60} key={service.nameEn}>
-              <article className="card flex h-full flex-col p-6">
-                <h2 className="text-lg font-semibold text-slate-900">{name}</h2>
-                <p className="mt-2 flex-1 text-sm text-slate-600">{description}</p>
-                <Link href="/book" className="btn-primary mt-4 self-start">
-                  {t('services.bookService')} →
-                </Link>
+              <article className="card flex h-full flex-col overflow-hidden">
+                <div className="relative aspect-[3/2] w-full bg-slate-100">
+                  <Image
+                    src={service.imageUrl}
+                    alt={name}
+                    fill
+                    sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                    className="object-cover"
+                  />
+                </div>
+                <div className="flex flex-1 flex-col p-6">
+                  <h2 className="text-lg font-semibold text-slate-900">{name}</h2>
+                  <p className="mt-2 flex-1 text-sm text-slate-600">{description}</p>
+                  <Link href="/book" className="btn-primary mt-4 self-start">
+                    {t('services.bookService')} →
+                  </Link>
+                </div>
               </article>
             </Reveal>
           );

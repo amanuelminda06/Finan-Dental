@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { requirePageRole } from '@/lib/require-role';
@@ -117,8 +118,28 @@ export default async function ServicesPage({ searchParams }: { searchParams: Sea
                   className="border-b border-slate-100 last:border-0 hover:bg-slate-50"
                 >
                   <td className="px-4 py-3">
-                    <div className="font-medium text-slate-900">{row.name}</div>
-                    {row.nameAm ? <div className="text-xs text-slate-500">{row.nameAm}</div> : null}
+                    <div className="flex items-center gap-3">
+                      {row.imageUrl ? (
+                        <Image
+                          src={row.imageUrl}
+                          alt=""
+                          width={44}
+                          height={44}
+                          className="h-11 w-11 shrink-0 rounded-lg border border-slate-200 object-cover"
+                        />
+                      ) : (
+                        <div
+                          className="h-11 w-11 shrink-0 rounded-lg border border-slate-200 bg-slate-100"
+                          aria-hidden="true"
+                        />
+                      )}
+                      <div>
+                        <div className="font-medium text-slate-900">{row.name}</div>
+                        {row.nameAm ? (
+                          <div className="text-xs text-slate-500">{row.nameAm}</div>
+                        ) : null}
+                      </div>
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-slate-600">{categoryLabel(row.category)}</td>
                   <td className="px-4 py-3 font-medium text-slate-900">

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Image from 'next/image';
 import { SERVICES } from '@/config/services';
 import { brand, telLink } from '@/config/brand';
 import Link from 'next/link';
@@ -184,13 +185,24 @@ export default async function HomePage() {
           <Reveal delay={40}>
             <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {featured.map((service) => (
-                <article key={service.nameEn} className="card card-hover p-6">
-                  <h3 className="text-lg font-semibold text-slate-900">
-                    {locale === 'am' ? service.nameAm : service.nameEn}
-                  </h3>
-                  <p className="mt-2 text-sm text-slate-600 line-clamp-3">
-                    {locale === 'am' ? service.descriptionAm : service.descriptionEn}
-                  </p>
+                <article key={service.nameEn} className="card card-hover overflow-hidden">
+                  <div className="relative aspect-[3/2] w-full bg-slate-100">
+                    <Image
+                      src={service.imageUrl}
+                      alt={locale === 'am' ? service.nameAm : service.nameEn}
+                      fill
+                      sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                      className="object-cover"
+                    />
+                  </div>
+                  <div className="p-6">
+                    <h3 className="text-lg font-semibold text-slate-900">
+                      {locale === 'am' ? service.nameAm : service.nameEn}
+                    </h3>
+                    <p className="mt-2 text-sm text-slate-600 line-clamp-3">
+                      {locale === 'am' ? service.descriptionAm : service.descriptionEn}
+                    </p>
+                  </div>
                 </article>
               ))}
             </div>

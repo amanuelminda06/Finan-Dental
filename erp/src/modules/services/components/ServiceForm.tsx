@@ -265,7 +265,7 @@ export default function ServiceForm({ mode, service, route }: Props) {
               name="imageUrl"
               type="text"
               autoComplete="off"
-              placeholder="/services/general-eye-care.png"
+              placeholder="/services/teeth-cleaning.jpg"
               defaultValue={service?.imageUrl ?? ''}
               disabled={pending}
               aria-invalid={!!fieldError('imageUrl')}
