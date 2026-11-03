@@ -41,6 +41,7 @@ export const TEMPLATE_KEYS = [
   'WELCOME',
   'CLOSURE_NOTICE',
   'CUSTOM',
+  'HAPPY_NEW_YEAR',
 ] as const satisfies readonly MessageTemplateKey[];
 
 /** `t()` key inside the `messages` namespace describing each template. */
@@ -58,6 +59,7 @@ export const TEMPLATE_LABEL_KEYS: Record<MessageTemplateKey, string> = {
   WELCOME: 'tplWelcome',
   CLOSURE_NOTICE: 'tplClosureNotice',
   CUSTOM: 'tplCustom',
+  HAPPY_NEW_YEAR: 'tplHappyNewYear',
 };
 
 export const MESSAGE_STATUS_LABEL_KEYS: Record<MessageStatus, string> = {
