@@ -9,7 +9,7 @@ const notoSansEthiopic = Noto_Sans_Ethiopic({ subsets: ['ethiopic', 'latin'], va
 
 // Every route in this ERP is session- and locale-dependent (dynamic by
 // design) — opt out of the static-shell requirement for the whole app.
-export const instant = false;
+// export const instant = false;
 
 export async function generateMetadata(): Promise<Metadata> {
   return {

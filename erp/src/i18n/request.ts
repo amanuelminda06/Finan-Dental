@@ -1,11 +1,8 @@
-import { connection } from 'next/server';
 import { cookies, headers } from 'next/headers';
 import { getRequestConfig } from 'next-intl/server';
 import { defaultLocale, isLocale, LOCALE_COOKIE } from './config';
 
 export default getRequestConfig(async () => {
-  await connection();
-  
   // `?lang=` (public site) is forwarded by the proxy as `x-locale`; otherwise
   // fall back to the persisted cookie, then the default.
   const requestHeaders = await headers();

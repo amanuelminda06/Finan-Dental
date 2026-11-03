@@ -36,8 +36,8 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-  cacheComponents: true,
-  partialPrefetching: true,
+  // cacheComponents: false,
+  // partialPrefetching: true,
   turbopack: {
     rules: {
       '*.css': {

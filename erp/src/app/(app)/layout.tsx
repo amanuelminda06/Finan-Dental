@@ -1,4 +1,3 @@
-import { connection } from 'next/server';
 import { redirect } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { brand } from '@/config/brand';
@@ -12,7 +11,6 @@ import MessagesTicker from '@/modules/messaging/components/MessagesTicker';
  * optimistic cookie sniff; `auth()` verifies the JWT signature here.
  */
 export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
-  await connection();
   const session = await auth();
   const user = session?.user;
   if (!user?.id) redirect(loginPath);
