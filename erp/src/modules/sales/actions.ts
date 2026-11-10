@@ -23,6 +23,34 @@ function parseLines(raw: string): SaleLineInput[] | null {
   }
 }
 
+/**
+ * True when the write collided on `Sale.receiptNumber` (P2002). The claim
+ * self-heals, so this should not happen — the retry only covers a race with a
+ * receipt issued by another process between our claim and our insert.
+ */
+function isReceiptNumberClash(error: unknown): boolean {
+  if (typeof error !== 'object' || error === null) return false;
+  const candidate = error as { code?: unknown; meta?: { target?: unknown } };
+  if (candidate.code !== 'P2002') return false;
+  const target = candidate.meta?.target;
+  if (Array.isArray(target)) return target.includes('receiptNumber');
+  return target === 'receiptNumber';
+}
+
+/** Runs `write`, retrying only on a receipt-number clash. `null` = exhausted. */
+async function withReceiptRetry<T>(write: () => Promise<T>): Promise<T | null> {
+  const MAX_ATTEMPTS = 3;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
+    try {
+      return await write();
+    } catch (error) {
+      if (!isReceiptNumberClash(error)) throw error;
+      if (attempt === MAX_ATTEMPTS) return null;
+    }
+  }
+  return null;
+}
+
 function readSaleForm(formData: FormData) {
   return {
     patientId: String(formData.get('patientId') ?? ''),
@@ -84,31 +112,34 @@ export async function createSaleAction(
     const tz = timezoneFrom(settings);
     const now = new Date();
 
-    const sale = await prisma.$transaction(async (tx) => {
-      const receiptNumber = await nextReceiptNumber(tx, now, tz);
-      return tx.sale.create({
-        data: {
-          receiptNumber,
-          patientId,
-          doctorId,
-          saleDate: now,
-          status: 'CONFIRMED',
-          paymentMethod: values.paymentMethod,
-          total: computed.total,
-          createdBy: actor.id,
-          confirmedAt: now,
-          lines: {
-            create: computed.lines.map((line) => ({
-              serviceId: line.serviceId,
-              serviceNameSnapshot: line.serviceNameSnapshot,
-              qty: line.qty,
-              unitPrice: line.unitPrice,
-              lineTotal: line.lineTotal,
-            })),
+    const sale = await withReceiptRetry(() =>
+      prisma.$transaction(async (tx) => {
+        const receiptNumber = await nextReceiptNumber(tx, now, tz);
+        return tx.sale.create({
+          data: {
+            receiptNumber,
+            patientId,
+            doctorId,
+            saleDate: now,
+            status: 'CONFIRMED',
+            paymentMethod: values.paymentMethod,
+            total: computed.total,
+            createdBy: actor.id,
+            confirmedAt: now,
+            lines: {
+              create: computed.lines.map((line) => ({
+                serviceId: line.serviceId,
+                serviceNameSnapshot: line.serviceNameSnapshot,
+                qty: line.qty,
+                unitPrice: line.unitPrice,
+                lineTotal: line.lineTotal,
+              })),
+            },
           },
-        },
-      });
-    });
+        });
+      }),
+    );
+    if (!sale) return fail('unknownError');
 
     await writeAudit({
       user: actor,
