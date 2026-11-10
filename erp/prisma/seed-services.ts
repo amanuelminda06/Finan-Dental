@@ -17,7 +17,7 @@ export async function seedServicesAndSales(prisma: PrismaClient): Promise<void> 
           nameEn: seed.nameEn,
           nameAm: seed.nameAm,
           category: seed.category,
-          currentPrice: seed.price === 0 ? '0.00' : null,
+          currentPrice: seed.price === null ? null : String(seed.price),
           active: true,
           isPublic: true,
           publicDescriptionEn: descriptionEn,
