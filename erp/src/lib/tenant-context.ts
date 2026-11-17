@@ -1,14 +1,18 @@
+import { headers } from 'next/headers';
 import { env } from '@/env';
 import { prisma } from '@/lib/prisma';
+import { TENANT_ID_HEADER } from '@/lib/tenant-request-headers';
 import { getExplicitTenantId } from '@/lib/tenant-scope';
 
 /**
- * Resolves the tenant for the current request.
+ * Resolves the tenant for database scoping.
  *
- * - An explicit `runWithTenant()` scope (jobs, seeds, tests) is authoritative.
- * - Signed-in requests use the tenant baked into the session JWT at sign-in.
- * - Anonymous flows (public booking/feedback, cron jobs) fall back to the
- *   tenant named by DEFAULT_TENANT_SLUG until host-based tenancy lands.
+ * - An explicit `runWithTenant()` scope (cron fan-out, seeds, tests) wins.
+ * - In a request, the tenant comes from the URL via the proxy's request header.
+ *   There is deliberately no session or DEFAULT_TENANT_SLUG fallback here: a
+ *   signed-in session may not silently reach a different clinic's data.
+ * - Outside any request (scripts, unit tests) DEFAULT_TENANT_SLUG still picks
+ *   the seeded clinic.
  *
  * Writes must take tenantId from here (or from a parent row inside the same
  * transaction) — never from form data.
@@ -39,11 +43,19 @@ export async function getDefaultTenantId(): Promise<string> {
 export async function getTenantId(): Promise<string> {
   const explicit = getExplicitTenantId();
   if (explicit) return explicit;
-  // Imported lazily: auth.ts passes the login tenant into verifyCredentials,
-  // so a static import here would create an auth → tenant-context → auth cycle.
-  const { auth } = await import('@/auth');
-  const session = await auth();
-  if (session?.user?.tenantId) return session.user.tenantId;
+
+  let inRequest = false;
+  try {
+    const headerList = await headers();
+    inRequest = true;
+    const id = headerList.get(TENANT_ID_HEADER);
+    if (id) return id;
+  } catch {
+    // No request scope — a script or unit test, handled below.
+  }
+  if (inRequest) {
+    throw new Error('Tenant was not resolved from the URL; check the proxy matcher');
+  }
   return getDefaultTenantId();
 }
 

@@ -46,6 +46,12 @@ const nextConfig: NextConfig = {
       },
     },
   },
+  async rewrites() {
+    // Static brand/public assets are shared across clinics, but their URLs are
+    // still tenant-prefixed (see tenantAssetPath). The proxy validates the
+    // tenant before this rewrite serves the file.
+    return [{ source: '/:tenant/static/:path*', destination: '/:path*' }];
+  },
   async headers() {
     return [
       {

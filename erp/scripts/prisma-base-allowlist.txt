@@ -3,6 +3,10 @@
 # Keep this list as small as possible; every addition needs a comment in docs/tenancy.md.
 src/lib/prisma-base.ts
 src/lib/tenant-prisma.ts
+# URL gate resolves the slug against Tenant before any page or API runs.
+src/proxy.ts
+# Cron fans out over every serving tenant with the unscoped client.
+src/app/api/jobs/messages/route.ts
 src/lib/tenant-prisma.test.ts
 src/lib/tenant-isolation.test.ts
 src/lib/tenant-uniqueness.test.ts
