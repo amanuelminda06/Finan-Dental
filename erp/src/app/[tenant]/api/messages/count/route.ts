@@ -1,5 +1,6 @@
 import { connection, NextResponse } from 'next/server';
 import { auth } from '@/auth';
+import { assertSessionTenant } from '@/lib/session-tenant';
 import { countDueTasks } from '@/modules/messaging/queries';
 
 /**
@@ -12,6 +13,7 @@ export async function GET() {
   if (!session?.user?.id) {
     return NextResponse.json({ ok: false }, { status: 401 });
   }
+  await assertSessionTenant(session.user.tenantId);
   const count = await countDueTasks().catch(() => 0);
   return NextResponse.json({ ok: true, count }, { headers: { 'Cache-Control': 'no-store' } });
 }

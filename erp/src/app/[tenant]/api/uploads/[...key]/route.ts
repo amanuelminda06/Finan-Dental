@@ -1,6 +1,8 @@
 import type { NextRequest } from 'next/server';
 import { auth } from '@/auth';
 import { storage } from '@/lib/storage';
+import { assertSessionTenant } from '@/lib/session-tenant';
+import { getRequestTenantId } from '@/lib/tenant-request';
 
 const CONTENT_TYPE_BY_EXT: Record<string, string> = {
   png: 'image/png',
@@ -19,8 +21,10 @@ export async function GET(
 ) {
   const session = await auth();
   if (!session?.user?.id) return new Response(null, { status: 404 });
+  await assertSessionTenant(session.user.tenantId);
 
   const { key } = await params;
+  const requestTenantId = await getRequestTenantId();
   // Storage keys are tenant-prefixed: /api/uploads/<tenantId>/<file>.
   if (key.length !== 2 || !session.user.tenantId) return new Response(null, { status: 404 });
   let name: string;
@@ -30,6 +34,9 @@ export async function GET(
     return new Response(null, { status: 404 });
   }
   if (name.split('/')[0] !== session.user.tenantId) return new Response(null, { status: 404 });
+  if (requestTenantId && name.split('/')[0] !== requestTenantId) {
+    return new Response(null, { status: 404 });
+  }
   const ext = name.includes('.') ? (name.split('.').pop()?.toLowerCase() ?? '') : '';
   const contentType = CONTENT_TYPE_BY_EXT[ext];
   if (!contentType) return new Response(null, { status: 404 });

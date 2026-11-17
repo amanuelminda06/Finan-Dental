@@ -10,7 +10,15 @@ vi.mock('next/navigation', () => ({
 
 vi.mock('@/auth', () => ({
   auth: vi.fn(),
-  loginPath: '/login/secret-path',
+  getLoginPath: vi.fn(async () => '/login/secret-path'),
+}));
+
+// requirePageRole builds tenant-prefixed redirect targets from the request.
+// These unit tests have no request scope, so keep the paths as-is.
+vi.mock('@/lib/tenant-server-path', () => ({
+  tenantServerHref: (path: string) => path,
+  tenantServerUrl: (_request: Request, path: string) =>
+    new URL(path, 'http://localhost').toString(),
 }));
 
 import { auth } from '@/auth';

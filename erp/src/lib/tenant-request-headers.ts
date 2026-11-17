@@ -7,3 +7,4 @@
  */
 export const TENANT_ID_HEADER = 'x-finan-tenant-id';
 export const TENANT_SLUG_HEADER = 'x-finan-tenant-slug';
+export const TENANT_LOGIN_PATH_HEADER = 'x-finan-login-path';

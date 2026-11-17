@@ -1,6 +1,9 @@
 'use client';
 
-import { useTenantRouter as useRouter } from '@/components/tenant-navigation';
+import {
+  useTenantHref,
+  useTenantRouter as useRouter,
+} from '@/components/tenant-navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import type { Locale } from '@/i18n/config';
 
@@ -9,22 +12,24 @@ const LOCALES: Array<{ code: Locale; label: string }> = [
   { code: 'am', label: 'አማ' },
 ];
 
-function setLocaleCookie(code: Locale): void {
-  document.cookie = `locale=${code}; path=/; max-age=31536000; samesite=lax`;
+function setLocaleCookie(code: Locale, path: string): void {
+  document.cookie = `locale=${code}; path=${path}; max-age=31536000; samesite=lax`;
 }
 
 /**
- * Public language toggle. Uses the cookie-based locale (no URL prefix), so
- * switching keeps the visitor on exactly the page they are viewing. The proxy
- * also understands `?lang=en|am` links (used for hreflang/crawlers).
+ * Public language toggle. Uses a cookie scoped to this clinic's URL tree, so
+ * switching keeps the visitor on exactly the page they are viewing and each
+ * tenant keeps its own preference. The proxy also understands `?lang=en|am`
+ * links (used for hreflang/crawlers).
  */
 export default function PublicLocaleSwitcher() {
   const router = useRouter();
+  const resolve = useTenantHref();
   const active = useLocale();
   const t = useTranslations('site');
 
   function switchTo(code: Locale) {
-    setLocaleCookie(code);
+    setLocaleCookie(code, resolve('/'));
     router.refresh();
   }
 

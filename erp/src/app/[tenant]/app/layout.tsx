@@ -1,7 +1,8 @@
 import { redirect } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { brand } from '@/config/brand';
-import { auth, loginPath } from '@/auth';
+import { auth, getLoginPath } from '@/auth';
+import { assertSessionTenant } from '@/lib/session-tenant';
 import AppShell from '@/components/AppShell';
 import { TenantAreaProvider } from '@/components/tenant-navigation';
 import { countDueTasks } from '@/modules/messaging/queries';
@@ -18,7 +19,9 @@ export const fetchCache = 'force-no-store';
 export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
   const user = session?.user;
-  if (!user?.id) redirect(loginPath);
+  if (!user?.id) redirect(await getLoginPath());
+  await assertSessionTenant(user.tenantId);
+  const loginPath = await getLoginPath();
 
   const t = await getTranslations('app');
   const canSeeMessages = user.role === 'OWNER' || user.role === 'RECEPTION';

@@ -1,6 +1,9 @@
 'use client';
 
-import { useTenantRouter as useRouter } from '@/components/tenant-navigation';
+import {
+  useTenantHref,
+  useTenantRouter as useRouter,
+} from '@/components/tenant-navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import type { Locale } from '@/i18n/config';
 
@@ -9,21 +12,23 @@ const LOCALES: Array<{ code: Locale; label: string }> = [
   { code: 'am', label: 'አማ' },
 ];
 
-function setLocaleCookie(code: Locale): void {
-  document.cookie = `locale=${code}; path=/; max-age=31536000; samesite=lax`;
+function setLocaleCookie(code: Locale, path: string): void {
+  document.cookie = `locale=${code}; path=${path}; max-age=31536000; samesite=lax`;
 }
 
 /**
- * Cookie-based locale switcher (no URL prefix, so `/login/<secret>` stays
- * clean). Sets the `locale` cookie and refreshes the server components.
+ * Cookie-based locale switcher. The cookie is scoped to this clinic's URL tree
+ * so each tenant keeps its own language preference (and matches the path the
+ * proxy writes when `?lang=` is used).
  */
 export default function LocaleSwitcher() {
   const router = useRouter();
+  const resolve = useTenantHref();
   const active = useLocale();
   const t = useTranslations('common');
 
   function switchTo(code: Locale) {
-    setLocaleCookie(code);
+    setLocaleCookie(code, resolve('/'));
     router.refresh();
   }
 

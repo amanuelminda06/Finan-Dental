@@ -1,10 +1,23 @@
 import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import { env } from '@/env';
-import { getDefaultTenantId } from '@/lib/tenant-context';
+import { getRequestLoginPath } from '@/lib/tenant-request';
+import { TENANT_ID_HEADER } from '@/lib/tenant-request-headers';
+import { tenantLoginPath } from '@/lib/tenant-path';
 import { verifyCredentials } from '@/modules/auth';
 
-export const loginPath = `/login/${env.LOGIN_SECRET_PATH}`;
+/**
+ * The login URL belongs to the tenant in the request (its own `loginSecret`).
+ * The proxy injects it as a request header, so no global secret path is needed.
+ * Outside a request (scripts/tests) the seeded default tenant is used.
+ */
+export async function getLoginPath(): Promise<string> {
+  try {
+    return await getRequestLoginPath();
+  } catch {
+    return tenantLoginPath(env.DEFAULT_TENANT_SLUG, env.LOGIN_SECRET_PATH);
+  }
+}
 
 /** 12-hour session (spec). */
 const SESSION_MAX_AGE = 12 * 60 * 60;
@@ -14,7 +27,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   // trustHost is required on Vercel because the request host is derived from
   // forwarded headers; AUTH_URL is set explicitly to avoid host-header spoofing.
   trustHost: true,
-  pages: { signIn: loginPath },
+  // Real sign-in redirects use getLoginPath() (per tenant). The proxy handles
+  // unauthenticated ERP pages; this is only a last-resort NextAuth fallback.
+  pages: { signIn: '/' },
   cookies: {
     sessionToken: {
       options: {
@@ -32,9 +47,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
       },
-      // Login has no session yet: scope credentials to the configured default
-      // tenant explicitly instead of deriving tenant from user input.
-      authorize: async (credentials) => verifyCredentials(credentials, await getDefaultTenantId()),
+      // The proxy resolved the tenant from the login URL and put its id on the
+      // request. Never derive it from user-supplied credentials.
+      authorize: async (credentials, request) => {
+        const tenantId = request.headers.get(TENANT_ID_HEADER);
+        if (!tenantId) return null;
+        return verifyCredentials(credentials, tenantId);
+      },
     }),
   ],
   callbacks: {

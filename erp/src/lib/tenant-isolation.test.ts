@@ -3,7 +3,8 @@ import type { NextRequest } from 'next/server';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 // Search gating calls auth(); runWithTenant() is the authoritative tenant so
-// the exact session tenant here is irrelevant to isolation.
+// the exact session tenant here is irrelevant to isolation. The header tenant
+// id matches the session tenant so assertSessionTenant() does not reject.
 vi.mock('@/auth', () => ({
   auth: vi.fn(async () => ({
     user: {
@@ -16,7 +17,21 @@ vi.mock('@/auth', () => ({
       tenantSlug: 'session-tenant',
     },
   })),
-  loginPath: '/login/test',
+  getLoginPath: vi.fn(async () => '/login/test'),
+}));
+
+// The search route builds tenant-prefixed hrefs from the URL-resolved tenant.
+// These unit tests have no Next request scope, so supply the proxy headers.
+// Query scoping itself still comes from runWithTenant() (explicit scope wins).
+vi.mock('next/headers', () => ({
+  headers: async () => {
+    const h = new Headers();
+    h.set('x-finan-tenant-id', 'session-tenant');
+    h.set('x-finan-tenant-slug', 'session-tenant');
+    h.set('x-finan-login-path', '/login/test');
+    return h;
+  },
+  cookies: async () => new Map(),
 }));
 
 import { prisma } from '@/lib/prisma';

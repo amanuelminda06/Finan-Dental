@@ -4,6 +4,7 @@ import { validate, ValidationError } from '@/lib/errors';
 import { parsePhone } from '@/lib/phone';
 import { hashClientIp } from '@/lib/ip';
 import { checkRateLimit } from '@/lib/ratelimit';
+import { TENANT_ID_HEADER } from '@/lib/tenant-request-headers';
 import { createPublicBooking } from '@/modules/appointments/actions';
 import { bookingFormSchema, isHoneypotTripped } from '@/modules/public-site/schemas';
 import { verifyTurnstile } from '@/modules/public-site/turnstile';
@@ -25,8 +26,9 @@ export async function POST(request: Request) {
   await connection();
 
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? null;
+  const tenantKey = request.headers.get(TENANT_ID_HEADER) ?? 'unknown';
   if (
-    !checkRateLimit(`public-booking:${ip ?? 'unknown'}`, {
+    !checkRateLimit(`public-booking:${tenantKey}:${ip ?? 'unknown'}`, {
       max: PUBLIC_BOOKING_RATE_MAX,
       windowMs: PUBLIC_BOOKING_RATE_WINDOW_MS,
     })

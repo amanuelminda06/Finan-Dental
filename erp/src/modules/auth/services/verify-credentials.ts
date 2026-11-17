@@ -37,7 +37,7 @@ export async function verifyCredentials(
   if (!email || !password) return null;
 
   const ip = await clientIp();
-  if (!checkRateLimit(`login:${ip ?? 'unknown'}`)) return null;
+  if (!checkRateLimit(`login:${tenantId}:${ip ?? 'unknown'}`)) return null;
 
   const user = await prisma.user.findUnique({
     where: { tenantId_email: { tenantId, email } },

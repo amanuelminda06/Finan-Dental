@@ -4,7 +4,11 @@ import { env } from '@/env';
 import { isLocale, LOCALE_COOKIE } from '@/i18n/config';
 import { basePrisma } from '@/lib/prisma-base';
 import { tenantFromPath, tenantLoginPath, tenantPath } from '@/lib/tenant-path';
-import { TENANT_ID_HEADER, TENANT_SLUG_HEADER } from '@/lib/tenant-request-headers';
+import {
+  TENANT_ID_HEADER,
+  TENANT_LOGIN_PATH_HEADER,
+  TENANT_SLUG_HEADER,
+} from '@/lib/tenant-request-headers';
 import { isTenantServing } from '@/lib/tenant-status';
 
 /**
@@ -84,6 +88,7 @@ export async function proxy(request: NextRequest) {
     const headers = new Headers(request.headers);
     headers.set(TENANT_ID_HEADER, tenant.id);
     headers.set(TENANT_SLUG_HEADER, tenant.slug);
+    headers.set(TENANT_LOGIN_PATH_HEADER, loginPath);
     if (isLocale(lang ?? undefined)) headers.set('x-locale', lang as string);
     const response = NextResponse.next({ request: { headers } });
     if (isLocale(lang ?? undefined)) {

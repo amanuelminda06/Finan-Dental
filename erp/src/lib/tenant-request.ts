@@ -1,6 +1,10 @@
 import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
-import { TENANT_ID_HEADER, TENANT_SLUG_HEADER } from './tenant-request-headers';
+import {
+  TENANT_ID_HEADER,
+  TENANT_LOGIN_PATH_HEADER,
+  TENANT_SLUG_HEADER,
+} from './tenant-request-headers';
 import { runWithTenant } from './tenant-scope';
 
 export type RequestTenant = { id: string; slug: string };
@@ -26,6 +30,14 @@ export async function getRequestTenantId(): Promise<string | null> {
   } catch {
     return null;
   }
+}
+
+/** This clinic's secret login URL, injected by the proxy from Tenant.loginSecret. */
+export async function getRequestLoginPath(): Promise<string> {
+  const headerList = await headers();
+  const loginPath = headerList.get(TENANT_LOGIN_PATH_HEADER);
+  if (!loginPath) notFound();
+  return loginPath;
 }
 
 /** Run an async unit of work inside the URL-resolved tenant scope. */

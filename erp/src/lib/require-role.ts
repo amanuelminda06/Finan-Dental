@@ -1,7 +1,9 @@
 import { redirect } from 'next/navigation';
 import type { Role } from '@prisma/client';
 import type { Session } from 'next-auth';
-import { auth, loginPath } from '@/auth';
+import { auth, getLoginPath } from '@/auth';
+import { assertSessionTenant } from './session-tenant';
+import { tenantServerHref } from './tenant-server-path';
 import { hasRole } from './roles';
 
 export type SessionUser = {
@@ -37,7 +39,8 @@ function toSessionUser(user: NonNullable<Session>['user']): SessionUser {
 export async function requireAuth(): Promise<SessionUser> {
   const session = await auth();
   const user = session?.user;
-  if (!user?.id) redirect(loginPath);
+  if (!user?.id) redirect(await getLoginPath());
+  await assertSessionTenant(user.tenantId);
   return toSessionUser(user);
 }
 
@@ -45,16 +48,17 @@ export async function requireAuth(): Promise<SessionUser> {
  * THE single authorization helper (rule 2). Every server action and protected
  * page must call this with its allowed roles.
  *
- * - No session        → redirect to the secret login URL.
- * - mustChangePassword → throws PASSWORD_CHANGE_REQUIRED (use requireAuth on
- *                        the change-password page itself).
- * - Wrong role        → throws FORBIDDEN.
+ * - No session               → redirect to this clinic's secret login URL.
+ * - Session from another clinic → 404 (see assertSessionTenant).
+ * - mustChangePassword       → throws PASSWORD_CHANGE_REQUIRED.
+ * - Wrong role               → throws FORBIDDEN.
  * - `redirect()` errors are never converted — they are not AuthorizationError.
  */
 export async function requireRole(allowed: Role[]): Promise<SessionUser> {
   const session = await auth();
   const user = session?.user;
-  if (!user?.id) redirect(loginPath);
+  if (!user?.id) redirect(await getLoginPath());
+  await assertSessionTenant(user.tenantId);
   if (user.mustChangePassword) throw new AuthorizationError('PASSWORD_CHANGE_REQUIRED');
   if (!hasRole(user.role, allowed)) throw new AuthorizationError('FORBIDDEN');
   return toSessionUser(user);
@@ -69,8 +73,10 @@ export async function requirePageRole(allowed: Role[]): Promise<SessionUser> {
     return await requireRole(allowed);
   } catch (err) {
     if (err instanceof AuthorizationError) {
-      if (err.code === 'PASSWORD_CHANGE_REQUIRED') redirect('/change-password');
-      redirect('/403');
+      if (err.code === 'PASSWORD_CHANGE_REQUIRED') {
+        redirect(await tenantServerHref('/change-password'));
+      }
+      redirect(await tenantServerHref('/403'));
     }
     throw err;
   }
