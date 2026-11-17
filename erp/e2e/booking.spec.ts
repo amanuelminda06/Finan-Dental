@@ -2,21 +2,22 @@ import { test, expect } from '@playwright/test';
 import { login } from './helpers';
 
 /**
- * The public website (and its booking flow) is intentionally unchanged. The
- * ERP no longer displays appointments, so the booking API is exercised on its
- * own and the old ERP route is checked separately.
+ * A public website booking (unauthenticated POST) is auto-approved: it becomes
+ * a CONFIRMED appointment that reception sees straight away. There is no
+ * request queue to clear.
  */
-test.describe('public website booking', () => {
-  test('the public booking endpoint is still available', async ({ request }) => {
+test.describe('public booking → approved appointment', () => {
+  test('website booking appears as an appointment in the ERP', async ({ page, request }) => {
     const stamp = Date.now().toString().slice(-8);
-    const preferredDate = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
-      .toISOString()
-      .slice(0, 10);
+    const name = `E2E Booking ${stamp}`;
+    const phone = `09${stamp}`;
+    // A few days out keeps the slot in the future regardless of when this runs.
+    const preferredDate = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
     const response = await request.post('/api/public/requests', {
       data: {
-        name: `E2E Booking ${stamp}`,
-        phone: `09${stamp}`,
+        name,
+        phone,
         preferredDate,
         preferredTimeWindow: 'any',
         serviceInterest: '',
@@ -42,12 +43,10 @@ test.describe('public website booking', () => {
     expect(body.ok).toBe(true);
     expect(body.appointment).toMatchObject({ date: preferredDate });
     expect(body.appointment.doctor).toBeTruthy();
-  });
 
-  test('the ERP no longer displays an appointments screen', async ({ page }) => {
+    // The booking is already a real appointment — reception just sees it.
     await login(page, 'RECEPTION');
     await page.goto('/appointments');
-    await expect(page).toHaveURL(/\/dashboard$/);
-    await expect(page.getByRole('link', { name: 'Appointments', exact: true })).toHaveCount(0);
+    await expect(page.getByText(name)).toBeVisible({ timeout: 15_000 });
   });
 });
