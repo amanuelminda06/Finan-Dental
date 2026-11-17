@@ -1,6 +1,9 @@
 import type { Prisma } from '@prisma/client';
 import { clinicDateKey } from '@/lib/datetime';
 
+/** Raw-SQL subset shared by base and tenant-extended transaction clients. */
+type RawTransactionClient = Pick<Prisma.TransactionClient, '$queryRaw' | '$executeRaw'>;
+
 /**
  * Gap-free, per-year receipt numbers (`2026-000123`).
  *
@@ -43,7 +46,7 @@ export function clampReceiptClaim(claimed: number, highestExisting: number): num
 
 /** Highest receipt number already issued for `year` (0 when none). */
 async function highestExistingReceiptNumber(
-  tx: Prisma.TransactionClient,
+  tx: RawTransactionClient,
   year: number,
   tenantId: string,
 ): Promise<number> {
@@ -57,7 +60,7 @@ async function highestExistingReceiptNumber(
 
 /** Claims the next integer for `year` (atomic — safe under concurrency). */
 export async function claimReceiptNumber(
-  tx: Prisma.TransactionClient,
+  tx: RawTransactionClient,
   year: number,
   tenantId: string,
 ): Promise<number> {
@@ -81,7 +84,7 @@ export async function claimReceiptNumber(
 
 /** Claims + formats in one call (inside the sale transaction). */
 export async function nextReceiptNumber(
-  tx: Prisma.TransactionClient,
+  tx: RawTransactionClient,
   date: Date,
   timeZone: string,
   tenantId: string,

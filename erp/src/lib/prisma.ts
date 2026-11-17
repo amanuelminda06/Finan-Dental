@@ -1,7 +1,10 @@
-import { PrismaClient } from '@prisma/client';
+import { createTenantPrisma } from '@/lib/tenant-prisma';
 
-const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
+/** Tenant-scoped Prisma client used by all application code. */
+const globalForPrisma = globalThis as unknown as {
+  prisma?: ReturnType<typeof createTenantPrisma>;
+};
 
-export const prisma = globalForPrisma.prisma ?? new PrismaClient();
+export const prisma = globalForPrisma.prisma ?? createTenantPrisma();
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
