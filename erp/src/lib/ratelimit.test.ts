@@ -3,6 +3,7 @@ import {
   checkRateLimit,
   resetRateLimits,
   RATE_LIMIT_MAX,
+  tenantRateLimitKey,
 } from './ratelimit';
 
 beforeEach(resetRateLimits);
@@ -49,5 +50,27 @@ describe('in-memory sliding-window rate limiter', () => {
     checkRateLimit('r', { max: 1, now: 0 });
     resetRateLimits();
     expect(checkRateLimit('r', { max: 1, now: 0 })).toBe(true);
+  });
+});
+
+describe('tenantRateLimitKey', () => {
+  it('includes the tenant so budgets are independent', () => {
+    const a = tenantRateLimitKey('login', 'tenant-a', '1.2.3.4');
+    const b = tenantRateLimitKey('login', 'tenant-b', '1.2.3.4');
+    expect(a).not.toBe(b);
+    expect(a).toBe('login:tenant-a:1.2.3.4');
+
+    // Exhaust tenant A's budget; tenant B keeps its own.
+    const now = 1_000_000;
+    for (let i = 0; i < RATE_LIMIT_MAX; i++) checkRateLimit(a, { now });
+    expect(checkRateLimit(a, { now })).toBe(false);
+    expect(checkRateLimit(b, { now })).toBe(true);
+  });
+
+  it('separates scopes and handles a missing IP', () => {
+    expect(tenantRateLimitKey('login', 'tenant-a', null)).toBe('login:tenant-a:unknown');
+    expect(tenantRateLimitKey('public-booking', 'tenant-a', '1.2.3.4')).not.toBe(
+      tenantRateLimitKey('public-feedback', 'tenant-a', '1.2.3.4'),
+    );
   });
 });

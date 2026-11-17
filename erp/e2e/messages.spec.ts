@@ -1,11 +1,11 @@
 import { test, expect } from '@playwright/test';
-import { login } from './helpers';
+import { login, appUrl } from './helpers';
 
 test.describe('messages workspace', () => {
   test('owner opens the message list, templates, and campaigns', async ({ page }) => {
     await login(page, 'OWNER');
 
-    await page.goto('/messages');
+    await page.goto(appUrl('/messages'));
     await expect(page.getByRole('heading', { name: "Today's Messages" })).toBeVisible();
     await expect(page.getByRole('link', { name: 'New message' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Templates' })).toBeVisible();

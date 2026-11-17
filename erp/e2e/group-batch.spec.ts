@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
 import { expect, test } from '@playwright/test';
-import { login } from './helpers';
+import { login, appUrl } from './helpers';
 
 /**
  * Slice 6 group-session E2E (runs on the `mobile` project — the clinic sends
@@ -29,7 +29,7 @@ test.describe('group session delivery (mobile)', () => {
     seedGroup('allow');
     await login(page, 'OWNER');
 
-    await page.goto('/messages/new');
+    await page.goto(appUrl('/messages/new'));
     await addPatient(page, 'Group E2E Patient 1');
     await addPatient(page, 'Group E2E Patient 2');
 

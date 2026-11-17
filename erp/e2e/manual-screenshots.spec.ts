@@ -1,7 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { login } from './helpers';
+import { login, appUrl } from './helpers';
 
 /**
  * Captures the screenshots used by docs/manual (PMS, CMS, MMS).
@@ -42,7 +42,7 @@ test('capture PMS, CMS and MMS screenshots', async ({ page }) => {
 
   /* ------------------------------------------------------------------ PMS */
   await test.step('PMS · patients list', async () => {
-    await page.goto('/patients');
+    await page.goto(appUrl('/patients'));
     await settle(page);
     await shot(page, 'pms-01-patients-list');
 
@@ -51,7 +51,7 @@ test('capture PMS, CMS and MMS screenshots', async ({ page }) => {
     await settle(page);
     await shot(page, 'pms-02-patients-search');
 
-    await page.goto('/patients?status=INACTIVE');
+    await page.goto(appUrl('/patients?status=INACTIVE'));
     await settle(page);
     await shot(page, 'pms-03-patients-filtered');
 
@@ -61,14 +61,14 @@ test('capture PMS, CMS and MMS screenshots', async ({ page }) => {
 
   let patientId = '';
   await test.step('PMS · create patient', async () => {
-    await page.goto('/patients?q=' + encodeURIComponent(DEMO_PHONE));
+    await page.goto(appUrl('/patients?q=' + encodeURIComponent(DEMO_PHONE)));
     await settle(page);
     const existing = page.getByRole('link', { name: DEMO_PATIENT }).first();
     if (await existing.count()) {
       patientId = (await existing.getAttribute('href'))?.split('/').pop() ?? '';
     }
 
-    await page.goto('/patients/new');
+    await page.goto(appUrl('/patients/new'));
     await settle(page);
     await shot(page, 'pms-04-patient-form-empty');
 
@@ -87,19 +87,21 @@ test('capture PMS, CMS and MMS screenshots', async ({ page }) => {
       await page.getByRole('button', { name: 'Create patient' }).click();
       // Land on the detail page — not on /patients/new itself.
       await page.waitForURL(
-        (url) => /^\/patients\/[^/]+$/.test(url.pathname) && url.pathname !== '/patients/new',
+        (url) =>
+          url.pathname.startsWith(appUrl('/patients/')) &&
+          url.pathname !== appUrl('/patients/new'),
         { timeout: 20_000 },
       );
       patientId = new URL(page.url()).pathname.split('/').pop() ?? '';
     }
 
-    await page.goto(`/patients/${patientId}`);
+    await page.goto(appUrl(`/patients/${patientId}`));
     await settle(page);
     await shot(page, 'pms-06-patient-detail');
   });
 
   await test.step('PMS · edit patient', async () => {
-    await page.goto(`/patients/${patientId}/edit`);
+    await page.goto(appUrl(`/patients/${patientId}/edit`));
     await settle(page);
     await shot(page, 'pms-07-patient-edit');
 
@@ -115,12 +117,12 @@ test('capture PMS, CMS and MMS screenshots', async ({ page }) => {
 
   /* ------- CMS · priced service first, so the demo sale has a price ------ */
   await test.step('CMS · create service', async () => {
-    await page.goto('/dashboard/services?q=' + encodeURIComponent(DEMO_SERVICE));
+    await page.goto(appUrl('/dashboard/services?q=' + encodeURIComponent(DEMO_SERVICE)));
     await settle(page);
     const alreadyThere = await page.getByRole('link', { name: 'Edit' }).count();
 
     if (!alreadyThere) {
-      await page.goto('/dashboard/services/new');
+      await page.goto(appUrl('/dashboard/services/new'));
       await settle(page);
       await shot(page, 'cms-03-service-form-empty');
 
@@ -141,18 +143,18 @@ test('capture PMS, CMS and MMS screenshots', async ({ page }) => {
       await settle(page);
     }
 
-    await page.goto('/dashboard/services?q=' + encodeURIComponent(DEMO_SERVICE));
+    await page.goto(appUrl('/dashboard/services?q=' + encodeURIComponent(DEMO_SERVICE)));
     await settle(page);
     await shot(page, 'cms-05-service-created');
   });
 
   let saleId = '';
   await test.step('PMS · record a sale', async () => {
-    await page.goto('/sales');
+    await page.goto(appUrl('/sales'));
     await settle(page);
     await shot(page, 'pms-09-sales-list');
 
-    await page.goto('/sales/new');
+    await page.goto(appUrl('/sales/new'));
     await settle(page);
     await shot(page, 'pms-10-sale-new-empty');
 
@@ -181,7 +183,7 @@ test('capture PMS, CMS and MMS screenshots', async ({ page }) => {
     await shot(page, 'pms-13-sale-doctor-and-payment');
 
     await page.getByRole('button', { name: 'Confirm sale' }).click();
-    await page.waitForURL((url) => /^\/sales\/[^/]+$/.test(url.pathname), {
+    await page.waitForURL((url) => url.pathname.startsWith(appUrl('/sales/')), {
       timeout: 20_000,
     });
     saleId = new URL(page.url()).pathname.split('/').pop() ?? '';
@@ -190,30 +192,30 @@ test('capture PMS, CMS and MMS screenshots', async ({ page }) => {
   });
 
   await test.step('PMS · sales list, revenue, follow-ups, import', async () => {
-    await page.goto('/sales');
+    await page.goto(appUrl('/sales'));
     await settle(page);
     await shot(page, 'pms-15-sales-list-with-sale');
 
-    await page.goto(`/sales/${saleId}`);
+    await page.goto(appUrl(`/sales/${saleId}`));
     await settle(page);
     await shot(page, 'pms-16-sale-detail');
 
-    await page.goto('/revenue');
+    await page.goto(appUrl('/revenue'));
     await settle(page);
     await shot(page, 'pms-17-revenue');
 
-    await page.goto('/follow-ups');
+    await page.goto(appUrl('/follow-ups'));
     await settle(page);
     await shot(page, 'pms-18-follow-ups');
 
-    await page.goto('/patients/import');
+    await page.goto(appUrl('/patients/import'));
     await settle(page);
     await shot(page, 'pms-19-patient-import');
   });
 
   /* ------------------------------------------------------------------ CMS */
   await test.step('CMS · services list and price history', async () => {
-    await page.goto('/dashboard/services');
+    await page.goto(appUrl('/dashboard/services'));
     await settle(page);
     await shot(page, 'cms-01-services-list');
 
@@ -225,7 +227,7 @@ test('capture PMS, CMS and MMS screenshots', async ({ page }) => {
   });
 
   await test.step('CMS · edit service', async () => {
-    await page.goto('/dashboard/services?q=' + encodeURIComponent(DEMO_SERVICE));
+    await page.goto(appUrl('/dashboard/services?q=' + encodeURIComponent(DEMO_SERVICE)));
     await settle(page);
     await page.getByRole('link', { name: 'Edit' }).first().click();
     await settle(page);
@@ -233,7 +235,7 @@ test('capture PMS, CMS and MMS screenshots', async ({ page }) => {
   });
 
   await test.step('CMS · settings', async () => {
-    await page.goto('/settings');
+    await page.goto(appUrl('/settings'));
     await settle(page);
     await shot(page, 'cms-07-settings-clinic', false);
 
@@ -250,21 +252,21 @@ test('capture PMS, CMS and MMS screenshots', async ({ page }) => {
 
   /* ------------------------------------------------------------------ MMS */
   await test.step('MMS · outbox, templates, library', async () => {
-    await page.goto('/messages');
+    await page.goto(appUrl('/messages'));
     await settle(page);
     await shot(page, 'mms-01-outbox');
 
-    await page.goto('/messages/templates');
+    await page.goto(appUrl('/messages/templates'));
     await settle(page);
     await shot(page, 'mms-02-templates');
 
-    await page.goto('/messages/library');
+    await page.goto(appUrl('/messages/library'));
     await settle(page);
     await shot(page, 'mms-03-library');
   });
 
   await test.step('MMS · compose a message', async () => {
-    await page.goto('/messages/new');
+    await page.goto(appUrl('/messages/new'));
     await settle(page);
     await shot(page, 'mms-04-compose-empty');
 
@@ -328,19 +330,19 @@ test('capture PMS, CMS and MMS screenshots', async ({ page }) => {
   });
 
   await test.step('MMS · campaigns, drafts, reports', async () => {
-    await page.goto('/messages');
+    await page.goto(appUrl('/messages'));
     await settle(page);
     await shot(page, 'mms-12-outbox-after-send');
 
-    await page.goto('/messages/campaigns');
+    await page.goto(appUrl('/messages/campaigns'));
     await settle(page);
     await shot(page, 'mms-13-campaigns');
 
-    await page.goto('/messages/drafts');
+    await page.goto(appUrl('/messages/drafts'));
     await settle(page);
     await shot(page, 'mms-14-drafts');
 
-    await page.goto('/messages/reports');
+    await page.goto(appUrl('/messages/reports'));
     await settle(page);
     await shot(page, 'mms-15-reports');
   });

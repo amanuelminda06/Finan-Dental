@@ -3,7 +3,7 @@ import type { Role } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { clientIp, writeAudit } from '@/lib/audit';
 import { isLocked, nextLoginStateAfterFailure, stateAfterLoginSuccess } from '@/lib/login-policy';
-import { checkRateLimit } from '@/lib/ratelimit';
+import { checkRateLimit, tenantRateLimitKey } from '@/lib/ratelimit';
 
 /** Valid argon2 hash of a throwaway string — equalizes timing when no user matches. */
 const DUMMY_HASH = '$argon2id$v=19$m=19456,t=2,p=1$c29tZXNhbHRzYWx0$c29tZWhhc2hlZGhhc2h2YWx1ZQ';
@@ -37,7 +37,7 @@ export async function verifyCredentials(
   if (!email || !password) return null;
 
   const ip = await clientIp();
-  if (!checkRateLimit(`login:${tenantId}:${ip ?? 'unknown'}`)) return null;
+  if (!checkRateLimit(tenantRateLimitKey('login', tenantId, ip))) return null;
 
   const user = await prisma.user.findUnique({
     where: { tenantId_email: { tenantId, email } },

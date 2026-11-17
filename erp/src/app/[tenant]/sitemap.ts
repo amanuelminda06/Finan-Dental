@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next';
-import { siteBaseUrl } from '@/modules/public-site';
+import { siteBaseUrl } from '@/modules/public-site/seo';
 import { tenantPath } from '@/lib/tenant-path';
 import { getRequestTenant } from '@/lib/tenant-request';
 

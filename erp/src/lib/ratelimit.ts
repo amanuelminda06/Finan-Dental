@@ -42,6 +42,14 @@ export function checkRateLimit(key: string, options: RateLimitOptions = {}): boo
   return true;
 }
 
+/**
+ * Rate-limit keys are always tenant-prefixed so attempts against one clinic
+ * never consume another clinic's budget (login, booking and feedback).
+ */
+export function tenantRateLimitKey(scope: string, tenantId: string, ip: string | null): string {
+  return `${scope}:${tenantId}:${ip ?? 'unknown'}`;
+}
+
 /** Test helper. */
 export function resetRateLimits(): void {
   buckets.clear();

@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { login } from './helpers';
+import { login, appUrl } from './helpers';
 
 /**
  * Reception creates a patient, then books a walk-in sale and reaches the
@@ -14,7 +14,7 @@ test.describe('patient → sale', () => {
     const phone = `09${stamp}`;
 
     await test.step('create patient', async () => {
-      await page.goto('/patients/new');
+      await page.goto(appUrl('/patients/new'));
       await page.fill('#fullName', fullName);
       await page.fill('#phone', phone);
       await page.getByRole('button', { name: 'Create patient' }).click();
@@ -23,7 +23,7 @@ test.describe('patient → sale', () => {
     });
 
     await test.step('record walk-in sale', async () => {
-      await page.goto('/sales/new');
+      await page.goto(appUrl('/sales/new'));
       await page.getByRole('button', { name: 'Walk-in' }).click();
 
       const serviceInput = page.getByPlaceholder('Type a service, press Enter to add');

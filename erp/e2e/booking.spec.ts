@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { login } from './helpers';
+import { login, appUrl, tenantUrl } from './helpers';
 
 /**
  * A public website booking (unauthenticated POST) is auto-approved: it becomes
@@ -14,7 +14,7 @@ test.describe('public booking → approved appointment', () => {
     // A few days out keeps the slot in the future regardless of when this runs.
     const preferredDate = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
-    const response = await request.post('/api/public/requests', {
+    const response = await request.post(tenantUrl('/api/public/requests'), {
       data: {
         name,
         phone,
@@ -46,7 +46,7 @@ test.describe('public booking → approved appointment', () => {
 
     // The booking is already a real appointment — reception just sees it.
     await login(page, 'RECEPTION');
-    await page.goto('/appointments');
+    await page.goto(appUrl('/appointments'));
     await expect(page.getByText(name)).toBeVisible({ timeout: 15_000 });
   });
 });

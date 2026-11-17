@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { login } from './helpers';
+import { login, appUrl } from './helpers';
 
 /**
  * Staff requests leave and the owner approves it from the inbox.
@@ -16,7 +16,7 @@ test.describe('leave request → approval', () => {
 
     await test.step('staff submits a request', async () => {
       await login(page, 'STAFF');
-      await page.goto('/leave');
+      await page.goto(appUrl('/leave'));
       await page.selectOption('#leave-type', 'ANNUAL');
       await page.fill('#leave-start', fmt(start));
       await page.fill('#leave-end', fmt(end));
@@ -27,7 +27,7 @@ test.describe('leave request → approval', () => {
 
     await test.step('owner approves from the inbox', async () => {
       await login(page, 'OWNER');
-      await page.goto('/leave/inbox');
+      await page.goto(appUrl('/leave/inbox'));
       await expect(page.getByText(reason)).toBeVisible({ timeout: 15_000 });
       const row = page.locator('li, tr, .card').filter({ hasText: reason }).first();
       await row.getByRole('button', { name: 'Approve' }).click();

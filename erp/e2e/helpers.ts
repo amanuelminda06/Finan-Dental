@@ -13,6 +13,25 @@ export type RoleKey = 'OWNER' | 'RECEPTION' | 'STAFF';
 
 const LOGIN_PATH = process.env.LOGIN_SECRET_PATH ?? '';
 
+/** Default clinic whose URL tree the e2e suite logs into. */
+export const TENANT = process.env.DEFAULT_TENANT_SLUG || 'finan';
+export const SECOND_TENANT = process.env.E2E_SECOND_TENANT || 'bright-dental';
+
+/** `/[tenant]/...` for API, login and public-site paths. */
+export function tenantUrl(path: string): string {
+  return `/${TENANT}${path.startsWith('/') ? path : `/${path}`}`;
+}
+
+/** `/[tenant]/app/...` for ERP pages. */
+export function appUrl(path: string): string {
+  return `/${TENANT}/app${path.startsWith('/') ? path : `/${path}`}`;
+}
+
+/** This clinic's secret login URL. */
+export function loginUrl(): string {
+  return tenantUrl(`/login/${LOGIN_PATH}`);
+}
+
 const CREDENTIALS: Record<RoleKey, { email: string; password: string }> = {
   OWNER: {
     email: process.env.OWNER_EMAIL ?? '',
@@ -81,7 +100,7 @@ export async function login(page: Page, role: RoleKey = 'OWNER') {
   const { email, password } = CREDENTIALS[role];
   const derived = derivedPassword();
 
-  await page.goto(`/login/${LOGIN_PATH}`);
+  await page.goto(loginUrl());
   await submitCredentials(page, email, password);
 
   const outcome = await Promise.race([
@@ -112,6 +131,6 @@ export async function login(page: Page, role: RoleKey = 'OWNER') {
 
 /** Assert the current page redirected to the friendly 403 page. */
 export async function expectForbidden(page: Page, path: string) {
-  await page.goto(path);
+  await page.goto(appUrl(path));
   await expect(page).toHaveURL(/\/403/);
 }

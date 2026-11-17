@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { login } from './helpers';
+import { login, loginUrl, tenantUrl } from './helpers';
 
 test.describe('smoke', () => {
   test('owner signs in and lands on the dashboard', async ({ page }) => {
@@ -8,8 +8,7 @@ test.describe('smoke', () => {
   });
 
   test('wrong password is rejected', async ({ page }) => {
-    const path = process.env.LOGIN_SECRET_PATH ?? '';
-    await page.goto(`/login/${path}`);
+    await page.goto(loginUrl());
     await page.fill('#email', process.env.OWNER_EMAIL ?? '');
     await page.fill('#password', 'definitely-wrong-password');
     await page.getByRole('button', { name: /sign in/i }).click();
@@ -18,7 +17,7 @@ test.describe('smoke', () => {
   });
 
   test('unknown login path 404s', async ({ page }) => {
-    const response = await page.goto('/login/not-the-secret');
+    const response = await page.goto(tenantUrl('/login/not-the-secret'));
     expect(response?.status()).toBe(404);
   });
 });

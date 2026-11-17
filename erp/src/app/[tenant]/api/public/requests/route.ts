@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { validate, ValidationError } from '@/lib/errors';
 import { parsePhone } from '@/lib/phone';
 import { hashClientIp } from '@/lib/ip';
-import { checkRateLimit } from '@/lib/ratelimit';
+import { checkRateLimit, tenantRateLimitKey } from '@/lib/ratelimit';
 import { TENANT_ID_HEADER } from '@/lib/tenant-request-headers';
 import { createPublicBooking } from '@/modules/appointments/actions';
 import { bookingFormSchema, isHoneypotTripped } from '@/modules/public-site/schemas';
@@ -28,7 +28,7 @@ export async function POST(request: Request) {
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? null;
   const tenantKey = request.headers.get(TENANT_ID_HEADER) ?? 'unknown';
   if (
-    !checkRateLimit(`public-booking:${tenantKey}:${ip ?? 'unknown'}`, {
+    !checkRateLimit(tenantRateLimitKey('public-booking', tenantKey, ip), {
       max: PUBLIC_BOOKING_RATE_MAX,
       windowMs: PUBLIC_BOOKING_RATE_WINDOW_MS,
     })

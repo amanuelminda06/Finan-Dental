@@ -2,7 +2,7 @@ import { connection, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { validate, ValidationError } from '@/lib/errors';
 import { hashClientIp } from '@/lib/ip';
-import { checkRateLimit } from '@/lib/ratelimit';
+import { checkRateLimit, tenantRateLimitKey } from '@/lib/ratelimit';
 import { TENANT_ID_HEADER } from '@/lib/tenant-request-headers';
 import {
   createPublicFeedback,
@@ -27,7 +27,7 @@ export async function POST(request: Request) {
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? null;
   const tenantKey = request.headers.get(TENANT_ID_HEADER) ?? 'unknown';
   if (
-    !checkRateLimit(`public-feedback:${tenantKey}:${ip ?? 'unknown'}`, {
+    !checkRateLimit(tenantRateLimitKey('public-feedback', tenantKey, ip), {
       max: PUBLIC_FEEDBACK_RATE_MAX,
       windowMs: PUBLIC_FEEDBACK_RATE_WINDOW_MS,
     })
