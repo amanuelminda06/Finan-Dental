@@ -44,7 +44,9 @@ function chunk<T>(items: T[], size: number): T[][] {
 async function main() {
   const tenantId = await ensureSeedTenant(prisma);
   const markerPhone = '+251900000001';
-  const existing = await prisma.patient.findUnique({ where: { phoneE164: markerPhone } });
+  const existing = await prisma.patient.findUnique({
+    where: { tenantId_phoneE164: { tenantId, phoneE164: markerPhone } },
+  });
   if (existing) {
     console.log('✓ load seed already applied (marker patient found) — skipping');
     return;

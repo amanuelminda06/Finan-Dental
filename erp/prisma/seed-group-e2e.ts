@@ -64,7 +64,7 @@ async function main(): Promise<void> {
 
     if (mode === 'allow') {
       const tag = await prisma.tag.upsert({
-        where: { name: TAG },
+        where: { tenantId_name: { tenantId, name: TAG } },
         update: {},
         create: { tenantId, name: TAG, color: '#0ea5e9' },
       });

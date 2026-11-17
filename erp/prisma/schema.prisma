@@ -366,7 +366,7 @@ model Patient {
   id                 String       @id @default(cuid())
   fullName           String
   /// E.164 (+2519…/+2517…) — normalized by src/lib/phone.ts before write.
-  phoneE164          String       @unique
+  phoneE164          String
   sex                Sex?
   /// Date of birth, no time component.
   birthDate          DateTime?    @db.Date
@@ -400,20 +400,22 @@ model Patient {
   @@index([birthDate])
   @@index([active])
   @@index([createdAt])
-  @@index([idNo])
+  @@unique([tenantId, phoneE164])
+  @@index([tenantId, idNo])
   @@index([tenantId])
 }
 
 model Tag {
   id       String       @id @default(cuid())
   /// Lowercase display name — the app lowercases before write.
-  name     String       @unique
+  name     String
   /// Hex colour, e.g. `#3B82F6`.
   color    String
   patients PatientTag[]
   tenantId String
   tenant   Tenant?      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
+  @@unique([tenantId, name])
   @@index([tenantId])
 }
 
@@ -464,13 +466,14 @@ model PatientSickLeave {
  */
 model StoredFile {
   id        String   @id @default(cuid())
-  key       String   @unique
+  key       String
   mimeType  String
   data      Bytes
   createdAt DateTime @default(now()) @db.Timestamptz
   tenantId  String
   tenant    Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
+  @@unique([tenantId, key])
   @@index([createdAt])
   @@index([tenantId])
 }
@@ -536,7 +539,7 @@ model ServicePriceHistory {
 model Sale {
   id            String        @id @default(cuid())
   /// Per-year, gap-free receipt number, e.g. `2026-000123`.
-  receiptNumber String        @unique
+  receiptNumber String
   patientId     String?
   patient       Patient?      @relation(fields: [patientId], references: [id])
   doctorId      String?
@@ -568,6 +571,7 @@ model Sale {
   @@index([status, saleDate])
   @@index([patientId])
   @@index([doctorId])
+  @@unique([tenantId, receiptNumber])
   @@index([createdBy, saleDate])
   @@index([paymentMethod])
   @@index([status, voidRequestedBy])

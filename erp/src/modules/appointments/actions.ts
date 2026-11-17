@@ -59,8 +59,9 @@ async function resolvePatient(
   const name = (values.quickName ?? '').trim();
   const phone = normalizePhone(values.quickPhone ?? '');
   if (!name || !phone) return { error: 'patientRequired' };
+  const tenantId = await getTenantId();
   const existing = await prisma.patient.findUnique({
-    where: { phoneE164: phone },
+    where: { tenantId_phoneE164: { tenantId, phoneE164: phone } },
     select: { id: true, active: true },
   });
   if (existing) {
@@ -69,7 +70,7 @@ async function resolvePatient(
   }
   const created = await prisma.patient.create({
     data: {
-      tenantId: await getTenantId(),
+      tenantId,
       fullName: name,
       phoneE164: phone,
       createdBy: actorId,
@@ -538,18 +539,18 @@ export async function createPublicBooking(input: {
     // "Today" with a slot that has already gone by — nothing left to approve.
     if (startsAt.getTime() <= Date.now()) return { ok: false, error: 'pastSlot' };
 
+    const tenantId = await getTenantId();
     const doctors = await prisma.staff.findMany({
-      where: { active: true, isDoctor: true },
+      where: { tenantId, active: true, isDoctor: true },
       select: { id: true, fullName: true },
       orderBy: { fullName: 'asc' },
     });
     if (doctors.length === 0) return { ok: false, error: 'noDoctorAvailable' };
     const doctor = await pickBookingDoctor(doctors, startsAt, endsAt, tz);
 
-    const tenantId = await getTenantId();
     const { appointmentId, serviceId } = await prisma.$transaction(async (tx) => {
       const existing = await tx.patient.findUnique({
-        where: { phoneE164: input.phoneE164 },
+        where: { tenantId_phoneE164: { tenantId, phoneE164: input.phoneE164 } },
         select: { id: true },
       });
       const patientId = existing
@@ -570,6 +571,7 @@ export async function createPublicBooking(input: {
       const service = input.serviceInterest
         ? await tx.service.findFirst({
             where: {
+              tenantId,
               active: true,
               name: { equals: input.serviceInterest, mode: 'insensitive' },
             },

@@ -154,7 +154,7 @@ code=$(curl -s -b "$JAR" -o /tmp/opencode/patients-none.html -w '%{http_code}' "
 check "empty search → 200" 200 "$code"
 contains "empty search state" "No results found" /tmp/opencode/patients-none.html
 
-PID=$(sql "const row = await p.patient.findUnique({ where: { phoneE164: '+251911223344' }, select: { id: true } }); console.log(row.id);")
+PID=$(sql "const row = await p.patient.findUnique({ where: { tenantId_phoneE164: { tenantId: '$TENANT_ID', phoneE164: '+251911223344' } }, select: { id: true } }); console.log(row.id);")
 code=$(curl -s -b "$JAR" -o /tmp/opencode/patient.html -w '%{http_code}' "$BASE/patients/$PID")
 check "owner patient detail → 200" 200 "$code"
 contains "tap-to-call shows stored E.164" "+251911223344" /tmp/opencode/patient.html
@@ -327,9 +327,9 @@ code=$(curl -s -o /tmp/opencode/pub-ok.html -w '%{http_code}' -X POST "$BASE/api
 check "public booking valid → 200" 200 "$code"
 contains "public booking returns ok" "\"ok\":true" /tmp/opencode/pub-ok.html
 contains "public booking names the slot" "\"appointment\"" /tmp/opencode/pub-ok.html
-BOOKED=$(sql "const row = await p.appointment.findFirst({ where: { patient: { phoneE164: '+251911000001' }, createdFrom: 'WEBSITE_REQUEST' }, select: { status: true, createdBy: true, doctorId: true } }); console.log(row ? row.status + ':' + row.createdBy + ':' + (row.doctorId ? 'doctor' : 'none') : 'missing');")
+BOOKED=$(sql "const row = await p.appointment.findFirst({ where: { tenantId: '$TENANT_ID', patient: { tenantId: '$TENANT_ID', phoneE164: '+251911000001' }, createdFrom: 'WEBSITE_REQUEST' }, select: { status: true, createdBy: true, doctorId: true } }); console.log(row ? row.status + ':' + row.createdBy + ':' + (row.doctorId ? 'doctor' : 'none') : 'missing');")
 check "public booking auto-created a CONFIRMED appointment" "CONFIRMED:public-booking:doctor" "$BOOKED"
-sql "const rows = await p.patient.findMany({ where: { phoneE164: '+251911000001' }, select: { id: true } }); const ids = rows.map(r => r.id); await p.messageTask.deleteMany({ where: { patientId: { in: ids } } }); await p.appointment.deleteMany({ where: { patientId: { in: ids } } }); await p.patient.deleteMany({ where: { id: { in: ids } } }); console.log('cleaned');"
+sql "const rows = await p.patient.findMany({ where: { tenantId: '$TENANT_ID', phoneE164: '+251911000001' }, select: { id: true } }); const ids = rows.map(r => r.id); await p.messageTask.deleteMany({ where: { patientId: { in: ids } } }); await p.appointment.deleteMany({ where: { patientId: { in: ids } } }); await p.patient.deleteMany({ where: { id: { in: ids } } }); console.log('cleaned');"
 
 # role gates: reception may view, staff is denied
 code=$(curl -s -b "$JAR2B" -o /tmp/opencode/rec-fups.html -w '%{http_code}' "$BASE/follow-ups")

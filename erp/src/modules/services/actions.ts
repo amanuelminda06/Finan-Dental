@@ -37,7 +37,7 @@ function readServiceForm(formData: FormData) {
 async function storeServiceImage(file: File): Promise<string> {
   const ext = serviceImageExtension(file);
   if (!ext) throw new ValidationError({ image: 'imageInvalidType' });
-  const key = `service-${randomUUID()}.${ext}`;
+  const key = `${await getTenantId()}/service-${randomUUID()}.${ext}`;
   const buffer = Buffer.from(await file.arrayBuffer());
   await storage.put(key, buffer);
   return `${IMAGE_URL_PREFIX}${key}`;

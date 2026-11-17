@@ -34,12 +34,16 @@ export class DatabaseStorage implements StorageProvider {
   }
 
   async get(key: string): Promise<Buffer | null> {
-    const row = await prisma.storedFile.findUnique({ where: { key } });
+    const tenantId = await getTenantId();
+    const row = await prisma.storedFile.findUnique({
+      where: { tenantId_key: { tenantId, key } },
+    });
     if (!row) return null;
     return Buffer.from(row.data as never) as Buffer;
   }
 
   async remove(key: string): Promise<void> {
-    await prisma.storedFile.deleteMany({ where: { key } });
+    const tenantId = await getTenantId();
+    await prisma.storedFile.deleteMany({ where: { tenantId, key } });
   }
 }

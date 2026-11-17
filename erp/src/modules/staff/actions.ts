@@ -27,7 +27,7 @@ function readForm(formData: FormData): unknown {
 async function storePhoto(file: File): Promise<string> {
   const ext = photoExtension(file);
   if (!ext) throw new ValidationError({ photo: 'photoInvalidType' });
-  const key = `staff-${randomUUID()}.${ext}`;
+  const key = `${await getTenantId()}/staff-${randomUUID()}.${ext}`;
   const buffer = Buffer.from(await file.arrayBuffer());
   await storage.put(key, buffer);
   return `${PHOTO_URL_PREFIX}${key}`;

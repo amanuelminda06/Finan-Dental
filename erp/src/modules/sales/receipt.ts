@@ -45,11 +45,12 @@ export function clampReceiptClaim(claimed: number, highestExisting: number): num
 async function highestExistingReceiptNumber(
   tx: Prisma.TransactionClient,
   year: number,
+  tenantId: string,
 ): Promise<number> {
   const rows = await tx.$queryRaw<Array<{ highest: number | null }>>`
     SELECT MAX(CAST(SUBSTRING("receiptNumber" FROM '^[0-9]+-([0-9]+)$') AS INT)) AS "highest"
     FROM "Sale"
-    WHERE "receiptNumber" LIKE ${`${year}-%`}
+    WHERE "receiptNumber" LIKE ${`${year}-%`} AND "tenantId" = ${tenantId}
   `;
   return Number(rows[0]?.highest ?? 0);
 }
@@ -67,7 +68,7 @@ export async function claimReceiptNumber(
     RETURNING "lastNumber"
   `;
   const claimed = Number(rows[0]?.lastNumber ?? 1);
-  const highest = await highestExistingReceiptNumber(tx, year);
+  const highest = await highestExistingReceiptNumber(tx, year, tenantId);
   const next = clampReceiptClaim(claimed, highest);
 
   // Repair the drifted counter inside the same transaction, so the next sale

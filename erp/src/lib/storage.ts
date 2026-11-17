@@ -17,7 +17,10 @@ export interface StorageProvider {
   remove(key: string): Promise<void>;
 }
 
-const SAFE_KEY = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
+// Keys are tenant-prefixed (`<tenantId>/<kind>-<uuid>.<ext>`): exactly one "/"
+// separates the tenant segment from the file name. No "..", so the local-disk
+// driver's path-escape guard below still holds.
+const SAFE_KEY = /^[A-Za-z0-9][A-Za-z0-9._-]*\/[A-Za-z0-9][A-Za-z0-9._-]*$/;
 
 function safeKey(key: string): string {
   if (!SAFE_KEY.test(key) || key.includes('..')) {

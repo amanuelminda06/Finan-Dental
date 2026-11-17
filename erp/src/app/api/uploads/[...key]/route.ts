@@ -21,8 +21,15 @@ export async function GET(
   if (!session?.user?.id) return new Response(null, { status: 404 });
 
   const { key } = await params;
-  if (key.length !== 1) return new Response(null, { status: 404 });
-  const name = decodeURIComponent(key[0]);
+  // Storage keys are tenant-prefixed: /api/uploads/<tenantId>/<file>.
+  if (key.length !== 2 || !session.user.tenantId) return new Response(null, { status: 404 });
+  let name: string;
+  try {
+    name = `${decodeURIComponent(key[0])}/${decodeURIComponent(key[1])}`;
+  } catch {
+    return new Response(null, { status: 404 });
+  }
+  if (name.split('/')[0] !== session.user.tenantId) return new Response(null, { status: 404 });
   const ext = name.includes('.') ? (name.split('.').pop()?.toLowerCase() ?? '') : '';
   const contentType = CONTENT_TYPE_BY_EXT[ext];
   if (!contentType) return new Response(null, { status: 404 });

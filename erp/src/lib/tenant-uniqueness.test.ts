@@ -94,3 +94,57 @@ describe('per-tenant user uniqueness', () => {
     expect(wrongTenant).toBeNull();
   });
 });
+
+describe('per-tenant patient, tag, sale and storage uniqueness', () => {
+  it('allows the same phone number in two tenants but rejects a duplicate in one tenant', async () => {
+    const phoneE164 = `+2519${randomUUID().replace(/-/g, '').slice(0, 9)}`;
+    const data = { fullName: 'Shared', phoneE164, createdBy: 'tenant-test' };
+
+    await prisma.patient.create({ data: { ...data, tenantId: tenantA } });
+    await prisma.patient.create({ data: { ...data, tenantId: tenantB } });
+
+    await expect(
+      prisma.patient.create({ data: { ...data, tenantId: tenantA } }),
+    ).rejects.toMatchObject({ code: 'P2002' });
+  });
+
+  it('allows the same tag name in two tenants but rejects a duplicate in one tenant', async () => {
+    const name = `tag-${randomUUID()}`;
+    await prisma.tag.create({ data: { tenantId: tenantA, name, color: '#000000' } });
+    await prisma.tag.create({ data: { tenantId: tenantB, name, color: '#000000' } });
+
+    await expect(
+      prisma.tag.create({ data: { tenantId: tenantA, name, color: '#000000' } }),
+    ).rejects.toMatchObject({ code: 'P2002' });
+  });
+
+  it('allows the same receipt number in two tenants but rejects a duplicate in one tenant', async () => {
+    const receiptNumber = `2026-${randomUUID().replace(/-/g, '').slice(0, 6)}`;
+    const data = {
+      receiptNumber,
+      saleDate: new Date(),
+      paymentMethod: 'CASH' as const,
+      total: 10,
+      createdBy: 'tenant-test',
+    };
+
+    await prisma.sale.create({ data: { ...data, tenantId: tenantA } });
+    await prisma.sale.create({ data: { ...data, tenantId: tenantB } });
+
+    await expect(
+      prisma.sale.create({ data: { ...data, tenantId: tenantA } }),
+    ).rejects.toMatchObject({ code: 'P2002' });
+  });
+
+  it('allows the same storage key in two tenants but rejects a duplicate in one tenant', async () => {
+    const key = `${tenantA}/shared-${randomUUID()}.png`;
+    const data = { key, mimeType: 'image/png', data: Buffer.from('test') };
+
+    await prisma.storedFile.create({ data: { ...data, tenantId: tenantA } });
+    await prisma.storedFile.create({ data: { ...data, tenantId: tenantB } });
+
+    await expect(
+      prisma.storedFile.create({ data: { ...data, tenantId: tenantA } }),
+    ).rejects.toMatchObject({ code: 'P2002' });
+  });
+});

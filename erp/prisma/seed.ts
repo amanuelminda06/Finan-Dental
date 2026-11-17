@@ -156,7 +156,7 @@ async function main(): Promise<void> {
     const tagIds = new Map<string, string>();
     for (const name of TAG_NAMES) {
       const tag = await prisma.tag.upsert({
-        where: { name },
+        where: { tenantId_name: { tenantId, name } },
         update: {},
         create: { tenantId, name, color: tagColorFor(name) },
       });
@@ -179,7 +179,7 @@ async function main(): Promise<void> {
         createdBy: owner?.id ?? 'seed',
       };
       const patient = await prisma.patient.upsert({
-        where: { phoneE164: row.phoneE164 ?? row.phone },
+        where: { tenantId_phoneE164: { tenantId, phoneE164: row.phoneE164 ?? row.phone } },
         update: data,
         create: data,
       });

@@ -141,9 +141,10 @@ export async function getPatient(id: string): Promise<PatientDetail | null> {
 /** Phone lookup for duplicate blocking. */
 export async function findPatientByPhone(
   phoneE164: string,
+  tenantId: string,
 ): Promise<{ id: string; fullName: string } | null> {
   return prisma.patient.findUnique({
-    where: { phoneE164 },
+    where: { tenantId_phoneE164: { tenantId, phoneE164 } },
     select: { id: true, fullName: true },
   });
 }

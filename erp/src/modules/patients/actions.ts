@@ -43,7 +43,7 @@ function readPatientForm(formData: FormData) {
 async function storeIdPhoto(file: File): Promise<string> {
   const ext = idPhotoExtension(file);
   if (!ext) throw new ValidationError({ idPhoto: 'idPhotoInvalidType' });
-  const key = `patient-id-${randomUUID()}.${ext}`;
+  const key = `${await getTenantId()}/patient-id-${randomUUID()}.${ext}`;
   const buffer = Buffer.from(await file.arrayBuffer());
   await storage.put(key, buffer);
   return `${PATIENT_ID_PHOTO_URL_PREFIX}${key}`;
@@ -110,8 +110,9 @@ export async function createPatientAction(
     const values = validate(patientFormSchema, readPatientForm(formData));
     const confirmed = String(formData.get('confirm') ?? '') === 'true';
     const birthDate = values.age === null ? null : birthDateFromAge(values.age);
+    const tenantId = await getTenantId();
 
-    const duplicate = await findPatientByPhone(values.phone);
+    const duplicate = await findPatientByPhone(values.phone, tenantId);
     if (duplicate) return fail('phoneTaken', undefined, duplicate);
 
     if (!confirmed) {
@@ -129,7 +130,7 @@ export async function createPatientAction(
     try {
       created = await prisma.patient.create({
         data: {
-          tenantId: await getTenantId(),
+          tenantId,
           fullName: values.fullName,
           phoneE164: values.phone,
           sex: values.sex,
@@ -144,7 +145,7 @@ export async function createPatientAction(
       });
     } catch (err) {
       if (isPrismaError(err, 'P2002')) {
-        const existing = await findPatientByPhone(values.phone);
+        const existing = await findPatientByPhone(values.phone, tenantId);
         return fail('phoneTaken', undefined, existing ?? undefined);
       }
       throw err;
@@ -171,11 +172,12 @@ export async function updatePatientAction(
     const values = validate(patientFormSchema, readPatientForm(formData));
     const confirmed = String(formData.get('confirm') ?? '') === 'true';
     const birthDate = values.age === null ? null : birthDateFromAge(values.age);
+    const tenantId = await getTenantId();
 
     const before = await prisma.patient.findUnique({ where: { id } });
     if (!before) return fail('unknownError');
 
-    const duplicate = await findPatientByPhone(values.phone);
+    const duplicate = await findPatientByPhone(values.phone, tenantId);
     if (duplicate && duplicate.id !== id) return fail('phoneTaken', undefined, duplicate);
 
     if (!confirmed) {
@@ -260,7 +262,7 @@ export async function setPatientTagsAction(
       const tagIds: string[] = [];
       for (const name of names) {
         const tag = await prisma.tag.upsert({
-          where: { name },
+          where: { tenantId_name: { tenantId, name } },
           update: {},
           create: { tenantId, name, color: tagColorFor(name) },
         });
@@ -438,7 +440,7 @@ export async function importPatientsAction(
         const tagIds: string[] = [];
         for (const name of values.tags) {
           const tag = await prisma.tag.upsert({
-            where: { name },
+            where: { tenantId_name: { tenantId, name } },
             update: {},
             create: { tenantId, name, color: tagColorFor(name) },
           });
