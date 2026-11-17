@@ -1,0 +1,14 @@
+name: Tenancy guard
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  base-prisma-allowlist:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify unscoped Prisma client use is allowlisted
+        working-directory: erp
+        run: npm run tenancy:check

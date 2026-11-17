@@ -1,0 +1,20 @@
+# Files allowed to construct or import the unscoped base Prisma client.
+# Application code must use @/lib/prisma (the tenant-scoped client).
+# Keep this list as small as possible; every addition needs a comment in docs/tenancy.md.
+src/lib/prisma-base.ts
+src/lib/tenant-prisma.ts
+src/lib/tenant-prisma.test.ts
+src/lib/tenant-isolation.test.ts
+src/lib/tenant-uniqueness.test.ts
+prisma/seed.ts
+prisma/seed-load.ts
+prisma/seed-group-e2e.ts
+scripts/client-data-export.ts
+scripts/set-tenant-login-secret.ts
+scripts/qa/phase1-change.mts
+scripts/qa/reset-users.mts
+scripts/tmp-null-check.mts
+scripts/tmp-backfill.mts
+scripts/smoke.sh
+scripts/dump-tz.cjs
+scripts/update-tz.cjs
