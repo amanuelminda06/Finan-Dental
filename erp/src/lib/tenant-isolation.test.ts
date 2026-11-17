@@ -34,7 +34,7 @@ import {
   getSiteContent,
 } from '@/modules/public-site/queries';
 import { expireTasks } from '@/modules/messaging/generate';
-import { GET as search } from '@/app/api/search/route';
+import { GET as search } from '@/app/[tenant]/api/search/route';
 import { DEFAULT_TIMEZONE } from '@/lib/datetime';
 
 const marker = `iso-${randomUUID()}`;
