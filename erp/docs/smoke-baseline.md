@@ -1,5 +1,9 @@
 # Smoke baseline before multi-tenancy
 
+Check descriptions and flight-redirect needles below describe the historical
+root-relative URLs at commit `c786978`. The current smoke script prefixes every
+URL with `/<tenant>` and adds cross-tenant checks; see `docs/tenancy.md`.
+
 Captured at commit `c786978` (the commit immediately before
 `68d5a7b`, which added the multi-tenancy foundation).
 

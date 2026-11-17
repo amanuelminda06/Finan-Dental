@@ -7,7 +7,7 @@ Three roles exist. Authorization is enforced server-side
 
 Sees everything. Day to day:
 
-- **Dashboard** — role overview + **Daily summary** (`/dashboard/daily`) with
+- **Dashboard** — role overview + **Daily summary** (`/<tenant>/app/dashboard/daily`) with
   today's revenue, average sale, voided total, receipt range and breakdowns by
   payment/doctor/service; print it or email it.
 - **Patients, Sales, Appointments, Requests, Follow-ups, Messages** — full access.
@@ -25,7 +25,7 @@ Sees everything. Day to day:
 - **Settings** — clinic name, timezone, currency, hours, contacts, campaign cap,
   and the group-SMS controls (`group_sms_allow_for_filtered`,
   `group_sms_max_recipients`).
-- **Website content** (`/dashboard/content`) — CMS-lite text for the public site.
+- **Website content** (`/<tenant>/app/dashboard/content`) — CMS-lite text for the public site.
 - **Audit log** — filter and export (CSV/Excel) every recorded change.
 - **Exports & search** — CSV/Excel on Patients, Sales, Audit, Appointments,
   Messages and Leave; header search for patients/sales/appointments.
@@ -62,9 +62,12 @@ Minimal footprint.
 
 ## Common to all
 
-- Sign in only via `/login/<LOGIN_SECRET_PATH>`; first login forces a password
-  change.
-- Switch EN/AM from the header.
+- Sign in only via `/<your-clinic>/login/<that clinic's LOGIN_SECRET_PATH>`;
+  first login forces a password change. A secret from another clinic does not
+  work at your URL.
+- Switch EN/AM from the header (remembered per clinic).
 - Change your own password from the user menu; sign out there too.
-- If you reach a page you may not use, you get the friendly `/403` page — tell
-  the owner if you think your role is wrong.
+- If you reach a page you may not use, you get the friendly
+  `/<your-clinic>/app/403` page — tell the owner if you think your role is wrong.
+- Opening another clinic's URL with your session shows a plain 404 (not data or
+  a redirect).

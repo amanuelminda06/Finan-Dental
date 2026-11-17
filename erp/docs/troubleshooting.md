@@ -23,15 +23,18 @@ lists each bad/missing key. Fix `.env` and restart. Common causes:
 
 ## "This page does not exist" on login
 
-`/login/…` returns a real 404 unless the path exactly equals
-`LOGIN_SECRET_PATH`. Use the full secret URL. If it changed, users' bookmarks
-break — update them.
+`/<tenant>/login/…` returns a real 404 unless the path is the full secret URL
+`/<tenant>/login/<that tenant's LOGIN_SECRET_PATH>` **for the tenant in the
+URL**. Using tenant A's secret at tenant B's URL is also a 404. The bare `/`
+only redirects to the default tenant. If a secret changed, bookmarks break —
+update them.
 
 ## Locked out / too many attempts
 
 Five failed logins lock the account for 15 minutes; > 30 attempts / 5 min per
-IP is rate-limited. An OWNER can reset the user's password from `/users`
-(sends a one-time temp password). Check `/audit` for `LOGIN_FAILED`.
+tenant **and** IP is rate-limited (one tenant's attempts do not block another).
+An OWNER can reset the user's password from `/<tenant>/app/users` (sends a
+one-time temp password). Check `/<tenant>/app/audit` for `LOGIN_FAILED`.
 
 ## Forced back to "Change password"
 
@@ -44,8 +47,8 @@ resetting the password.
 
 Roles decide access: OWNER (everything), RECEPTION (front desk + patients,
 sales, appointments, requests, messages, team schedule view), STAFF (own
-schedule + leave only). Reassign the role in `/users/staff`. The same rules
-apply to the export/API endpoints.
+schedule + leave only). Reassign the role in `/<tenant>/app/users`. The same
+rules apply to the export/API endpoints.
 
 ## Messages look wrong or empty
 

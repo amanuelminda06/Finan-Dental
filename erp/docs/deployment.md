@@ -1,10 +1,19 @@
 # Deployment
 
-Two deployables share one database and one `.env`:
+One Next.js build serves every clinic under one URL tree per tenant. The bare
+`/` redirects to the default tenant (`DEFAULT_TENANT_SLUG`); everything else is
+prefixed with the tenant slug:
 
-1. **The ERP app** (this project) — secret-link login at `/login/<LOGIN_SECRET_PATH>`.
-2. The **public website** — the `(public)` routes in the same Next.js build
-   (`/`, `/about`, `/services`, `/doctors`, `/book`, `/contact`, `/faq`, `/privacy`).
+1. **Public website** — `/<tenant>/`, `/<tenant>/about`, `/<tenant>/services`,
+   `/<tenant>/doctors`, `/<tenant>/book`, `/<tenant>/contact`, `/<tenant>/faq`,
+   `/<tenant>/privacy`, plus `/<tenant>/sitemap.xml` and `/<tenant>/robots.txt`.
+2. **ERP** — `/<tenant>/app/...`, secret-link login at
+   `/<tenant>/login/<that tenant's LOGIN_SECRET_PATH>`.
+3. **APIs** — `/<tenant>/api/...` (auth, exports, uploads, public feeds, cron).
+
+The tenant is resolved from the first URL segment and checked on every request
+(unknown/suspended/expired tenants 404). Sessions, secrets, rate limits and
+locale cookies are bound to one tenant; see `docs/tenancy.md`.
 
 ## Prerequisites
 
@@ -25,13 +34,14 @@ Fill, at minimum:
 | --- | --- |
 | `DATABASE_URL` | production Postgres; add `?sslmode=require` when required |
 | `AUTH_SECRET` | `openssl rand -base64 32` |
-| `LOGIN_SECRET_PATH` | `openssl rand -hex 12` — treat as a secret |
+| `LOGIN_SECRET_PATH` | `openssl rand -hex 12` — seed-time secret for the default tenant's `/<tenant>/login/<secret>`; each `Tenant.loginSecret` is authoritative at runtime |
+| `DEFAULT_TENANT_SLUG` | `finan` — where `/` redirects and which tenant seed/scripts use (never a fallback in request handling) |
 | `OWNER_EMAIL` / `OWNER_PASSWORD` | first owner account; password ≥ 10 chars |
 | `RECEPTION_EMAIL` / `RECEPTION_PASSWORD` | created with forced password change |
 | `STAFF_EMAIL` / `STAFF_PASSWORD` | created with forced password change |
 | `UPLOAD_DIR` | persistent volume path (e.g. `/var/lib/vision-erp/uploads`) |
 | `PUBLIC_BASE_URL` | canonical https origin (SEO/hreflang/sitemap) |
-| `CRON_SECRET` | ≥ 16 chars to enable `POST /api/jobs/messages` |
+| `CRON_SECRET` | ≥ 16 chars to enable `POST /<tenant>/api/jobs/messages` (runs for all serving tenants) |
 
 Everything is validated at boot (`src/env.ts`) — the app refuses to start on a
 bad/missing value and never logs the values.
@@ -71,14 +81,19 @@ Messages no longer require a server (manual-link mode), but the daily job that
 expires/creates tasks and the optional daily summary email should run:
 
 ```cron
-*/15 * * * * curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" https://erp.finandental.com/api/jobs/messages
+*/15 * * * * curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" https://erp.finandental.com/finan/api/jobs/messages
 ```
+
+The URL tenant is only the carrier: the endpoint fans out over every TRIAL or
+ACTIVE tenant in its own `runWithTenant()` scope and returns a per-tenant
+`results` array. Pointing the cron at any serving tenant URL has the same effect.
 
 ## 5. Health & smoke
 
 ```bash
-curl -fsS http://127.0.0.1:3000/login/<LOGIN_SECRET_PATH> >/dev/null
-bash scripts/smoke.sh                       # 173 checks against a running server
+curl -fsS http://127.0.0.1:3000/finan/login/<LOGIN_SECRET_PATH> >/dev/null
+npx tsx scripts/seed-e2e-tenants.ts          # local-only: two tenants for isolation checks
+bash scripts/smoke.sh                       # tenant-aware checks, server on :3100
 npm run security:scan                       # regenerates docs/security-review.md
 ```
 

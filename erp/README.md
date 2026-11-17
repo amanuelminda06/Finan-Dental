@@ -6,7 +6,26 @@ clinic management (users, staff, settings, audit trail, patients, services,
 sales/POS + revenue, HR lite (shifts/schedule, leave approvals, a cached
 public "on-duty now" feed) and appointments (day/week/list views, website
 booking requests → converted appointments, and patient recall follow-ups).
-Reachable **only** via the secret link `/login/<LOGIN_SECRET_PATH>`.
+Reachable **only** via the secret link `/<tenant>/login/<LOGIN_SECRET_PATH>`.
+
+## URL layout (one clinic = one URL tree)
+
+Every clinic owns a URL prefix. The bare root has no tenant and only redirects
+to the default clinic; everything else is resolved from the first path segment.
+
+| Area | URL | Notes |
+| --- | --- | --- |
+| Default entry | `/` → `/<tenant>` | 307 redirect; the redirect target is `DEFAULT_TENANT_SLUG` |
+| Public site | `/<tenant>/...` | marketing, booking, `sitemap.xml`, `robots.txt` |
+| ERP | `/<tenant>/app/...` | dashboard, patients, sales, settings, … |
+| APIs | `/<tenant>/api/...` | auth, exports, uploads, public feeds, cron |
+| Secret login | `/<tenant>/login/<secret>` | `secret` comes from that tenant's `loginSecret` |
+| Shared assets | `/<tenant>/static/...` | rewritten to the root `public/` files |
+
+An unknown, suspended or expired tenant returns a real 404 for every area. A
+session (and its rate-limit budget, locale cookie and secret login URL) is bound
+to one tenant: presenting tenant A's session or secret at tenant B's URL gets a
+404, never data, a 403 or a redirect. See `docs/tenancy.md`.
 
 ## Stack
 
@@ -24,11 +43,12 @@ npm run db:up          # embedded local Postgres on :5433 (or point DATABASE_URL
 cp .env.example .env   # then fill AUTH_SECRET, LOGIN_SECRET_PATH, seed passwords
 npm run db:migrate     # apply prisma/migrations
 npm run db:seed        # settings + staff + users + tags + patients + services + sales + HR shifts/leave + appointments/requests/follow-ups (idempotent)
-npm run dev            # http://localhost:3000
+npm run dev            # http://localhost:3000 → redirects to the default tenant
 ```
 
-Login URL: `http://localhost:3000/login/<LOGIN_SECRET_PATH>` — any other
-`/login/...` path returns a real 404 (checked in proxy + page).
+Login URL: `http://localhost:3000/<tenant>/login/<LOGIN_SECRET_PATH>` — any
+other `/<tenant>/login/...` path returns a real 404 (checked in proxy + page).
+`/<second-tenant>/login/<LOGIN_SECRET_PATH>` also 404s: secrets are per tenant.
 
 Seeded accounts (passwords come from `.env`):
 
@@ -48,6 +68,7 @@ npm run typecheck      # tsc --noEmit
 npm run messages       # en/am catalogs identical + all t() keys resolve
 npm test               # Vitest unit tests
 npm run test:e2e       # Playwright specs (npx playwright install once; seeded DB + server)
+npx tsx scripts/seed-e2e-tenants.ts  # local-only: seed the two URL-tenancy e2e tenants
 npm run db:migrate     # create/apply migrations (dev)
 npm run db:reset       # drop + migrate + seed
 npm run db:load        # generate a staged load dataset (5k patients, 20k sales)
@@ -56,7 +77,7 @@ npm run restore -- <dump>  # restore (FORCE=1 to replace)
 npm run export:client -- <dir>  # CSV copy of patients + sales for the clinic
 npm run security:scan  # regenerate docs/security-review.md (guards + roles)
 npm run audit:deps     # fail on high/critical dependency advisories
-bash scripts/smoke.sh  # production smoke test, 173 checks (server must be running)
+bash scripts/smoke.sh  # tenant-aware smoke test (server on :3100, local DB only)
 ```
 
 ## Documentation
@@ -100,7 +121,7 @@ erp/
 │   ├── client-data-export.ts  # CSV copy of patients + sales
 │   ├── security-scan.mjs      # → docs/security-review.md
 │   ├── audit-deps.sh          # npm audit (high+)
-│   └── smoke.sh               # production smoke test (173 checks)
+│   └── smoke.sh               # tenant-aware smoke test (2 seeded tenants)
 ├── e2e/                       # Playwright specs (smoke, roles, patient→sale,
 │                              # request→appointment, leave, messages)
 ├── messages/en.json, am.json  # full translations (identical structure)
@@ -201,22 +222,23 @@ erp/
     │       │                  # Footer/LocaleSwitcher, BookingForm, DoctorAvatar/Badge,
     │       │                  # AnnouncementBanner, SiteContentForm, JsonLd, Analytics)
     └── app/
-        ├── (public)/          # open marketing site: / about services doctors book
-        │                      # contact faq privacy (+ not-found, opengraph-image)
-        ├── sitemap.ts, robots.ts
-        ├── login/[secret]/    # the only entry point
-        ├── (app)/             # / 403 change-password users staff settings audit
-        │   ├── patients/      # list, new, [id] (+ tabs), [id]/edit, import
-        │   ├── dashboard/     # home, services (list/new/[id]/edit, OWNER), content (CMS)
-        │   ├── sales/         # list, new, [id] (receipt + void actions), voids
-        │   ├── revenue/       # OWNER-only revenue dashboard
-        │   ├── schedule/      # weekly shift grid (OWNER manage, RECEPTION team view, STAFF self)
-        │   ├── leave/         # my leave + balance, inbox (OWNER), team calendar
-        │   ├── appointments/  # day/week/list views + create/edit/transition (OWNER/RECEPTION)
-        │   ├── requests/      # website booking inbox, filter by status, convert to appointment
-        │   ├── follow-ups/    # open/overdue/done/cancelled recall list (OWNER/RECEPTION)
-        │   └── messages/      # outbox, templates, campaigns (+ new/[id]), reports (OWNER/RECEPTION)
-        └── api/               # auth callback, uploads, audit export,
+        └── [tenant]/          # every clinic owns this URL tree
+            ├── (public)/      # open marketing site: / about services doctors book
+            │                  # contact faq privacy (+ not-found, opengraph-image)
+            ├── sitemap.ts, robots.ts
+            ├── login/[secret]/ # the only entry point (secret is per tenant)
+            ├── app/           # /app 403 change-password users staff settings audit
+            │   ├── patients/  # list, new, [id] (+ tabs), [id]/edit, import
+            │   ├── dashboard/ # home, services (list/new/[id]/edit, OWNER), content (CMS)
+            │   ├── sales/     # list, new, [id] (receipt + void actions), voids
+            │   ├── revenue/   # OWNER-only revenue dashboard
+            │   ├── schedule/  # weekly shift grid (OWNER manage, RECEPTION team view, STAFF self)
+            │   ├── leave/     # my leave + balance, inbox (OWNER), team calendar
+            │   ├── appointments/  # day/week/list views + create/edit/transition (OWNER/RECEPTION)
+            │   ├── requests/  # website booking inbox, filter by status, convert to appointment
+            │   ├── follow-ups/    # open/overdue/done/cancelled recall list (OWNER/RECEPTION)
+            │   └── messages/  # outbox, templates, campaigns (+ new/[id]), reports (OWNER/RECEPTION)
+            └── api/           # auth callback, uploads, audit export,
                                 # patients export + CSV template, sales export,
                                 # appointments/messages/leave export, global search,
                                 # public doctors, public appointment requests (POST,
@@ -226,28 +248,34 @@ erp/
 
 ## Security model
 
-- **Secret link**: `proxy.ts` 404s `/login/*` unless the path matches
-  `LOGIN_SECRET_PATH`; the page re-checks server-side.
-- **Session**: JWT, httpOnly + sameSite=lax + secure(prod), 12h expiry.
+- **URL tenancy**: the proxy resolves the tenant from the first path segment,
+  checks `Tenant.status`/`trialEndsAt`, injects trusted tenant headers, and 404s
+  unknown/suspended/expired tenants. There is no default-tenant fallback in a
+  request — only scripts and tests may use `DEFAULT_TENANT_SLUG`.
+- **Secret link**: `proxy.ts` 404s `/<tenant>/login/*` unless the path matches
+  **that tenant's** `Tenant.loginSecret`; the page re-checks server-side.
+- **Session**: JWT, httpOnly + sameSite=lax + secure(prod), 12h expiry. The JWT
+  carries `tenantId`; a session presented at another tenant's URL is 404ed by
+  the proxy, layouts, `requireRole`, APIs and uploads alike.
 - **Password**: argon2id, min 10 chars, common/personal-password rejection,
-  15-min lockout after 5 failed attempts, per-IP rate limit (30/5 min),
-  every attempt audited (`LOGIN_FAILED`/`LOGIN_SUCCESS`).
+  15-min lockout after 5 failed attempts, rate limit (30/5 min) keyed by tenant
+  **and** IP, every attempt audited (`LOGIN_FAILED`/`LOGIN_SUCCESS`).
 - **Forced first login**: `mustChangePassword` — pages redirect to
-  `/change-password`, server actions refuse with `passwordChangeRequired`
+  `/<tenant>/app/change-password`, server actions refuse with `passwordChangeRequired`
   until the password changes (JWT claim refreshed by auto re-login).
 - **Authorization**: `requireRole()` for actions, `requirePageRole()` for pages
-  (wrong role → `/403`), `<RoleGate>` for UI-only hiding. OWNER-only menus.
+  (wrong role → `/<tenant>/app/403`), `<RoleGate>` for UI-only hiding. OWNER-only menus.
 - **HR**: OWNER manages shifts/templates and decides leave; RECEPTION sees the
   team schedule + team leave calendar but has no edit controls; STAFF sees only
   their own schedule and requests their own leave. Nobody can approve/reject
   their own leave (highest-role peer decides) and approved leave suppresses duty
   with an "On leave" status. Mutations audit `SHIFT_CREATED/…`, `LEAVE_*`.
-- **Public on-duty feed**: `GET /api/public/doctors` requires no session and is
+- **Public on-duty feed**: `GET /<tenant>/api/public/doctors` requires no session and is
   cached 60 s (`stale-while-revalidate=120`). It is built from a strict allow-list
   (active published doctors only) and returns only `id/name/specialty/photoUrl/
 status/todayShifts/nextShiftStartsAt` — no phone, email, internal fields,
   salary/leave data, or leave reasons.
-- **Public booking intake**: `POST /api/public/requests` needs no session and is
+- **Public booking intake**: `POST /<tenant>/api/public/requests` needs no session and is
   rate-limited per hashed IP (429), validates the same zod rules as internal
   forms (400 invalid JSON / 422 field errors) and stores only a sha-256 IP hash
   (never the raw IP). Responses are `Cache-Control: no-store`.
@@ -294,9 +322,10 @@ NO_SHOW`); terminal states are frozen unless an OWNER overrides, and every
 
 Automated: with the production server running, `bash scripts/smoke.sh` covers
 items 1–5, 10, 13, parts of 15–24, the HR role/model checks, the
-appointments/requests/follow-ups + public-intake checks and the messaging
-page/role/API checks (173 checks, exits non-zero on failure); `npm test` adds
-335 unit tests (41 files: phone normalization, duplicate detection, CSV import,
+appointments/requests/follow-ups + public-intake checks, the messaging
+page/role/API checks and the two-tenant cross-access checks (exits non-zero on
+failure; run `scripts/seed-e2e-tenants.ts` first); `npm test` adds
+unit tests (phone normalization, duplicate detection, CSV import,
 consent/audit helpers, role gates, money rounding, sale line snapshots, receipt
 numbers + timezone boundary, revenue aggregation + period presets, shift
 template generation + overlap + week grids, leave balances/overlap/duty
@@ -313,11 +342,13 @@ browser-level items below still need a human. The Playwright specs under `e2e/`
 (`npm run test:e2e`) automate the authentication, role-access, patient→sale,
 request→appointment, leave and messages flows against a seeded database; the
 group-chat batch flow runs on the `mobile` project (`e2e/group-batch.spec.ts`).
+`e2e/tenant-url-isolation.spec.ts` walks every tenant-B page/API/SEO route with
+a tenant-A session (expecting 404) and checks per-tenant public data and SEO.
 
-1. `/login/wrong` → 404; `/login` → 404; correct secret → login page.
+1. `/<tenant>/login/wrong` → 404; `/<tenant>/login` → 404; correct secret → login page.
 2. Wrong password ×5 → account locked (15 min), `LOGIN_FAILED` rows with IP.
 3. Rate limit: >30 attempts / 5 min from one IP → rejected.
-4. Login as RECEPTION → forced to `/change-password`; other pages bounce back
+4. Login as RECEPTION → forced to `/<tenant>/app/change-password`; other pages bounce back
    until the password changes; new password must pass strength rules.
 5. After change: lands on dashboard, session still valid, `PASSWORD_CHANGED` audited.
 6. OWNER: create a user (weak password rejected, duplicate email rejected),
@@ -326,7 +357,7 @@ group-chat batch flow runs on the `mobile` project (`e2e/group-batch.spec.ts`).
 8. OWNER: settings — bad time (`25:00`), bad timezone, close ≤ open all rejected;
    valid save audits `SETTING_UPDATED` with changed fields only.
 9. OWNER: audit viewer — filter by user/entity/action/date, expand JSON, CSV export.
-10. RECEPTION hitting `/users` directly → `/403`; menu hides OWNER-only items.
+10. RECEPTION hitting `/<tenant>/app/users` directly → `/<tenant>/app/403`; menu hides OWNER-only items.
 11. Locale switch EN ↔ AM (cookie) — all screens translate, including errors.
 12. Mobile 360px: drawer nav, tables scroll horizontally, forms usable.
 13. Headers present (`curl -I`): CSP, X-Frame-Options: DENY, nosniff.
@@ -350,8 +381,8 @@ group-chat batch flow runs on the `mobile` project (`e2e/group-batch.spec.ts`).
     with consent **false** unless the file explicitly says `yes`; duplicates
     inside the file or already in the DB are reported, never silently
     overwritten.
-19. STAFF (`doctor@finandental.com`): `/patients` → `/403`, direct
-    `/api/patients/export` → 403.
+19. STAFF (`doctor@finandental.com`): `/<tenant>/app/patients` → `/<tenant>/app/403`, direct
+    `/<tenant>/api/patients/export` → 403.
 20. Services (OWNER): create/edit with bad category or non-numeric price
     rejected; changing a price writes a price-history row and leaves existing
     sale lines untouched; deactivated services disappear from the new-sale
@@ -387,7 +418,7 @@ group-chat batch flow runs on the `mobile` project (`e2e/group-batch.spec.ts`).
     rejected).
 29. Leave calendar (OWNER + RECEPTION): 30-day team table shows approved leave
     per day and the SMART template days; forbidden for STAFF.
-30. Public feed: `curl /api/public/doctors` with no session returns only
+30. Public feed: `curl /<tenant>/api/public/doctors` with no session returns only
     published doctors' `id/name/specialty/photoUrl/status/todayShifts/
 nextShiftStartsAt` + `generatedAt`, has `Cache-Control: public, max-age=60`,
     never shows phone/email/internal/leave-reason fields, shows today's shifts
@@ -405,15 +436,15 @@ nextShiftStartsAt` + `generatedAt`, has `Cache-Control: public, max-age=60`,
     patient is created, and the request becomes CONVERTED.
 33. Follow-ups (OWNER/RECEPTION): tabs for open/overdue/done/cancelled with a
     patient filter; overdue rows highlighted; mark-done and cancel are audited.
-    STAFF is denied all three pages (`/403`).
-34. Public intake: `curl -X POST /api/public/requests` with no session — invalid
+    STAFF is denied all three pages (`/<tenant>/app/403`).
+34. Public intake: `curl -X POST /<tenant>/api/public/requests` with no session — invalid
     JSON → 400, bad fields/phone → 422 with field errors, a valid payload → 200
     `{ok:true,id}` and stores only `ipHash`; repeating fast hits the per-IP
     rate limit (429).
 35. Messages (OWNER/RECEPTION): one simple list of messages to send, plus the
     blocked and sent-today rows; New message, Templates, and Campaigns sit on
     the same screen; the sidebar badge and browser-tab count
-    (`/api/messages/count`) match; a BLOCKED row shows the reason (opted out /
+    (`/<tenant>/api/messages/count`) match; a BLOCKED row shows the reason (opted out /
     invalid phone / inactive / source cancelled).
 36. Send flow: "Send" is a real `sms:` link, so the phone's Messages app opens
     pre-filled with that recipient's number and text. **Test on a real Android
@@ -437,19 +468,20 @@ nextShiftStartsAt` + `generatedAt`, has `Cache-Control: public, max-age=60`,
 39. Opt-out: "stop messages" on a patient cancels pending tasks and sets
     `doNotMessage`; re-enabling requires OWNER and both are audited; the send
     flow then refuses that patient.
-40. Jobs: `POST /api/jobs/messages` without a bearer returns 503 when
+40. Jobs: `POST /<tenant>/api/jobs/messages` without a bearer returns 503 when
     `CRON_SECRET` is unset (401 with a wrong secret once set); the OWNER
     "Run message jobs now" button reports a created/expired summary and is
     safe to run twice (idempotent).
-41. Public website opens with no session: `/`, `/about`, `/services`, `/doctors`,
-    `/book`, `/contact`, `/faq`, `/privacy` all render; any other path still
-    bounces to the secret login and `/login/wrong` is a real 404.
+41. Public website opens with no session: `/` redirects to `/<tenant>`, whose
+    `/<tenant>/about`, `/<tenant>/services`, `/<tenant>/doctors`,
+    `/<tenant>/book`, `/<tenant>/contact`, `/<tenant>/faq`, `/<tenant>/privacy` all render; any other path still
+    bounces to the secret login and `/<tenant>/login/wrong` is a real 404.
 42. Bilingual: switch EN ↔ AM from the header (cookie, no URL prefix) — hero,
     services, doctors, form labels, FAQ, hours and footer all translate; a
     `?lang=am` URL (e.g. from an hreflang tag) also renders Amharic and persists
     the cookie. Amharic copy is draft and marked for native review.
 43. Home: hero, 6 featured services, "doctors on duty" strip (live status badges
-    match `/api/public/doctors`, placeholder initials when no photo), why-us
+    match `/<tenant>/api/public/doctors`, placeholder initials when no photo), why-us
     cards, testimonials (marked placeholder) and the CTA/location block.
 44. Services: grouped by category, **no price is ever shown**; an empty catalogue
     shows the "being updated" message; each card links to booking.
@@ -463,17 +495,17 @@ nextShiftStartsAt` + `generatedAt`, has `Cache-Control: public, max-age=60`,
     unset) and opening hours from Settings; the map is a link only (no tracking
     iframe). FAQ accordion keyboard-operable with `<details>`.
 48. SEO/a11y: each page has a unique title + description + `<link rel="canonical">`
-    and en/am `hreflang`; `/sitemap.xml` and `/robots.txt` respond; the default OG
+    and en/am `hreflang`; `/<tenant>/sitemap.xml` and `/<tenant>/robots.txt` respond; the default OG
     image renders; JSON-LD `MedicalClinic` is in the HTML; skip-link works; the
     page is usable by keyboard and Lighthouse (mobile) is ≥ 90 for
     performance/accessibility/SEO/best-practices.
-49. CMS-lite (OWNER): `/dashboard/content` edits every text field (hero, about,
+49. CMS-lite (OWNER): `/<tenant>/app/dashboard/content` edits every text field (hero, about,
     hours, contact, announcement, FAQ, testimonials, privacy, footer); saving
     audits `SITE_CONTENT_UPDATED`; the announcement shows on the public site only
     while active and inside its date window.
 50. Services admin (OWNER): mark a service "Show on the website" and add public
-    descriptions; it appears on `/services` and `/book`; the price stays private;
-    a doctor's photo only loads through `/api/public/doctors/<id>/photo` when the
+    descriptions; it appears on `/<tenant>/services` and `/<tenant>/book`; the price stays private;
+    a doctor's photo only loads through `/<tenant>/api/public/doctors/<id>/photo` when the
     doctor is published.
 
 ## Public website — clinic-provided content

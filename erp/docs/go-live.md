@@ -45,8 +45,10 @@ Work top to bottom. Do not launch with unchecked items in **Critical**.
 ## Day-1
 
 - [ ] Take a fresh backup immediately after go-live.
-- [ ] Watch the audit log (`/audit`) for unexpected `LOGIN_FAILED` bursts.
-- [ ] Confirm `/api/public/doctors` loads on the live site with correct statuses.
+- [ ] Watch the audit log (`/<tenant>/app/audit`) for unexpected `LOGIN_FAILED` bursts.
+- [ ] Confirm `/<tenant>/api/public/doctors` loads on the live site with correct statuses.
+- [ ] Confirm `/` redirects to the default tenant and each tenant's
+      `sitemap.xml`/`robots.txt` lists only its own URLs.
 - [ ] Confirm the messages badge / outbox matches what reception expects.
 
 ## Public site content (clinic to provide)

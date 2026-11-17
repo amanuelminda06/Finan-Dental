@@ -58,7 +58,12 @@ function resolveRoles(token, localConsts) {
 }
 
 // ── guard detection ─────────────────────────────────────────────────────────
+// Every clinic owns an /[tenant]/api tree; both the old (pre-URL-tenancy) and
+// current prefixes are kept so this scan works against either layout.
 const PUBLIC_PREFIXES = [
+  'src/app/[tenant]/api/public/',
+  'src/app/[tenant]/api/auth/',
+  'src/app/[tenant]/api/uploads/',
   'src/app/api/public/',
   'src/app/api/auth/',
   'src/app/api/uploads/',
@@ -138,10 +143,10 @@ for (const row of rows) {
 lines.push('');
 lines.push('## Allow-listed (no session by design)');
 lines.push('');
-lines.push('- `src/app/api/public/**` — public website (doctors list, booking request, photos).');
-lines.push('- `src/app/api/auth/**` — NextAuth sign-in/out.');
-lines.push('- `src/app/api/uploads/**` — uploaded images, key-gated.');
-lines.push('- `src/app/api/jobs/**` — scheduled jobs, `Authorization: Bearer $CRON_SECRET`.');
+lines.push('- `src/app/[tenant]/api/public/**` — public website (doctors list, booking request, photos).');
+lines.push('- `src/app/[tenant]/api/auth/**` — NextAuth sign-in/out.');
+lines.push('- `src/app/[tenant]/api/uploads/**` — uploaded images, key-gated (session + tenant checked at runtime).');
+lines.push('- `src/app/[tenant]/api/jobs/**` — scheduled jobs, `Authorization: Bearer $CRON_SECRET`.');
 lines.push('');
 lines.push('## Needs manual review');
 lines.push('');

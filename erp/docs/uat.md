@@ -6,9 +6,11 @@ non-technical user should observe. Sign off at the bottom.
 
 ## A. Everyone — sign in & language
 
-1. Open `/login/<secret>`; a wrong password shows a clear error (no stack trace).
+1. Open `/<your-clinic>/login/<secret>` (the bare site root sends you to the
+   default clinic); a wrong password shows a clear error (no stack trace).
 2. Sign in → land on the dashboard; the sidebar shows only pages your role may use.
 3. Switch language EN ↔ AM from the header; page text, buttons and errors change.
+   The preference is kept per clinic.
 4. Change your password from the user menu; you are re-signed in automatically.
 5. On a phone (360 px), open the drawer menu and use a form.
 
@@ -39,7 +41,7 @@ non-technical user should observe. Sign off at the bottom.
 ## C. Staff (doctor)
 
 1. Dashboard shows *my* appointments, *my* shifts and my leave balance only.
-2. `/patients`, `/sales`, `/revenue`, `/users`, `/staff`, `/settings` all bounce
+2. `/<tenant>/app/patients`, `/sales`, `/revenue`, `/users`, `/staff`, `/settings` all bounce
    to the "no permission" page.
 3. Schedule shows only your own week.
 4. Leave: request annual leave (whole and half day); an overlapping request is
@@ -63,7 +65,7 @@ non-technical user should observe. Sign off at the bottom.
 8. **Messages**: edit a template (live preview, character count, safety note);
    build a campaign and check matched vs excluded counts; run "message jobs now"
    twice (idempotent).
-9. **Daily summary**: open `/dashboard/daily`, print it, and (if email is
+9. **Daily summary**: open `/<tenant>/app/dashboard/daily`, print it, and (if email is
    configured) send it to yourself.
 10. **Audit log**: filter by user/entity/action/date; export CSV and Excel.
 11. **Exports**: on Patients, Sales, Audit, Appointments, Messages and Leave,

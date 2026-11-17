@@ -6,7 +6,7 @@ src/lib/tenant-prisma.ts
 # URL gate resolves the slug against Tenant before any page or API runs.
 src/proxy.ts
 # Cron fans out over every serving tenant with the unscoped client.
-src/app/api/jobs/messages/route.ts
+src/app/[tenant]/api/jobs/messages/route.ts
 src/lib/tenant-prisma.test.ts
 src/lib/tenant-isolation.test.ts
 src/lib/tenant-uniqueness.test.ts
@@ -15,6 +15,8 @@ prisma/seed-load.ts
 prisma/seed-group-e2e.ts
 scripts/client-data-export.ts
 scripts/set-tenant-login-secret.ts
+# Seeds the two local-only URL-tenancy e2e tenants (guarded to 127.0.0.1:5433).
+scripts/seed-e2e-tenants.ts
 scripts/qa/phase1-change.mts
 scripts/qa/reset-users.mts
 scripts/tmp-null-check.mts

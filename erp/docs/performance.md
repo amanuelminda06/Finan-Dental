@@ -50,18 +50,18 @@ npm run db:load          # 5 000 patients, 20 000 sales (~90% CONFIRMED)
 
 Then measure the pages that matter with the load data in place:
 
-1. `/patients` first page and a search with a phone fragment.
+1. `/<tenant>/app/patients` first page and a search with a phone fragment.
 2. `/sales` filtered by a date range.
 3. `/revenue` for a 30-day period.
 4. `/appointments` day view.
-5. `/dashboard` (owner) cold load.
+5. `/<tenant>/app/dashboard` (owner) cold load.
 6. A patient export (CSV and XLSX).
 
 Use the browser Network tab or:
 
 ```bash
 curl -o /dev/null -s -w '%{time_total}\n' -b cookies.txt \
-  'http://localhost:3000/api/patients/export?format=xlsx&...'
+  'http://localhost:3000/<tenant>/api/patients/export?format=xlsx&...'
 ```
 
 Expect sub-second responses on the list pages with these indexes applied. If a

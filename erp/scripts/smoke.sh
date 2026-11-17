@@ -1,5 +1,8 @@
 #!/bin/bash
-# Production smoke test against http://localhost:3100
+# Smoke test against http://localhost:3100 (local embedded Postgres only).
+# Every clinic owns a URL tree: /[tenant] (public), /[tenant]/app (ERP),
+# /[tenant]/api (APIs). This script exercises the default tenant and verifies
+# that a session/secrets for it cannot cross into a second seeded tenant.
 # Note: with cacheComponents the status line is committed before the page's
 # dynamic pass runs, so post-login redirects arrive as NEXT_REDIRECT digests
 # in the RSC flight payload (client-side), not as HTTP 307s. Unauthenticated
@@ -7,7 +10,28 @@
 set -u
 cd "$(dirname "$0")/.."
 BASE=http://localhost:3100
+TENANT_SLUG=$(grep "^DEFAULT_TENANT_SLUG=" .env | cut -d= -f2- | tr -d '\"')
+[ -n "$TENANT_SLUG" ] || TENANT_SLUG=finan
+SECOND_TENANT=$(grep "^E2E_SECOND_TENANT=" .env | cut -d= -f2- | tr -d '\"')
+[ -n "$SECOND_TENANT" ] || SECOND_TENANT=bright-dental
+TENANT_PATH=/$TENANT_SLUG
+APP_PATH=$TENANT_PATH/app
+PUB=$BASE$TENANT_PATH           # public site + secret login
+APP=$BASE$APP_PATH              # ERP pages
+API=$PUB/api                    # tenant APIs
+SECOND_PUB=$BASE/$SECOND_TENANT
+SECOND_APP=$SECOND_PUB/app
+SECOND_API=$SECOND_PUB/api
 SECRET=$(grep "^LOGIN_SECRET_PATH=" .env | cut -d= -f2- | tr -d "\"")
+
+# Safety: never let the smoke test's Prisma calls reach a hosted database.
+DB_TARGET=$(node -e "const u=new URL(process.env.DATABASE_URL||''); console.log([u.hostname,u.port||'5432',u.pathname.slice(1)].join(' '))")
+read -r DB_HOST DB_PORT DB_NAME <<<"$DB_TARGET"
+case "$DB_HOST" in
+  127.0.0.1|localhost|::1) ;;
+  *) echo "Refusing to run smoke against non-local database host: ${DB_HOST:-<unset>}"; exit 1 ;;
+esac
+echo "Database: $DB_HOST:$DB_PORT/$DB_NAME"
 OWNER_EMAIL=$(grep '^OWNER_EMAIL=' .env | cut -d= -f2- | tr -d '\"')
 RECEPTION_EMAIL=$(grep '^RECEPTION_EMAIL=' .env | cut -d= -f2- | tr -d '\"')
 STAFF_EMAIL=$(grep '^STAFF_EMAIL=' .env | cut -d= -f2- | tr -d '\"')
@@ -24,8 +48,8 @@ contains() { # contains <desc> <needle> <file>
 login() { # login <jar> <email> <password>
   local jar=$1 email=$2 password=$3
   local token
-  token=$(curl -s -c "$jar" "$BASE/api/auth/csrf" | sed -E 's/.*"csrfToken":"([^"]+)".*/\1/')
-  curl -s -b "$jar" -c "$jar" -o /dev/null -X POST "$BASE/api/auth/callback/credentials" \
+  token=$(curl -s -c "$jar" "$API/auth/csrf" | sed -E 's/.*"csrfToken":"([^"]+)".*/\1/')
+  curl -s -b "$jar" -c "$jar" -o /dev/null -X POST "$API/auth/callback/credentials" \
     -H 'Content-Type: application/x-www-form-urlencoded' \
     --data-urlencode "csrfToken=$token" \
     --data-urlencode "email=$email" \
@@ -39,75 +63,77 @@ const p = new PrismaClient();
 $1
 await p.\$disconnect();"; }
 
-TENANT_SLUG=$(grep "^DEFAULT_TENANT_SLUG=" .env | cut -d= -f2- | tr -d '\"')
-[ -n "$TENANT_SLUG" ] || TENANT_SLUG=finan
 TENANT_ID=$(sql "const t = await p.tenant.findUnique({ where: { slug: '$TENANT_SLUG' }, select: { id: true } }); console.log(t ? t.id : '');")
+[ -n "$TENANT_ID" ] || { echo "Tenant '$TENANT_SLUG' not found — seed the local DB first"; exit 1; }
 
-rm -f /tmp/opencode/erp-smoke*.jar /tmp/opencode/*.html /tmp/opencode/*.headers /tmp/opencode/audit.csv
+rm -f /tmp/opencode/erp-smoke*.jar /tmp/opencode/*.html /tmp/opencode/*.headers /tmp/opencode/audit.csv /tmp/opencode/tenant-*.xml /tmp/opencode/tenant-*.txt
 
 # 1. Secret link gate
-code=$(curl -s -o /dev/null -w '%{http_code}' "$BASE/login/totally-wrong")
+code=$(curl -s -o /dev/null -w '%{http_code}' "$PUB/login/totally-wrong")
 check "wrong secret → 404" 404 "$code"
-code=$(curl -s -o /dev/null -w '%{http_code}' "$BASE/login")
+code=$(curl -s -o /dev/null -w '%{http_code}' "$PUB/login")
 check "/login → 404" 404 "$code"
-code=$(curl -s -o /tmp/opencode/login.html -w '%{http_code}' "$BASE/login/$SECRET")
+code=$(curl -s -o /tmp/opencode/login.html -w '%{http_code}' "$PUB/login/$SECRET")
 check "correct secret → 200" 200 "$code"
 contains "login page renders" "password" /tmp/opencode/login.html
 
 # 2. Security headers
-curl -s -D /tmp/opencode/login.headers -o /dev/null "$BASE/login/$SECRET"
+curl -s -D /tmp/opencode/login.headers -o /dev/null "$PUB/login/$SECRET"
 contains "CSP header" "content-security-policy" /tmp/opencode/login.headers
 contains "X-Frame-Options DENY" "x-frame-options: DENY" /tmp/opencode/login.headers
 contains "nosniff" "x-content-type-options: nosniff" /tmp/opencode/login.headers
 contains "Referrer-Policy" "referrer-policy" /tmp/opencode/login.headers
 
-# 3. Unauthenticated app routes redirect to the secret login (HTTP 307 from layout)
+# 3. Bare root sends visitors to the default tenant; ERP routes go to secret login
 code=$(curl -s -o /dev/null -w '%{http_code}' "$BASE/")
 check "no session / → 307" 307 "$code"
 loc=$(curl -s -o /dev/null -w '%{redirect_url}' "$BASE/")
-case "$loc" in *"/login/$SECRET"*) PASS=$((PASS+1)); echo "✓ redirect target is secret login";;
-  *) FAIL=$((FAIL+1)); echo "✗ redirect target: $loc";; esac
-code=$(curl -s -o /dev/null -w '%{http_code}' "$BASE/users")
-check "no session /users → 307" 307 "$code"
+case "$loc" in *"$TENANT_PATH"*) PASS=$((PASS+1)); echo "✓ root redirects to default tenant";;
+  *) FAIL=$((FAIL+1)); echo "✗ root redirect target: $loc";; esac
+code=$(curl -s -o /dev/null -w '%{http_code}' "$APP/users")
+check "no session /app/users → 307" 307 "$code"
+loc=$(curl -s -o /dev/null -w '%{redirect_url}' "$APP/users")
+case "$loc" in *"/login/$SECRET"*) PASS=$((PASS+1)); echo "✓ ERP redirect target is secret login";;
+  *) FAIL=$((FAIL+1)); echo "✗ ERP redirect target: $loc";; esac
 
 # 4. Owner login + pages
 JAR=/tmp/opencode/erp-smoke.jar
 login "$JAR" $OWNER_EMAIL "$(grep '^OWNER_PASSWORD=' .env | cut -d= -f2- | tr -d '\"')"
 if has_session "$JAR"; then PASS=$((PASS+1)); echo "✓ owner login sets session"; else FAIL=$((FAIL+1)); echo "✗ owner login: no session cookie"; fi
-code=$(curl -s -b "$JAR" -o /tmp/opencode/users.html -w '%{http_code}' "$BASE/users")
+code=$(curl -s -b "$JAR" -o /tmp/opencode/users.html -w '%{http_code}' "$APP/users")
 check "owner /users → 200" 200 "$code"
 contains "users page title" "Users" /tmp/opencode/users.html
 contains "users table has rows" "/users/cm" /tmp/opencode/users.html
-code=$(curl -s -b "$JAR" -o /tmp/opencode/audit.html -w '%{http_code}' "$BASE/audit")
+code=$(curl -s -b "$JAR" -o /tmp/opencode/audit.html -w '%{http_code}' "$APP/audit")
 check "owner /audit → 200" 200 "$code"
 contains "audit page renders" "Audit" /tmp/opencode/audit.html
-code=$(curl -s -b "$JAR" -o /tmp/opencode/settings.html -w '%{http_code}' "$BASE/settings")
+code=$(curl -s -b "$JAR" -o /tmp/opencode/settings.html -w '%{http_code}' "$APP/settings")
 check "owner /settings → 200" 200 "$code"
 contains "settings timezone field" "Africa/Addis_Ababa" /tmp/opencode/settings.html
 
 # 5. Owner CSV export
-code=$(curl -s -b "$JAR" -o /tmp/opencode/audit.csv -w '%{http_code}' "$BASE/api/audit/export")
+code=$(curl -s -b "$JAR" -o /tmp/opencode/audit.csv -w '%{http_code}' "$API/audit/export")
 check "CSV export → 200" 200 "$code"
 contains "CSV has BOM + header" "time,user,email,entity" /tmp/opencode/audit.csv
 contains "CSV contains LOGIN_SUCCESS" "LOGIN_SUCCESS" /tmp/opencode/audit.csv
 
 # 6. Uploads require a session
-code=$(curl -s -o /dev/null -w '%{http_code}' "$BASE/api/uploads/staff-nope.png")
+code=$(curl -s -o /dev/null -w '%{http_code}' "$API/uploads/staff-nope.png")
 check "upload without session → 404" 404 "$code"
-code=$(curl -s -b "$JAR" -o /dev/null -w '%{http_code}' "$BASE/api/uploads/staff-nope.png")
+code=$(curl -s -b "$JAR" -o /dev/null -w '%{http_code}' "$API/uploads/staff-nope.png")
 check "upload missing file → 404" 404 "$code"
-code=$(curl -s -b "$JAR" -o /dev/null -w '%{http_code}' "$BASE/api/uploads/..%2F..%2Fetc%2Fpasswd")
+code=$(curl -s -b "$JAR" -o /dev/null -w '%{http_code}' "$API/uploads/..%2F..%2Fetc%2Fpasswd")
 check "traversal key → 404" 404 "$code"
 
 # 7. Reception: forced-change gate first, then 403 for owner-only pages
 JAR2=/tmp/opencode/erp-smoke2.jar
 login "$JAR2" $RECEPTION_EMAIL "$(grep '^RECEPTION_PASSWORD=' .env | cut -d= -f2- | tr -d '\"')"
 if has_session "$JAR2"; then PASS=$((PASS+1)); echo "✓ reception login sets session"; else FAIL=$((FAIL+1)); echo "✗ reception login: no session cookie"; fi
-code=$(curl -s -b "$JAR2" -o /tmp/opencode/rec-users.html -w '%{http_code}' "$BASE/users")
+code=$(curl -s -b "$JAR2" -o /tmp/opencode/rec-users.html -w '%{http_code}' "$APP/users")
 check "reception /users → 200 (flight redirect)" 200 "$code"
-contains "reception forced-change redirect" "NEXT_REDIRECT;replace;/change-password" /tmp/opencode/rec-users.html
+contains "reception forced-change redirect" "NEXT_REDIRECT;replace;$APP_PATH/change-password" /tmp/opencode/rec-users.html
 if grep -q "owner@finandental" /tmp/opencode/rec-users.html; then FAIL=$((FAIL+1)); echo "✗ reception /users leaks owner rows"; else PASS=$((PASS+1)); echo "✓ reception /users leaks no data"; fi
-code=$(curl -s -b "$JAR2" -o /tmp/opencode/403.html -w '%{http_code}' "$BASE/403")
+code=$(curl -s -b "$JAR2" -o /tmp/opencode/403.html -w '%{http_code}' "$APP/403")
 check "/403 renders → 200" 200 "$code"
 contains "403 content" "403" /tmp/opencode/403.html
 # clear reception's forced change, log in fresh (JWT claims are set at login),
@@ -115,9 +141,9 @@ contains "403 content" "403" /tmp/opencode/403.html
 sql "await p.user.update({ where: { tenantId_email: { tenantId: '$TENANT_ID', email: '$RECEPTION_EMAIL' } }, data: { mustChangePassword: false } }); console.log('reset');"
 JAR2B=/tmp/opencode/erp-smoke2b.jar
 login "$JAR2B" $RECEPTION_EMAIL "$(grep '^RECEPTION_PASSWORD=' .env | cut -d= -f2- | tr -d '\"')"
-code=$(curl -s -b "$JAR2B" -o /tmp/opencode/rec-users2.html -w '%{http_code}' "$BASE/users")
+code=$(curl -s -b "$JAR2B" -o /tmp/opencode/rec-users2.html -w '%{http_code}' "$APP/users")
 check "reception /users (no force) → 200 (flight redirect)" 200 "$code"
-contains "reception forbidden redirect" "NEXT_REDIRECT;replace;/403" /tmp/opencode/rec-users2.html
+contains "reception forbidden redirect" "NEXT_REDIRECT;replace;$APP_PATH/403" /tmp/opencode/rec-users2.html
 sql "await p.user.update({ where: { tenantId_email: { tenantId: '$TENANT_ID', email: '$RECEPTION_EMAIL' } }, data: { mustChangePassword: true } }); console.log('restored');"
 
 # 8. Staff: forced password change (clean any leftover lockout first)
@@ -125,10 +151,10 @@ sql "await p.user.update({ where: { tenantId_email: { tenantId: '$TENANT_ID', em
 JAR3=/tmp/opencode/erp-smoke3.jar
 login "$JAR3" $STAFF_EMAIL "$(grep '^STAFF_PASSWORD=' .env | cut -d= -f2- | tr -d '\"')"
 if has_session "$JAR3"; then PASS=$((PASS+1)); echo "✓ staff login sets session"; else FAIL=$((FAIL+1)); echo "✗ staff login: no session cookie"; fi
-code=$(curl -s -b "$JAR3" -o /tmp/opencode/staff-home.html -w '%{http_code}' "$BASE/")
+code=$(curl -s -b "$JAR3" -o /tmp/opencode/staff-home.html -w '%{http_code}' "$APP/")
 check "staff / → 200 (flight redirect)" 200 "$code"
-contains "staff forced-change redirect" "NEXT_REDIRECT;replace;/change-password" /tmp/opencode/staff-home.html
-code=$(curl -s -b "$JAR3" -o /tmp/opencode/chpw.html -w '%{http_code}' "$BASE/change-password")
+contains "staff forced-change redirect" "NEXT_REDIRECT;replace;$APP_PATH/change-password" /tmp/opencode/staff-home.html
+code=$(curl -s -b "$JAR3" -o /tmp/opencode/chpw.html -w '%{http_code}' "$APP/change-password")
 check "/change-password renders → 200" 200 "$code"
 contains "change password form" "newPassword" /tmp/opencode/chpw.html
 
@@ -144,21 +170,21 @@ login "$JAR4" $STAFF_EMAIL "$(grep '^STAFF_PASSWORD=' .env | cut -d= -f2- | tr -
 if has_session "$JAR4"; then FAIL=$((FAIL+1)); echo "✗ correct password rejected while locked"; else PASS=$((PASS+1)); echo "✓ correct password rejected while locked"; fi
 
 # 10. Patients module (list, search, detail + VIEW audit, export, role gate)
-code=$(curl -s -b "$JAR" -o /tmp/opencode/patients.html -w '%{http_code}' "$BASE/patients")
+code=$(curl -s -b "$JAR" -o /tmp/opencode/patients.html -w '%{http_code}' "$APP/patients")
 check "owner /patients → 200" 200 "$code"
 contains "patients list title" "Patients" /tmp/opencode/patients.html
 contains "seed patient row" "Almaz Tesfaye" /tmp/opencode/patients.html
 contains "patient detail link" "/patients/c" /tmp/opencode/patients.html
 
-code=$(curl -s -b "$JAR" -o /tmp/opencode/patients-q.html -w '%{http_code}' "$BASE/patients?q=0911223344")
+code=$(curl -s -b "$JAR" -o /tmp/opencode/patients-q.html -w '%{http_code}' "$APP/patients?q=0911223344")
 check "phone search → 200" 200 "$code"
 contains "phone search finds the patient" "Almaz Tesfaye" /tmp/opencode/patients-q.html
-code=$(curl -s -b "$JAR" -o /tmp/opencode/patients-none.html -w '%{http_code}' "$BASE/patients?q=zzzz-no-match")
+code=$(curl -s -b "$JAR" -o /tmp/opencode/patients-none.html -w '%{http_code}' "$APP/patients?q=zzzz-no-match")
 check "empty search → 200" 200 "$code"
 contains "empty search state" "No results found" /tmp/opencode/patients-none.html
 
 PID=$(sql "const row = await p.patient.findUnique({ where: { tenantId_phoneE164: { tenantId: '$TENANT_ID', phoneE164: '+251911223344' } }, select: { id: true } }); console.log(row.id);")
-code=$(curl -s -b "$JAR" -o /tmp/opencode/patient.html -w '%{http_code}' "$BASE/patients/$PID")
+code=$(curl -s -b "$JAR" -o /tmp/opencode/patient.html -w '%{http_code}' "$APP/patients/$PID")
 check "owner patient detail → 200" 200 "$code"
 contains "tap-to-call shows stored E.164" "+251911223344" /tmp/opencode/patient.html
 contains "non-clinical notes hint" "Non-clinical notes only" /tmp/opencode/patient.html
@@ -167,144 +193,144 @@ VIEW=$(sql "const n = await p.auditLog.count({ where: { entity: 'Patient', entit
 if [ "$VIEW" -ge 1 ]; then PASS=$((PASS+1)); echo "✓ detail page writes VIEW audit ($VIEW)";
 else FAIL=$((FAIL+1)); echo "✗ detail page wrote no VIEW audit"; fi
 
-code=$(curl -s -b "$JAR" -o /tmp/opencode/patients.csv -w '%{http_code}' "$BASE/api/patients/export")
+code=$(curl -s -b "$JAR" -o /tmp/opencode/patients.csv -w '%{http_code}' "$API/patients/export")
 check "patients CSV export → 200" 200 "$code"
 contains "CSV header" "id,fullName,phone,sex,birthDate,preferredLanguage" /tmp/opencode/patients.csv
 rows=$(grep -c "251" /tmp/opencode/patients.csv)
 check "CSV has 20 patient rows" 20 "$rows"
-code=$(curl -s -b "$JAR" -o /tmp/opencode/patients-consent.csv -w '%{http_code}' "$BASE/api/patients/export?consent=true")
+code=$(curl -s -b "$JAR" -o /tmp/opencode/patients-consent.csv -w '%{http_code}' "$API/patients/export?consent=true")
 check "filtered CSV export → 200" 200 "$code"
 rows=$(grep -c "251" /tmp/opencode/patients-consent.csv)
 check "consent filter → 11 rows" 11 "$rows"
-code=$(curl -s -b "$JAR" -o /tmp/opencode/template.csv -w '%{http_code}' "$BASE/api/patients/template")
+code=$(curl -s -b "$JAR" -o /tmp/opencode/template.csv -w '%{http_code}' "$API/patients/template")
 check "import template → 200" 200 "$code"
 contains "template columns" "fullName,phone,sex,birthDate,tags,consent,preferredLanguage" /tmp/opencode/template.csv
-code=$(curl -s -o /dev/null -w '%{http_code}' "$BASE/api/patients/export")
+code=$(curl -s -o /dev/null -w '%{http_code}' "$API/patients/export")
 check "export without session → 307 to login" 307 "$code"
 
 # STAFF must be denied the patients module (clear the lockout from section 9 first)
 sql "await p.user.update({ where: { tenantId_email: { tenantId: '$TENANT_ID', email: '$STAFF_EMAIL' } }, data: { mustChangePassword: false, failedLoginCount: 0, lockedUntil: null } }); console.log('ok');"
 JAR5=/tmp/opencode/erp-smoke5.jar
 login "$JAR5" $STAFF_EMAIL "$(grep '^STAFF_PASSWORD=' .env | cut -d= -f2- | tr -d '\"')"
-code=$(curl -s -b "$JAR5" -o /tmp/opencode/staff-patients.html -w '%{http_code}' "$BASE/patients")
+code=$(curl -s -b "$JAR5" -o /tmp/opencode/staff-patients.html -w '%{http_code}' "$APP/patients")
 check "staff /patients → 200 (flight redirect)" 200 "$code"
-contains "staff /patients forbidden" "NEXT_REDIRECT;replace;/403" /tmp/opencode/staff-patients.html
-code=$(curl -s -b "$JAR5" -o /dev/null -w '%{http_code}' "$BASE/api/patients/export")
+contains "staff /patients forbidden" "NEXT_REDIRECT;replace;$APP_PATH/403" /tmp/opencode/staff-patients.html
+code=$(curl -s -b "$JAR5" -o /dev/null -w '%{http_code}' "$API/patients/export")
 check "staff CSV export → 403" 403 "$code"
 sql "await p.user.update({ where: { tenantId_email: { tenantId: '$TENANT_ID', email: '$STAFF_EMAIL' } }, data: { mustChangePassword: true } }); console.log('restored');"
 
 # 11. Services + Sales + Revenue
-code=$(curl -s -b "$JAR" -o /tmp/opencode/services.html -w '%{http_code}' "$BASE/services")
+code=$(curl -s -b "$JAR" -o /tmp/opencode/services.html -w '%{http_code}' "$APP/services")
 check "owner /services → 200" 200 "$code"
 contains "services list title" "Services" /tmp/opencode/services.html
 contains "seeded service row" "Eye Consultation" /tmp/opencode/services.html
-code=$(curl -s -b "$JAR" -o /tmp/opencode/services-new.html -w '%{http_code}' "$BASE/services/new")
+code=$(curl -s -b "$JAR" -o /tmp/opencode/services-new.html -w '%{http_code}' "$APP/services/new")
 check "owner /services/new → 200" 200 "$code"
 contains "new service form" "Choose a category" /tmp/opencode/services-new.html
 
-code=$(curl -s -b "$JAR" -o /tmp/opencode/sales.html -w '%{http_code}' "$BASE/sales")
+code=$(curl -s -b "$JAR" -o /tmp/opencode/sales.html -w '%{http_code}' "$APP/sales")
 check "owner /sales → 200" 200 "$code"
 contains "sales list has receipts" "2026-0000" /tmp/opencode/sales.html
 contains "sales list has total" "Total" /tmp/opencode/sales.html
-code=$(curl -s -b "$JAR" -o /tmp/opencode/sales-new.html -w '%{http_code}' "$BASE/sales/new")
+code=$(curl -s -b "$JAR" -o /tmp/opencode/sales-new.html -w '%{http_code}' "$APP/sales/new")
 check "owner /sales/new → 200" 200 "$code"
 contains "new sale confirm button" "Confirm sale" /tmp/opencode/sales-new.html
-code=$(curl -s -b "$JAR" -o /tmp/opencode/voids.html -w '%{http_code}' "$BASE/sales/voids")
+code=$(curl -s -b "$JAR" -o /tmp/opencode/voids.html -w '%{http_code}' "$APP/sales/voids")
 check "owner /sales/voids → 200" 200 "$code"
 
 SALEID=$(sql "const row = await p.sale.findFirst({ where: { status: 'CONFIRMED' }, orderBy: { saleDate: 'desc' }, select: { id: true } }); console.log(row.id);")
-code=$(curl -s -b "$JAR" -o /tmp/opencode/sale.html -w '%{http_code}' "$BASE/sales/$SALEID")
+code=$(curl -s -b "$JAR" -o /tmp/opencode/sale.html -w '%{http_code}' "$APP/sales/$SALEID")
 check "owner sale detail → 200" 200 "$code"
 contains "sale receipt renders" "Sales receipt" /tmp/opencode/sale.html
 contains "sale audit trail" "Sale created" /tmp/opencode/sale.html
 
-code=$(curl -s -b "$JAR" -o /tmp/opencode/revenue.html -w '%{http_code}' "$BASE/revenue")
+code=$(curl -s -b "$JAR" -o /tmp/opencode/revenue.html -w '%{http_code}' "$APP/revenue")
 check "owner /revenue → 200" 200 "$code"
 contains "revenue total card" "Total revenue" /tmp/opencode/revenue.html
 contains "revenue breakdown" "By service" /tmp/opencode/revenue.html
 
-code=$(curl -s -b "$JAR" -o /tmp/opencode/sales.csv -w '%{http_code}' "$BASE/api/sales/export")
+code=$(curl -s -b "$JAR" -o /tmp/opencode/sales.csv -w '%{http_code}' "$API/sales/export")
 check "owner sales CSV export → 200" 200 "$code"
 contains "sales CSV header" "receiptNumber,saleDate,patient" /tmp/opencode/sales.csv
-code=$(curl -s -o /dev/null -w '%{http_code}' "$BASE/api/sales/export")
+code=$(curl -s -o /dev/null -w '%{http_code}' "$API/sales/export")
 check "sales export without session → 307 to login" 307 "$code"
 
 # Reception: may sell, but cannot see revenue or manage services
-code=$(curl -s -b "$JAR2B" -o /tmp/opencode/rec-sales.html -w '%{http_code}' "$BASE/sales")
+code=$(curl -s -b "$JAR2B" -o /tmp/opencode/rec-sales.html -w '%{http_code}' "$APP/sales")
 check "reception /sales → 200" 200 "$code"
 contains "reception sales empty (own, today)" "Nothing here yet" /tmp/opencode/rec-sales.html
 if grep -q "2026-0000" /tmp/opencode/rec-sales.html; then FAIL=$((FAIL+1)); echo "✗ reception /sales leaks other sales"; else PASS=$((PASS+1)); echo "✓ reception /sales leaks no other sales"; fi
-code=$(curl -s -b "$JAR2B" -o /tmp/opencode/rec-revenue.html -w '%{http_code}' "$BASE/revenue")
+code=$(curl -s -b "$JAR2B" -o /tmp/opencode/rec-revenue.html -w '%{http_code}' "$APP/revenue")
 check "reception /revenue → 200 (flight redirect)" 200 "$code"
-contains "reception /revenue forbidden" "NEXT_REDIRECT;replace;/403" /tmp/opencode/rec-revenue.html
-code=$(curl -s -b "$JAR2B" -o /tmp/opencode/rec-services.html -w '%{http_code}' "$BASE/services")
+contains "reception /revenue forbidden" "NEXT_REDIRECT;replace;$APP_PATH/403" /tmp/opencode/rec-revenue.html
+code=$(curl -s -b "$JAR2B" -o /tmp/opencode/rec-services.html -w '%{http_code}' "$APP/services")
 check "reception /services → 200 (flight redirect)" 200 "$code"
-contains "reception /services forbidden" "NEXT_REDIRECT;replace;/403" /tmp/opencode/rec-services.html
+contains "reception /services forbidden" "NEXT_REDIRECT;replace;$APP_PATH/403" /tmp/opencode/rec-services.html
 
 # Staff: denied the whole sales module
-code=$(curl -s -b "$JAR5" -o /tmp/opencode/staff-sales.html -w '%{http_code}' "$BASE/sales")
+code=$(curl -s -b "$JAR5" -o /tmp/opencode/staff-sales.html -w '%{http_code}' "$APP/sales")
 check "staff /sales → 200 (flight redirect)" 200 "$code"
-contains "staff /sales forbidden" "NEXT_REDIRECT;replace;/403" /tmp/opencode/staff-sales.html
-code=$(curl -s -b "$JAR5" -o /dev/null -w '%{http_code}' "$BASE/api/sales/export")
+contains "staff /sales forbidden" "NEXT_REDIRECT;replace;$APP_PATH/403" /tmp/opencode/staff-sales.html
+code=$(curl -s -b "$JAR5" -o /dev/null -w '%{http_code}' "$API/sales/export")
 check "staff sales export → 403" 403 "$code"
 
 # 11b. HR: schedule, leave, approvals, calendar, public on-duty feed
-code=$(curl -s -b "$JAR" -o /tmp/opencode/hr-schedule.html -w '%{http_code}' "$BASE/schedule")
+code=$(curl -s -b "$JAR" -o /tmp/opencode/hr-schedule.html -w '%{http_code}' "$APP/schedule")
 check "owner /schedule → 200" 200 "$code"
 contains "schedule shows owner controls" "Add shift" /tmp/opencode/hr-schedule.html
 contains "schedule shows seeded shift" "Dr. Tigist Alemu" /tmp/opencode/hr-schedule.html
 
-code=$(curl -s -b "$JAR" -o /tmp/opencode/hr-leave.html -w '%{http_code}' "$BASE/leave")
+code=$(curl -s -b "$JAR" -o /tmp/opencode/hr-leave.html -w '%{http_code}' "$APP/leave")
 check "owner /leave → 200" 200 "$code"
 contains "leave page shows balance" "Annual leave balance" /tmp/opencode/hr-leave.html
 
-code=$(curl -s -b "$JAR" -o /tmp/opencode/hr-inbox.html -w '%{http_code}' "$BASE/leave/inbox")
+code=$(curl -s -b "$JAR" -o /tmp/opencode/hr-inbox.html -w '%{http_code}' "$APP/leave/inbox")
 check "owner /leave/inbox → 200" 200 "$code"
 contains "approval inbox lists seed request" "Hanna Girma" /tmp/opencode/hr-inbox.html
 contains "approval inbox has decision form" "Approve" /tmp/opencode/hr-inbox.html
 
-code=$(curl -s -b "$JAR" -o /tmp/opencode/hr-cal.html -w '%{http_code}' "$BASE/leave/calendar")
+code=$(curl -s -b "$JAR" -o /tmp/opencode/hr-cal.html -w '%{http_code}' "$APP/leave/calendar")
 check "owner /leave/calendar → 200" 200 "$code"
 contains "leave calendar shows approved leave" "Dr. Tigist Alemu" /tmp/opencode/hr-cal.html
 
-code=$(curl -s -b "$JAR2B" -o /tmp/opencode/hr-rec-schedule.html -w '%{http_code}' "$BASE/schedule")
+code=$(curl -s -b "$JAR2B" -o /tmp/opencode/hr-rec-schedule.html -w '%{http_code}' "$APP/schedule")
 check "reception /schedule → 200" 200 "$code"
 contains "reception sees team schedule" "Dr. Tigist Alemu" /tmp/opencode/hr-rec-schedule.html
 if grep -q "template-staff" /tmp/opencode/hr-rec-schedule.html; then FAIL=$((FAIL+1)); echo "✗ reception /schedule shows owner controls"; else PASS=$((PASS+1)); echo "✓ reception /schedule has no owner controls"; fi
 
-code=$(curl -s -b "$JAR5" -o /tmp/opencode/hr-staff-schedule.html -w '%{http_code}' "$BASE/schedule")
+code=$(curl -s -b "$JAR5" -o /tmp/opencode/hr-staff-schedule.html -w '%{http_code}' "$APP/schedule")
 check "staff /schedule → 200" 200 "$code"
 contains "staff sees own schedule" "Dr. Abebe Kebede" /tmp/opencode/hr-staff-schedule.html
 if grep -q "Dr. Tigist Alemu" /tmp/opencode/hr-staff-schedule.html; then FAIL=$((FAIL+1)); echo "✗ staff /schedule leaks teammates"; else PASS=$((PASS+1)); echo "✓ staff /schedule hides teammates"; fi
-code=$(curl -s -b "$JAR5" -o /tmp/opencode/hr-staff-inbox.html -w '%{http_code}' "$BASE/leave/inbox")
+code=$(curl -s -b "$JAR5" -o /tmp/opencode/hr-staff-inbox.html -w '%{http_code}' "$APP/leave/inbox")
 check "staff /leave/inbox → 200 (flight redirect)" 200 "$code"
-contains "staff approvals forbidden" "NEXT_REDIRECT;replace;/403" /tmp/opencode/hr-staff-inbox.html
+contains "staff approvals forbidden" "NEXT_REDIRECT;replace;$APP_PATH/403" /tmp/opencode/hr-staff-inbox.html
 
-code=$(curl -s -o /tmp/opencode/public.html -w '%{http_code}' "$BASE/api/public/doctors")
+code=$(curl -s -o /tmp/opencode/public.html -w '%{http_code}' "$API/public/doctors")
 check "public doctors feed → 200" 200 "$code"
 contains "feed has doctors array" "\"doctors\"" /tmp/opencode/public.html
 PUB_N=$(grep -o '"specialty"' /tmp/opencode/public.html | wc -l)
 check "feed publishes 3 website doctors" 3 "$PUB_N"
 if grep -q -e 'annualLeaveDays' -e 'jobTitle' -e '"email"' -e '"phone"' /tmp/opencode/public.html; then FAIL=$((FAIL+1)); echo "✗ public feed leaks private fields"; else PASS=$((PASS+1)); echo "✓ public feed leaks no private fields"; fi
-curl -s -D /tmp/opencode/public.headers -o /dev/null "$BASE/api/public/doctors"
+curl -s -D /tmp/opencode/public.headers -o /dev/null "$API/public/doctors"
 contains "public feed cached for 60s" "max-age=60" /tmp/opencode/public.headers
 
 # 11c. Appointments, website bookings, follow-ups + public intake
-code=$(curl -s -b "$JAR" -o /tmp/opencode/appts.html -w '%{http_code}' "$BASE/appointments")
+code=$(curl -s -b "$JAR" -o /tmp/opencode/appts.html -w '%{http_code}' "$APP/appointments")
 check "owner /appointments → 200" 200 "$code"
 contains "appointments title" "Appointments" /tmp/opencode/appts.html
 contains "appointments list shows patient" "Fatuma Hassan" /tmp/opencode/appts.html
 contains "appointments list shows doctor" "Dr. Tigist Alemu" /tmp/opencode/appts.html
 contains "appointments has new button" "New appointment" /tmp/opencode/appts.html
-code=$(curl -s -b "$JAR" -o /tmp/opencode/appts-week.html -w '%{http_code}' "$BASE/appointments?view=week")
+code=$(curl -s -b "$JAR" -o /tmp/opencode/appts-week.html -w '%{http_code}' "$APP/appointments?view=week")
 check "owner /appointments?view=week → 200" 200 "$code"
 contains "week view renders patient" "Fatuma Hassan" /tmp/opencode/appts-week.html
 
-code=$(curl -s -b "$JAR" -o /tmp/opencode/fups.html -w '%{http_code}' "$BASE/follow-ups")
+code=$(curl -s -b "$JAR" -o /tmp/opencode/fups.html -w '%{http_code}' "$APP/follow-ups")
 check "owner /follow-ups → 200" 200 "$code"
 contains "follow-ups title" "Follow-ups" /tmp/opencode/fups.html
 contains "follow-ups lists open item" "Repeat eye test" /tmp/opencode/fups.html
-code=$(curl -s -b "$JAR" -o /tmp/opencode/fups-over.html -w '%{http_code}' "$BASE/follow-ups?status=overdue")
+code=$(curl -s -b "$JAR" -o /tmp/opencode/fups-over.html -w '%{http_code}' "$APP/follow-ups?status=overdue")
 check "owner /follow-ups?status=overdue → 200" 200 "$code"
 contains "overdue tab lists overdue patient" "Bekele Wolde" /tmp/opencode/fups-over.html
 if grep -q "Contact lens review" /tmp/opencode/fups-over.html; then FAIL=$((FAIL+1)); echo "✗ overdue tab leaks future follow-up"; else PASS=$((PASS+1)); echo "✓ overdue tab hides future follow-up"; fi
@@ -316,15 +342,15 @@ FC=$(sql "const n = await p.followUp.count({ where: { id: { startsWith: 'seed-fo
 check "seeded follow-ups = 5" 5 "$FC"
 
 # public website booking intake (no session, no raw IP stored) — auto-approved
-code=$(curl -s -o /tmp/opencode/pub-badjson.html -w '%{http_code}' -X POST "$BASE/api/public/requests" \
+code=$(curl -s -o /tmp/opencode/pub-badjson.html -w '%{http_code}' -X POST "$API/public/requests" \
   -H 'Content-Type: application/json' -H "X-Forwarded-For: 10.0.0.11" --data 'not-json')
 check "public booking invalid JSON → 400" 400 "$code"
-code=$(curl -s -o /tmp/opencode/pub-bad.html -w '%{http_code}' -X POST "$BASE/api/public/requests" \
+code=$(curl -s -o /tmp/opencode/pub-bad.html -w '%{http_code}' -X POST "$API/public/requests" \
   -H 'Content-Type: application/json' -H "X-Forwarded-For: 10.0.0.12" \
   --data '{"name":"","phone":"nope"}')
 check "public booking invalid fields → 422" 422 "$code"
 contains "public booking reports validation error" "validationError" /tmp/opencode/pub-bad.html
-code=$(curl -s -o /tmp/opencode/pub-ok.html -w '%{http_code}' -X POST "$BASE/api/public/requests" \
+code=$(curl -s -o /tmp/opencode/pub-ok.html -w '%{http_code}' -X POST "$API/public/requests" \
   -H 'Content-Type: application/json' -H "X-Forwarded-For: 10.0.0.13" \
   --data '{"name":"Smoke Test","phone":"0911000001","preferredDate":"2027-01-05","language":"en"}')
 check "public booking valid → 200" 200 "$code"
@@ -335,31 +361,31 @@ check "public booking auto-created a CONFIRMED appointment" "CONFIRMED:public-bo
 sql "const rows = await p.patient.findMany({ where: { tenantId: '$TENANT_ID', phoneE164: '+251911000001' }, select: { id: true } }); const ids = rows.map(r => r.id); await p.messageTask.deleteMany({ where: { patientId: { in: ids } } }); await p.appointment.deleteMany({ where: { patientId: { in: ids } } }); await p.patient.deleteMany({ where: { id: { in: ids } } }); console.log('cleaned');"
 
 # role gates: reception may view, staff is denied
-code=$(curl -s -b "$JAR2B" -o /tmp/opencode/rec-fups.html -w '%{http_code}' "$BASE/follow-ups")
+code=$(curl -s -b "$JAR2B" -o /tmp/opencode/rec-fups.html -w '%{http_code}' "$APP/follow-ups")
 check "reception /follow-ups → 200" 200 "$code"
 contains "reception sees follow-ups" "Repeat eye test" /tmp/opencode/rec-fups.html
-code=$(curl -s -b "$JAR2B" -o /tmp/opencode/rec-appts.html -w '%{http_code}' "$BASE/appointments")
+code=$(curl -s -b "$JAR2B" -o /tmp/opencode/rec-appts.html -w '%{http_code}' "$APP/appointments")
 check "reception /appointments → 200" 200 "$code"
-code=$(curl -s -b "$JAR5" -o /tmp/opencode/staff-appts.html -w '%{http_code}' "$BASE/appointments")
+code=$(curl -s -b "$JAR5" -o /tmp/opencode/staff-appts.html -w '%{http_code}' "$APP/appointments")
 check "staff /appointments → 200 (flight redirect)" 200 "$code"
-contains "staff /appointments forbidden" "NEXT_REDIRECT;replace;/403" /tmp/opencode/staff-appts.html
-code=$(curl -s -b "$JAR" -o /dev/null -w '%{http_code}' "$BASE/requests")
+contains "staff /appointments forbidden" "NEXT_REDIRECT;replace;$APP_PATH/403" /tmp/opencode/staff-appts.html
+code=$(curl -s -b "$JAR" -o /dev/null -w '%{http_code}' "$APP/requests")
 check "removed /requests → 404" 404 "$code"
 
 # 11d. Messaging: outbox, templates, campaigns, reports, count API + job gate
-code=$(curl -s -b "$JAR" -o /tmp/opencode/messages.html -w '%{http_code}' "$BASE/messages")
+code=$(curl -s -b "$JAR" -o /tmp/opencode/messages.html -w '%{http_code}' "$APP/messages")
 check "owner /messages → 200" 200 "$code"
 contains "messages title" "Today's Messages" /tmp/opencode/messages.html
-code=$(curl -s -b "$JAR" -o /tmp/opencode/msg-templates.html -w '%{http_code}' "$BASE/messages/templates")
+code=$(curl -s -b "$JAR" -o /tmp/opencode/msg-templates.html -w '%{http_code}' "$APP/messages/templates")
 check "owner /messages/templates → 200" 200 "$code"
 contains "templates title" "Message templates" /tmp/opencode/msg-templates.html
-code=$(curl -s -b "$JAR" -o /tmp/opencode/msg-campaigns.html -w '%{http_code}' "$BASE/messages/campaigns")
+code=$(curl -s -b "$JAR" -o /tmp/opencode/msg-campaigns.html -w '%{http_code}' "$APP/messages/campaigns")
 check "owner /messages/campaigns → 200" 200 "$code"
 contains "campaigns title" "Campaigns" /tmp/opencode/msg-campaigns.html
-code=$(curl -s -b "$JAR" -o /tmp/opencode/msg-new.html -w '%{http_code}' "$BASE/messages/campaigns/new")
+code=$(curl -s -b "$JAR" -o /tmp/opencode/msg-new.html -w '%{http_code}' "$APP/messages/campaigns/new")
 check "owner /messages/campaigns/new → 200" 200 "$code"
 contains "new campaign title" "New campaign" /tmp/opencode/msg-new.html
-code=$(curl -s -b "$JAR" -o /tmp/opencode/msg-reports.html -w '%{http_code}' "$BASE/messages/reports")
+code=$(curl -s -b "$JAR" -o /tmp/opencode/msg-reports.html -w '%{http_code}' "$APP/messages/reports")
 check "owner /messages/reports → 200" 200 "$code"
 contains "reports title" "not sent by deadline" /tmp/opencode/msg-reports.html
 
@@ -367,24 +393,50 @@ TC=$(sql "const n = await p.messageTemplate.count(); console.log(String(n));")
 check "seeded message templates = 26" 26 "$TC"
 
 # count API is session-gated
-code=$(curl -s -b "$JAR" -o /tmp/opencode/msg-count.html -w '%{http_code}' "$BASE/api/messages/count")
+code=$(curl -s -b "$JAR" -o /tmp/opencode/msg-count.html -w '%{http_code}' "$API/messages/count")
 check "owner message count API → 200" 200 "$code"
 contains "count API returns ok" "\"ok\":true" /tmp/opencode/msg-count.html
-code=$(curl -s -o /dev/null -w '%{http_code}' "$BASE/api/messages/count")
+code=$(curl -s -o /dev/null -w '%{http_code}' "$API/messages/count")
 check "count API without session → 401" 401 "$code"
 
 # job endpoint requires a bearer secret (disabled when CRON_SECRET is unset)
-code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/api/jobs/messages")
+code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API/jobs/messages")
 CRON=$(grep "^CRON_SECRET=" .env | cut -d= -f2- | tr -d '"')
 if [ -z "$CRON" ]; then check "job endpoint disabled without secret → 503" 503 "$code";
 else check "job endpoint rejects missing bearer → 401" 401 "$code"; fi
 
 # reception may use messaging; staff is denied
-code=$(curl -s -b "$JAR2B" -o /tmp/opencode/rec-messages.html -w '%{http_code}' "$BASE/messages")
+code=$(curl -s -b "$JAR2B" -o /tmp/opencode/rec-messages.html -w '%{http_code}' "$APP/messages")
 check "reception /messages → 200" 200 "$code"
-code=$(curl -s -b "$JAR5" -o /tmp/opencode/staff-messages.html -w '%{http_code}' "$BASE/messages")
+code=$(curl -s -b "$JAR5" -o /tmp/opencode/staff-messages.html -w '%{http_code}' "$APP/messages")
 check "staff /messages → 200 (flight redirect)" 200 "$code"
-contains "staff /messages forbidden" "NEXT_REDIRECT;replace;/403" /tmp/opencode/staff-messages.html
+contains "staff /messages forbidden" "NEXT_REDIRECT;replace;$APP_PATH/403" /tmp/opencode/staff-messages.html
+
+# 11e. Cross-tenant isolation: identity and secrets belong to the URL tenant
+# Owner jar is bound to tenant A; nothing under tenant B may answer with data.
+code=$(curl -s -b "$JAR" -o /dev/null -w '%{http_code}' "$SECOND_APP/patients")
+check "tenant-A session on B /app/patients → 404" 404 "$code"
+code=$(curl -s -b "$JAR" -o /dev/null -w '%{http_code}' "$SECOND_API/patients/export")
+check "tenant-A session on B API → 404" 404 "$code"
+code=$(curl -s -b "$JAR" -o /dev/null -w '%{http_code}' "$SECOND_API/uploads/staff-nope.png")
+check "tenant-A session on B upload → 404" 404 "$code"
+code=$(curl -s -b "$JAR" -o /dev/null -w '%{http_code}' "$SECOND_PUB/login/$SECRET")
+check "tenant-A secret on B login → 404" 404 "$code"
+code=$(curl -s -o /dev/null -w '%{http_code}' "$SECOND_PUB/about")
+check "anonymous B public page → 200" 200 "$code"
+
+# SEO files are per tenant and never list another clinic's URLs.
+code=$(curl -s -o /tmp/opencode/tenant-a-sitemap.xml -w '%{http_code}' "$PUB/sitemap.xml")
+check "tenant A sitemap → 200" 200 "$code"
+contains "A sitemap lists A" "/$TENANT_SLUG/about" /tmp/opencode/tenant-a-sitemap.xml
+if grep -q "/$SECOND_TENANT/" /tmp/opencode/tenant-a-sitemap.xml; then FAIL=$((FAIL+1)); echo "✗ A sitemap leaks B"; else PASS=$((PASS+1)); echo "✓ A sitemap leaks no B URLs"; fi
+code=$(curl -s -o /tmp/opencode/tenant-b-sitemap.xml -w '%{http_code}' "$SECOND_PUB/sitemap.xml")
+check "tenant B sitemap → 200" 200 "$code"
+contains "B sitemap lists B" "/$SECOND_TENANT/about" /tmp/opencode/tenant-b-sitemap.xml
+if grep -q "/$TENANT_SLUG/" /tmp/opencode/tenant-b-sitemap.xml; then FAIL=$((FAIL+1)); echo "✗ B sitemap leaks A"; else PASS=$((PASS+1)); echo "✓ B sitemap leaks no A URLs"; fi
+code=$(curl -s -o /tmp/opencode/tenant-b-robots.txt -w '%{http_code}' "$SECOND_PUB/robots.txt")
+check "tenant B robots → 200" 200 "$code"
+contains "B robots sitemap scoped" "/$SECOND_TENANT/sitemap.xml" /tmp/opencode/tenant-b-robots.txt
 
 # 12. Cleanup + server still alive
 sql "await p.user.update({ where: { tenantId_email: { tenantId: '$TENANT_ID', email: '$STAFF_EMAIL' } }, data: { failedLoginCount: 0, lockedUntil: null } }); console.log('unlocked');"

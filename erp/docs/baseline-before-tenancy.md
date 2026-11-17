@@ -1,6 +1,9 @@
 # Baseline before multi-tenancy (schema expand)
 
 Captured on branch `multitenant` at commit `c786978`, before any tenancy change.
+File paths and test counts below describe that historical commit; after the
+URL-tenancy work the routes live under `src/app/[tenant]/...` and the current
+checks are documented in `docs/tenancy.md`.
 
 Database: local embedded PostgreSQL only — `127.0.0.1:5433`, database `vision_erp`
 (`DATABASE_URL` overridden for every command; the hosted Neon database was not
