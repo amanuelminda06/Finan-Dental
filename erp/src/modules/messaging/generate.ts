@@ -1,6 +1,6 @@
 import { Prisma, type MessageTemplateKey, type MessageSourceType } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
-import { getDefaultTenantId, getTenantId } from '@/lib/tenant-context';
+import { getTenantId } from '@/lib/tenant-context';
 import { clinicDateKey, combineDateAndTime, dateKeyAdd, endOfDay } from '@/lib/datetime';
 import { getSettingsMap, settingsFromMap } from '@/modules/settings';
 import type { BlockedReason } from './constants';
@@ -85,7 +85,7 @@ export type NewTaskInput = {
   sendBy: Date | null;
   expiresAt: Date | null;
   sourceStatus?: string | null;
-  /** Tenant of the row. Callers with a session may omit this; jobs pass the default tenant. */
+  /** Tenant of the row. Callers with a session may omit this; jobs use their runWithTenant scope. */
   tenantId?: string;
 };
 
@@ -122,11 +122,12 @@ export async function createTask(input: NewTaskInput): Promise<'created' | 'exis
 }
 
 /**
- * Background job runs have no signed-in user, so they attribute their rows to
- * the default tenant instead of the (possibly unrelated) request session.
+ * Background job runs have no signed-in user. The cron fans out over tenants in
+ * `runWithTenant()` scopes, so `createTask()` reads that scope via getTenantId()
+ * and never falls back to a session or a global default tenant.
  */
 async function createJobTask(input: NewTaskInput): Promise<'created' | 'exists'> {
-  return createTask({ ...input, tenantId: await getDefaultTenantId() });
+  return createTask(input);
 }
 
 async function cancelPendingScope(
@@ -748,7 +749,7 @@ async function maybeSendDigest(now: Date, config: MessagingConfig): Promise<bool
     subject: `Finan Speciality Dental Clinic — ${due} message(s) still unsent`,
     body: `${due} prepared message(s) are still waiting to be sent from the clinic phone.`,
   });
-  const tenantId = await getDefaultTenantId();
+  const tenantId = await getTenantId();
   await prisma.setting.upsert({
     where: { tenantId_key: { tenantId, key: 'digest_last_sent' } },
     update: { value: todayKey },
