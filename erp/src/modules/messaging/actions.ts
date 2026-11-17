@@ -664,7 +664,13 @@ export async function saveLibraryItemAction(
     const title = (values.title ?? '').trim() || titleFromBody(values.body);
 
     const duplicate = await prisma.messageLibraryItem.findUnique({
-      where: { normalizedHash_language: { normalizedHash: hash, language: values.language } },
+      where: {
+        tenantId_normalizedHash_language: {
+          tenantId: await getTenantId(),
+          normalizedHash: hash,
+          language: values.language,
+        },
+      },
       select: { id: true, active: true },
     });
     if (duplicate && duplicate.active && duplicate.id !== values.id) {

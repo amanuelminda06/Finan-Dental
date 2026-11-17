@@ -628,8 +628,7 @@ model MessageTemplate {
   tenantId  String
   tenant    Tenant?            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
-  @@unique([key, language])
-  @@index([tenantId])
+  @@unique([tenantId, key, language])
 }
 
 /// One prepared message for one patient. Generated idempotently: the unique
@@ -671,7 +670,7 @@ model MessageTask {
   tenantId        String
   tenant          Tenant?            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
-  @@unique([sourceType, sourceId, templateKey, patientId])
+  @@unique([tenantId, sourceType, sourceId, templateKey, patientId])
   @@index([status, dueAt])
   @@index([patientId, createdAt])
   @@index([campaignId])
@@ -787,7 +786,7 @@ model MessageLibraryItem {
   tenantId  String
   tenant    Tenant?    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
-  @@unique([normalizedHash, language])
+  @@unique([tenantId, normalizedHash, language])
   @@index([language, category])
   @@index([isFavorite, active])
   @@index([useCount])

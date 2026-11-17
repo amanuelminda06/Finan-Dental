@@ -71,7 +71,9 @@ export async function seedMessageTemplates(prisma: PrismaClient): Promise<number
   for (const [key, bodies] of Object.entries(TEMPLATES)) {
     for (const language of ['en', 'am'] as const) {
       await prisma.messageTemplate.upsert({
-        where: { key_language: { key: key as never, language } },
+        where: {
+          tenantId_key_language: { tenantId, key: key as never, language },
+        },
         update: {},
         create: { tenantId, key: key as never, language, body: bodies[language], active: true },
       });

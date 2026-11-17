@@ -5,9 +5,9 @@ import { isMessageLanguage, type MessageLanguage, type TemplateVariable } from '
 import type { MessageTemplateKey } from '@prisma/client';
 
 /** Loads every template body into a `${key}:${language}` map. */
-export async function loadTemplateBodies(): Promise<Map<string, string>> {
+export async function loadTemplateBodies(tenantId: string): Promise<Map<string, string>> {
   const rows = await prisma.messageTemplate.findMany({
-    where: { active: true },
+    where: { tenantId, active: true },
     select: { key: true, language: true, body: true },
   });
   return new Map(rows.map((row) => [`${row.key}:${row.language}`, row.body]));

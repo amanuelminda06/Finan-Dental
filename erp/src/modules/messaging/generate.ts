@@ -29,7 +29,7 @@ import {
 
 /**
  * Idempotent task generation. `createTask` relies on the
- * (sourceType, sourceId, templateKey, patientId) unique index, so hooks and job
+ * (tenantId, sourceType, sourceId, templateKey, patientId) unique index, so hooks and job
  * runs can repeat safely. Reschedule is the one case that intentionally makes a
  * NEW row (the old one is CANCELLED and a versioned sourceId is used).
  */
@@ -215,7 +215,7 @@ export async function onAppointmentChanged(payload: AppointmentChangedPayload): 
   if (!appointment) return;
 
   const config = await loadConfig();
-  const bodies = await loadTemplateBodies();
+  const bodies = await loadTemplateBodies(await getTenantId());
   const now = new Date();
   const patient = appointment.patient;
   const apptLike: AppointmentLike = {
@@ -338,7 +338,7 @@ export async function generateScheduleChangeTask(
   });
   if (!appointment) return 'missing';
   const config = await loadConfig();
-  const bodies = await loadTemplateBodies();
+  const bodies = await loadTemplateBodies(await getTenantId());
   const context = appointmentContext(
     appointment.patient,
     config,
@@ -391,7 +391,7 @@ export async function onFollowUpChanged(payload: FollowUpChangedPayload): Promis
   }
 
   const config = await loadConfig();
-  const bodies = await loadTemplateBodies();
+  const bodies = await loadTemplateBodies(await getTenantId());
   const patient = followUp.patient;
   const context: RenderContext = {
     patientName: patient.fullName,
@@ -488,7 +488,7 @@ async function generateSameDay(now: Date, config: MessagingConfig): Promise<numb
     },
     take: 500,
   });
-  const bodies = await loadTemplateBodies();
+  const bodies = await loadTemplateBodies(await getTenantId());
   let created = 0;
   for (const appointment of appointments) {
     const schedule = appointmentSameDaySchedule(
@@ -526,7 +526,7 @@ async function generateBirthdays(now: Date, config: MessagingConfig): Promise<nu
     if (!patient.birthDate) return false;
     return patient.birthDate.getUTCMonth() + 1 === month && patient.birthDate.getUTCDate() === day;
   });
-  const bodies = await loadTemplateBodies();
+  const bodies = await loadTemplateBodies(await getTenantId());
   const schedule = birthdaySchedule(now, config.settings);
   let created = 0;
   for (const patient of candidates) {
@@ -580,7 +580,7 @@ async function generateThankYous(now: Date, config: MessagingConfig): Promise<nu
     },
     take: 500,
   });
-  const bodies = await loadTemplateBodies();
+  const bodies = await loadTemplateBodies(await getTenantId());
   let created = 0;
   for (const appointment of appointments) {
     const context = appointmentContext(
@@ -632,7 +632,7 @@ async function generateFollowUps(now: Date, config: MessagingConfig): Promise<nu
     },
     take: 500,
   });
-  const bodies = await loadTemplateBodies();
+  const bodies = await loadTemplateBodies(await getTenantId());
   let created = 0;
   for (const followUp of followUps) {
     const patient = followUp.patient;
@@ -664,7 +664,7 @@ async function generateRecalls(now: Date, config: MessagingConfig): Promise<numb
   const threshold = new Date(now);
   threshold.setUTCMonth(threshold.getUTCMonth() - config.settings.recallMonths);
   const patients = await patientSelect({ doNotMessage: false, active: true });
-  const bodies = await loadTemplateBodies();
+  const bodies = await loadTemplateBodies(await getTenantId());
   let created = 0;
   for (const patient of patients) {
     const [lastAppointment, lastSale, futureAppointment] = await Promise.all([

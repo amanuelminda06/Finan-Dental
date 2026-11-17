@@ -95,7 +95,7 @@ async function main() {
   const year = new Date().getFullYear();
   const prefix = `${year}-`;
   const last = await prisma.sale.findFirst({
-    where: { receiptNumber: { startsWith: prefix } },
+    where: { tenantId, receiptNumber: { startsWith: prefix } },
     orderBy: { receiptNumber: 'desc' },
     select: { receiptNumber: true },
   });

@@ -25,9 +25,9 @@ describe('loadTemplateBodies', () => {
       { key, language: 'am', body: 'ሰላም {name}' },
     ]);
     expect(findManyMock).not.toHaveBeenCalled();
-    const map = await loadTemplateBodies();
+    const map = await loadTemplateBodies('tenant_test');
     expect(findManyMock).toHaveBeenCalledWith({
-      where: { active: true },
+      where: { tenantId: 'tenant_test', active: true },
       select: { key: true, language: true, body: true },
     });
     expect(map.get(`${key}:en`)).toBe('Hi {name}');

@@ -199,7 +199,7 @@ export async function materializeCampaign(params: {
   const { eligible, preview } = summarizeRecipients(candidates, filter, cap, true);
   if (preview.overCap) return { eligible: eligible.length, created: 0, overCap: true, batches: 0 };
 
-  const bodies = await loadTemplateBodies();
+  const bodies = await loadTemplateBodies(await getTenantId());
   const clinicName = typeof map.clinic_name === 'string' ? map.clinic_name : brand.clinicName;
   const reviewLink = typeof map.review_link === 'string' ? map.review_link : '';
 

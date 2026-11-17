@@ -1,5 +1,6 @@
 import type { MessageStatus, MessageTemplateKey, MessageSourceType } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
+import { getTenantId } from '@/lib/tenant-context';
 import { clinicDateKey, combineDateAndTime, dateKeyAdd, endOfDay } from '@/lib/datetime';
 import { getSettingsMap, timezoneFrom } from '@/modules/settings';
 
@@ -365,6 +366,7 @@ export type TemplateRow = {
 
 export async function listTemplates(): Promise<TemplateRow[]> {
   return prisma.messageTemplate.findMany({
+    where: { tenantId: await getTenantId() },
     select: { id: true, key: true, language: true, body: true, active: true },
     orderBy: [{ key: 'asc' }, { language: 'asc' }],
   });
@@ -428,7 +430,7 @@ export async function listLibraryItems(options?: {
   favorites?: boolean;
   includeArchived?: boolean;
 }): Promise<LibraryRow[]> {
-  const where: Record<string, unknown> = {};
+  const where: Record<string, unknown> = { tenantId: await getTenantId() };
   if (!options?.includeArchived) where.active = true;
   if (options?.language) where.language = options.language;
   if (options?.category) where.category = options.category;

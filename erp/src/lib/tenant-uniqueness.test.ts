@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { hash } from '@node-rs/argon2';
-import { PrismaClient } from '@prisma/client';
+import { MessageSourceType, MessageTemplateKey, PrismaClient } from '@prisma/client';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 // Keep the credential test focused on tenant scoping: audit writes need a
@@ -207,5 +207,64 @@ describe('per-tenant setting, site-content and receipt counters', () => {
     const a = await prisma.$transaction((tx) => claimReceiptNumber(tx, 2031, tenantA));
     expect(b).toBe(1);
     expect(a).toBe(501);
+  });
+});
+
+describe('per-tenant messaging uniqueness', () => {
+  it('allows the same template key and language in two tenants but rejects a duplicate in one tenant', async () => {
+    const data = { key: MessageTemplateKey.CUSTOM, language: 'en', body: 'Shared body' };
+    await prisma.messageTemplate.create({ data: { ...data, tenantId: tenantA } });
+    await prisma.messageTemplate.create({ data: { ...data, tenantId: tenantB } });
+
+    await expect(
+      prisma.messageTemplate.create({ data: { ...data, tenantId: tenantA } }),
+    ).rejects.toMatchObject({ code: 'P2002' });
+  });
+
+  it('allows the same library hash and language in two tenants but rejects a duplicate in one tenant', async () => {
+    const normalizedHash = `hash-${randomUUID()}`;
+    const data = {
+      title: 'Shared',
+      body: 'Shared body',
+      language: 'en',
+      normalizedHash,
+      createdBy: 'tenant-test',
+    };
+    await prisma.messageLibraryItem.create({ data: { ...data, tenantId: tenantA } });
+    await prisma.messageLibraryItem.create({ data: { ...data, tenantId: tenantB } });
+
+    await expect(
+      prisma.messageLibraryItem.create({ data: { ...data, tenantId: tenantA } }),
+    ).rejects.toMatchObject({ code: 'P2002' });
+  });
+
+  it('allows the same task tuple in two tenants but rejects a duplicate in one tenant', async () => {
+    // patientId only anchors the FK here; the same id is reused so the rest of
+    // the unique tuple is identical across tenants.
+    const patient = await prisma.patient.create({
+      data: {
+        tenantId: tenantA,
+        fullName: 'Task anchor',
+        phoneE164: `+2517${randomUUID().replace(/-/g, '').slice(0, 9)}`,
+        createdBy: 'tenant-test',
+      },
+      select: { id: true },
+    });
+    const tuple = {
+      patientId: patient.id,
+      templateKey: MessageTemplateKey.CUSTOM,
+      sourceType: MessageSourceType.MANUAL,
+      sourceId: `source-${randomUUID()}`,
+      language: 'en',
+      renderedMessage: 'Shared message',
+      dueAt: new Date(),
+    };
+
+    await prisma.messageTask.create({ data: { ...tuple, tenantId: tenantA } });
+    await prisma.messageTask.create({ data: { ...tuple, tenantId: tenantB } });
+
+    await expect(
+      prisma.messageTask.create({ data: { ...tuple, tenantId: tenantA } }),
+    ).rejects.toMatchObject({ code: 'P2002' });
   });
 });
