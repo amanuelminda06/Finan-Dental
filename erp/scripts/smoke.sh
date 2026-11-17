@@ -36,6 +36,10 @@ const p = new PrismaClient();
 $1
 await p.\$disconnect();"; }
 
+TENANT_SLUG=$(grep "^DEFAULT_TENANT_SLUG=" .env | cut -d= -f2- | tr -d '\"')
+[ -n "$TENANT_SLUG" ] || TENANT_SLUG=finan
+TENANT_ID=$(sql "const t = await p.tenant.findUnique({ where: { slug: '$TENANT_SLUG' }, select: { id: true } }); console.log(t ? t.id : '');")
+
 rm -f /tmp/opencode/erp-smoke*.jar /tmp/opencode/*.html /tmp/opencode/*.headers /tmp/opencode/audit.csv
 
 # 1. Secret link gate
@@ -105,16 +109,16 @@ check "/403 renders → 200" 200 "$code"
 contains "403 content" "403" /tmp/opencode/403.html
 # clear reception's forced change, log in fresh (JWT claims are set at login),
 # expect the role redirect to /403 instead
-sql "await p.user.update({ where: { email: 'reception@finandental.com' }, data: { mustChangePassword: false } }); console.log('reset');"
+sql "await p.user.update({ where: { tenantId_email: { tenantId: '$TENANT_ID', email: 'reception@finandental.com' } }, data: { mustChangePassword: false } }); console.log('reset');"
 JAR2B=/tmp/opencode/erp-smoke2b.jar
 login "$JAR2B" reception@finandental.com "$(grep '^RECEPTION_PASSWORD=' .env | cut -d= -f2- | tr -d '\"')"
 code=$(curl -s -b "$JAR2B" -o /tmp/opencode/rec-users2.html -w '%{http_code}' "$BASE/users")
 check "reception /users (no force) → 200 (flight redirect)" 200 "$code"
 contains "reception forbidden redirect" "NEXT_REDIRECT;replace;/403" /tmp/opencode/rec-users2.html
-sql "await p.user.update({ where: { email: 'reception@finandental.com' }, data: { mustChangePassword: true } }); console.log('restored');"
+sql "await p.user.update({ where: { tenantId_email: { tenantId: '$TENANT_ID', email: 'reception@finandental.com' } }, data: { mustChangePassword: true } }); console.log('restored');"
 
 # 8. Staff: forced password change (clean any leftover lockout first)
-sql "await p.user.update({ where: { email: 'doctor@finandental.com' }, data: { failedLoginCount: 0, lockedUntil: null } }); console.log('unlocked');"
+sql "await p.user.update({ where: { tenantId_email: { tenantId: '$TENANT_ID', email: 'doctor@finandental.com' } }, data: { failedLoginCount: 0, lockedUntil: null } }); console.log('unlocked');"
 JAR3=/tmp/opencode/erp-smoke3.jar
 login "$JAR3" doctor@finandental.com "$(grep '^STAFF_PASSWORD=' .env | cut -d= -f2- | tr -d '\"')"
 if has_session "$JAR3"; then PASS=$((PASS+1)); echo "✓ staff login sets session"; else FAIL=$((FAIL+1)); echo "✗ staff login: no session cookie"; fi
@@ -131,7 +135,7 @@ for i in 1 2 3 4 5; do
   login "$JAR4" doctor@finandental.com "definitely-wrong-$i"
 done
 if has_session "$JAR4"; then FAIL=$((FAIL+1)); echo "✗ wrong passwords must not set session"; else PASS=$((PASS+1)); echo "✓ wrong passwords set no session"; fi
-state=$(sql "const u = await p.user.findUnique({ where: { email: 'doctor@finandental.com' }, select: { failedLoginCount: true, lockedUntil: true } }); console.log(u.failedLoginCount + ':' + (u.lockedUntil ? 'locked' : 'open'));")
+state=$(sql "const u = await p.user.findUnique({ where: { tenantId_email: { tenantId: '$TENANT_ID', email: 'doctor@finandental.com' } }, select: { failedLoginCount: true, lockedUntil: true } }); console.log(u.failedLoginCount + ':' + (u.lockedUntil ? 'locked' : 'open'));")
 check "5 failures counted + locked" "5:locked" "$state"
 login "$JAR4" doctor@finandental.com "$(grep '^STAFF_PASSWORD=' .env | cut -d= -f2- | tr -d '\"')"
 if has_session "$JAR4"; then FAIL=$((FAIL+1)); echo "✗ correct password rejected while locked"; else PASS=$((PASS+1)); echo "✓ correct password rejected while locked"; fi
@@ -176,7 +180,7 @@ code=$(curl -s -o /dev/null -w '%{http_code}' "$BASE/api/patients/export")
 check "export without session → 307 to login" 307 "$code"
 
 # STAFF must be denied the patients module (clear the lockout from section 9 first)
-sql "await p.user.update({ where: { email: 'doctor@finandental.com' }, data: { mustChangePassword: false, failedLoginCount: 0, lockedUntil: null } }); console.log('ok');"
+sql "await p.user.update({ where: { tenantId_email: { tenantId: '$TENANT_ID', email: 'doctor@finandental.com' } }, data: { mustChangePassword: false, failedLoginCount: 0, lockedUntil: null } }); console.log('ok');"
 JAR5=/tmp/opencode/erp-smoke5.jar
 login "$JAR5" doctor@finandental.com "$(grep '^STAFF_PASSWORD=' .env | cut -d= -f2- | tr -d '\"')"
 code=$(curl -s -b "$JAR5" -o /tmp/opencode/staff-patients.html -w '%{http_code}' "$BASE/patients")
@@ -184,7 +188,7 @@ check "staff /patients → 200 (flight redirect)" 200 "$code"
 contains "staff /patients forbidden" "NEXT_REDIRECT;replace;/403" /tmp/opencode/staff-patients.html
 code=$(curl -s -b "$JAR5" -o /dev/null -w '%{http_code}' "$BASE/api/patients/export")
 check "staff CSV export → 403" 403 "$code"
-sql "await p.user.update({ where: { email: 'doctor@finandental.com' }, data: { mustChangePassword: true } }); console.log('restored');"
+sql "await p.user.update({ where: { tenantId_email: { tenantId: '$TENANT_ID', email: 'doctor@finandental.com' } }, data: { mustChangePassword: true } }); console.log('restored');"
 
 # 11. Services + Sales + Revenue
 code=$(curl -s -b "$JAR" -o /tmp/opencode/services.html -w '%{http_code}' "$BASE/services")
@@ -380,7 +384,7 @@ check "staff /messages → 200 (flight redirect)" 200 "$code"
 contains "staff /messages forbidden" "NEXT_REDIRECT;replace;/403" /tmp/opencode/staff-messages.html
 
 # 12. Cleanup + server still alive
-sql "await p.user.update({ where: { email: 'doctor@finandental.com' }, data: { failedLoginCount: 0, lockedUntil: null } }); console.log('unlocked');"
+sql "await p.user.update({ where: { tenantId_email: { tenantId: '$TENANT_ID', email: 'doctor@finandental.com' } }, data: { failedLoginCount: 0, lockedUntil: null } }); console.log('unlocked');"
 if ss -ltn | grep -q ":3100"; then PASS=$((PASS+1)); echo "✓ server alive after full run"; else FAIL=$((FAIL+1)); echo "✗ server died during run"; fi
 
 echo

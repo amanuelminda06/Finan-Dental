@@ -139,7 +139,7 @@ async function main(): Promise<void> {
         lockedUntil: null,
       };
       await prisma.user.upsert({
-        where: { email: user.email },
+        where: { tenantId_email: { tenantId, email: user.email } },
         update: data,
         create: { tenantId, email: user.email, ...data },
       });

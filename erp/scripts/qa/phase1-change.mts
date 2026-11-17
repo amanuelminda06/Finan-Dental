@@ -11,6 +11,13 @@ const val = (k: string): string => {
 const BASE = process.env.BASE || 'http://127.0.0.1:3101';
 const prisma = new PrismaClient();
 const email = val('RECEPTION_EMAIL');
+const tenantId = (
+  await prisma.tenant.findUnique({
+    where: { slug: val('DEFAULT_TENANT_SLUG') || 'finan' },
+    select: { id: true },
+  })
+)?.id;
+if (!tenantId) throw new Error('default tenant not found');
 const user = { id: '', email, name: 'reception' };
 
 let pass = 0, fail = 0;
@@ -29,7 +36,7 @@ const expectValidation = async (label: string, current: string, next: string) =>
   }
 };
 
-const u = await prisma.user.findUnique({ where: { email } });
+const u = await prisma.user.findUnique({ where: { tenantId_email: { tenantId, email } } });
 if (!u) {
   console.error(`user not found: ${email}`);
   process.exit(1);

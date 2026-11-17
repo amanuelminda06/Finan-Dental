@@ -9,6 +9,13 @@ const val = (k: string): string => {
 };
 
 const prisma = new PrismaClient();
+const tenantId = (
+  await prisma.tenant.findUnique({
+    where: { slug: val('DEFAULT_TENANT_SLUG') || 'finan' },
+    select: { id: true },
+  })
+)?.id;
+if (!tenantId) throw new Error('default tenant not found');
 
 const users = [
   { email: val('OWNER_EMAIL'), password: val('OWNER_PASSWORD'), mustChangePassword: false },
@@ -20,9 +27,9 @@ for (const u of users) {
   if (!u.email) throw new Error(`missing env for ${u.email}`);
   const passwordHash = await hash(u.password);
   await prisma.user.upsert({
-    where: { email: u.email.toLowerCase() },
+    where: { tenantId_email: { tenantId, email: u.email.toLowerCase() } },
     update: { passwordHash, mustChangePassword: u.mustChangePassword, failedLoginCount: 0, lockedUntil: null, active: true },
-    create: { email: u.email.toLowerCase(), passwordHash, name: u.email.split('@')[0], role: 'OWNER', mustChangePassword: u.mustChangePassword },
+    create: { tenantId, email: u.email.toLowerCase(), passwordHash, name: u.email.split('@')[0], role: 'OWNER', mustChangePassword: u.mustChangePassword },
   });
   console.log(`reset ${u.email} (mustChange=${u.mustChangePassword})`);
 }

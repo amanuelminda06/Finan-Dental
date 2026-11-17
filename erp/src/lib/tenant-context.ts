@@ -1,4 +1,3 @@
-import { auth } from '@/auth';
 import { env } from '@/env';
 import { prisma } from '@/lib/prisma';
 
@@ -34,6 +33,9 @@ export async function getDefaultTenantId(): Promise<string> {
 
 /** Tenant id for rows created during this request. */
 export async function getTenantId(): Promise<string> {
+  // Imported lazily: auth.ts passes the login tenant into verifyCredentials,
+  // so a static import here would create an auth → tenant-context → auth cycle.
+  const { auth } = await import('@/auth');
   const session = await auth();
   if (session?.user?.tenantId) return session.user.tenantId;
   return getDefaultTenantId();

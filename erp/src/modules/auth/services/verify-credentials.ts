@@ -25,7 +25,10 @@ export type AuthenticatedUser = {
  * - audits every failure and success
  * Returns the user on success, null otherwise (never reveals which check failed).
  */
-export async function verifyCredentials(credentials: unknown): Promise<AuthenticatedUser | null> {
+export async function verifyCredentials(
+  credentials: unknown,
+  tenantId: string,
+): Promise<AuthenticatedUser | null> {
   const raw = credentials as { email?: unknown; password?: unknown } | null | undefined;
   const email = String(raw?.email ?? '')
     .trim()
@@ -37,7 +40,7 @@ export async function verifyCredentials(credentials: unknown): Promise<Authentic
   if (!checkRateLimit(`login:${ip ?? 'unknown'}`)) return null;
 
   const user = await prisma.user.findUnique({
-    where: { email },
+    where: { tenantId_email: { tenantId, email } },
     include: { tenant: { select: { slug: true } } },
   });
   const passwordOk = await verify(user?.passwordHash ?? DUMMY_HASH, password);

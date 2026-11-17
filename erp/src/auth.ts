@@ -1,6 +1,7 @@
 import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import { env } from '@/env';
+import { getDefaultTenantId } from '@/lib/tenant-context';
 import { verifyCredentials } from '@/modules/auth';
 
 export const loginPath = `/login/${env.LOGIN_SECRET_PATH}`;
@@ -31,7 +32,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
       },
-      authorize: (credentials) => verifyCredentials(credentials),
+      // Login has no session yet: scope credentials to the configured default
+      // tenant explicitly instead of deriving tenant from user input.
+      authorize: async (credentials) => verifyCredentials(credentials, await getDefaultTenantId()),
     }),
   ],
   callbacks: {
