@@ -39,6 +39,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user) {
         token.role = user.role;
         token.mustChangePassword = user.mustChangePassword;
+        token.tenantId = user.tenantId;
+        token.tenantSlug = user.tenantSlug;
       }
       return token;
     },
@@ -48,6 +50,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (typeof token.mustChangePassword === 'boolean') {
         session.user.mustChangePassword = token.mustChangePassword;
       }
+      if (token.tenantId) session.user.tenantId = token.tenantId;
+      if (token.tenantSlug) session.user.tenantSlug = token.tenantSlug;
       return session;
     },
   },

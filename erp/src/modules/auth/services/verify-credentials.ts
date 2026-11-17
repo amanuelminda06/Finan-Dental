@@ -14,6 +14,8 @@ export type AuthenticatedUser = {
   name: string;
   role: Role;
   mustChangePassword: boolean;
+  tenantId: string;
+  tenantSlug: string;
 };
 
 /**
@@ -34,7 +36,10 @@ export async function verifyCredentials(credentials: unknown): Promise<Authentic
   const ip = await clientIp();
   if (!checkRateLimit(`login:${ip ?? 'unknown'}`)) return null;
 
-  const user = await prisma.user.findUnique({ where: { email } });
+  const user = await prisma.user.findUnique({
+    where: { email },
+    include: { tenant: { select: { slug: true } } },
+  });
   const passwordOk = await verify(user?.passwordHash ?? DUMMY_HASH, password);
   const now = new Date();
 
@@ -96,5 +101,7 @@ export async function verifyCredentials(credentials: unknown): Promise<Authentic
     name: user.name,
     role: user.role,
     mustChangePassword: user.mustChangePassword,
+    tenantId: user.tenantId,
+    tenantSlug: user.tenant.slug,
   };
 }

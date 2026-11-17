@@ -45,6 +45,14 @@ const schema = z.object({
   NEXT_PUBLIC_TURNSTILE_SITE_KEY: z.string().min(1).optional(),
   NEXT_PUBLIC_TRIAL_BANNER: z.enum(['true', 'false']).optional(),
   SMS_SENDER_NAME: z.string().min(1).max(11).optional(),
+  /** Tenant used by anonymous flows (public site, jobs) until host routing lands. */
+  DEFAULT_TENANT_SLUG: z
+    .string()
+    .regex(
+      /^[a-z0-9](?:[a-z0-9-]{1,38})[a-z0-9]$/,
+      'DEFAULT_TENANT_SLUG must be 3-40 lowercase letters, digits or hyphens',
+    )
+    .default('finan'),
 });
 
 const result = schema.safeParse(process.env);
