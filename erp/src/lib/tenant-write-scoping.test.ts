@@ -30,7 +30,7 @@ const mocks = vi.hoisted(() => {
     patient: { create: vi.fn(), findUnique: vi.fn() },
     appointment: { create: vi.fn() },
     sale: { create: vi.fn() },
-    service: { create: vi.fn(), findMany: vi.fn() },
+    service: { create: vi.fn(), findMany: vi.fn(), findUnique: vi.fn() },
     feedback: { create: vi.fn() },
     messageTask: { create: vi.fn() },
     auditLog: { create: vi.fn() },
@@ -220,6 +220,7 @@ describe('tenant scoping on writes', () => {
     mocks.prisma.service.findMany.mockResolvedValue([
       { id: 'service-1', name: 'Cleaning', currentPrice: '100.00', active: true },
     ]);
+    mocks.prisma.service.findUnique.mockResolvedValue({ id: 'service-1' });
 
     mocks.findPatientByPhone.mockResolvedValue(null);
     mocks.findSimilarPatients.mockResolvedValue([]);

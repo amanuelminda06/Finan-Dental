@@ -11,6 +11,7 @@ vi.mock('@/lib/audit', () => ({
 }));
 
 import { resetRateLimits } from '@/lib/ratelimit';
+import { runWithTenant } from '@/lib/tenant-scope';
 import { verifyCredentials } from '@/modules/auth/services/verify-credentials';
 import { claimReceiptNumber, formatReceiptNumber } from '@/modules/sales/receipt';
 
@@ -87,11 +88,17 @@ describe('per-tenant user uniqueness', () => {
       },
     });
 
-    const own = await verifyCredentials({ email, password }, tenantA);
+    // Credential verification uses the scoped client, so each lookup must run
+    // inside the tenant it targets (there is no signed-in session during login).
+    const own = await runWithTenant(tenantA, () =>
+      verifyCredentials({ email, password }, tenantA),
+    );
     expect(own?.email).toBe(email);
     expect(own?.tenantId).toBe(tenantA);
 
-    const wrongTenant = await verifyCredentials({ email, password }, tenantB);
+    const wrongTenant = await runWithTenant(tenantB, () =>
+      verifyCredentials({ email, password }, tenantB),
+    );
     expect(wrongTenant).toBeNull();
   });
 });
