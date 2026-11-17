@@ -9,7 +9,12 @@ export type Service = {
   imageUrl: string;
 };
 
-/** Shared public and ERP service catalog. Prices are placeholder values (ETB) pending clinic confirmation. */
+/**
+ * Seed data only — `prisma/seed-services.ts` upserts these rows into the
+ * `Service` table. The website and the ERP both read the database
+ * (`getPublicServices()`), so editing a service in the ERP changes the site.
+ * Prices are placeholder values (ETB) pending clinic confirmation.
+ */
 export const SERVICES: Service[] = [
   { nameEn: 'Free Consultation', nameAm: 'ነፃ የምክር አገልግሎት', descriptionEn: 'A complimentary dental consultation and oral health assessment.', descriptionAm: 'ነፃ የጥርስ ምክር እና የአፍ ጤና ግምገማ ያግኙ።', category: 'consultation', price: 0, imageUrl: '/services/free-consultation.jpg' },
   { nameEn: 'Modern Teeth Cleaning and Polishing', nameAm: 'በዘመናዊ መንገድ ጥርስ ማጠብና ማጽዳት', descriptionEn: 'Professional teeth cleaning and polishing with modern equipment.', descriptionAm: 'በዘመናዊ መሣሪያዎች ሙያዊ የጥርስ ማጽዳት እና ማለስለስ።', category: 'other', price: 500, imageUrl: '/services/teeth-cleaning.jpg' },

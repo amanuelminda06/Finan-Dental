@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { brand } from '@/config/brand';
-import { SERVICES } from '@/config/services';
 import { clinicDateKey } from '@/lib/datetime';
 import {
   getClinicProfile,
+  getPublicServices,
   getSiteContent,
   isAnnouncementVisible,
   pick,
@@ -33,8 +33,11 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function PublicLayout({ children }: { children: React.ReactNode }) {
-  const [content, profile] = await Promise.all([getSiteContent(), getClinicProfile()]);
-  const services = SERVICES;
+  const [content, profile, services] = await Promise.all([
+    getSiteContent(),
+    getClinicProfile(),
+    getPublicServices(),
+  ]);
   const locale = await getLocale();
   const t = await getTranslations('site');
 

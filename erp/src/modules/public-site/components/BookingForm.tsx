@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import type { Service } from '@/config/services';
+import type { PublicService } from '@/modules/public-site';
 
 const SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
@@ -21,7 +21,7 @@ function errorLabel(code: string | undefined): ErrorCode | null {
 }
 
 type Props = {
-  services: Service[];
+  services: PublicService[];
   windows: string[];
   /** Clinic-local "today" (YYYY-MM-DD) so the date picker cannot go backwards. */
   minDate: string;
@@ -247,8 +247,8 @@ export default function BookingForm({ services, windows, minDate }: Props) {
         >
           <option value="">{t('book.serviceNone')}</option>
           {services.map((service) => (
-            <option key={service.nameEn} value={service.nameEn}>
-              {locale === 'am' ? service.nameAm : service.nameEn}
+            <option key={service.id} value={service.nameEn}>
+              {locale === 'am' ? service.nameAm ?? service.nameEn : service.nameEn}
             </option>
           ))}
         </select>
