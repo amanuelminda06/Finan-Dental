@@ -268,3 +268,18 @@ describe('per-tenant messaging uniqueness', () => {
     ).rejects.toMatchObject({ code: 'P2002' });
   });
 });
+
+describe('per-tenant birthday index', () => {
+  it('indexes the birthday month/day expression after tenantId', async () => {
+    const rows = await prisma.$queryRaw<Array<{ indexdef: string }>>`
+      SELECT indexdef
+      FROM pg_indexes
+      WHERE schemaname = 'public'
+        AND tablename = 'Patient'
+        AND indexname = 'Patient_tenantId_birthday_md_idx'
+    `;
+    expect(rows).toHaveLength(1);
+    expect(rows[0].indexdef).toContain('"tenantId"');
+    expect(rows[0].indexdef).toContain('EXTRACT(month FROM "birthDate")');
+  });
+});

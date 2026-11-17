@@ -428,7 +428,7 @@ export type JobSummary = {
 
 async function patientSelect(where: Prisma.PatientWhereInput) {
   return prisma.patient.findMany({
-    where,
+    where: { ...where, tenantId: await getTenantId() },
     select: {
       id: true,
       fullName: true,

@@ -195,10 +195,10 @@ async function main(): Promise<void> {
       }
     }
 
-    // Birthday (month/day) lookup index — expression index, safe to re-run.
+    // Birthday (month/day) lookup index — tenant-aware expression index, safe to re-run.
     await prisma.$executeRawUnsafe(
-      'CREATE INDEX IF NOT EXISTS "Patient_birthday_md_idx" ON "Patient" ' +
-        '((EXTRACT(MONTH FROM "birthDate") * 100 + EXTRACT(DAY FROM "birthDate")))',
+      'CREATE INDEX IF NOT EXISTS "Patient_tenantId_birthday_md_idx" ON "Patient" ' +
+        '("tenantId", (EXTRACT(MONTH FROM "birthDate") * 100 + EXTRACT(DAY FROM "birthDate")))',
     );
     console.log(
       `✓ ${rows.length} patients, ${tagIds.size} tags, birthday index`,

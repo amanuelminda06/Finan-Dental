@@ -50,7 +50,7 @@ const logPatientView = cache(async (patientId: string, userId: string) => {
   try {
     const tenantId = await getTenantId();
     await prisma.$transaction(async (tx) => {
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`view:${patientId}:${userId}`}))`;
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`view:${tenantId}:${patientId}:${userId}`}))`;
       const recent = await tx.auditLog.findFirst({
         where: {
           tenantId,
