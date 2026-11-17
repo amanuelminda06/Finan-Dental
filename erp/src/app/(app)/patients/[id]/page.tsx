@@ -9,6 +9,7 @@ import { formatInTz } from '@/lib/datetime';
 import { formatPhoneDisplay } from '@/lib/phone';
 import { getSettingsMap, timezoneFrom, settingsFromMap } from '@/modules/settings';
 import { PatientSalesList } from '@/modules/sales';
+import PatientAppointmentsList from '@/modules/appointments/components/PatientAppointmentsList';
 import PatientMessagesList from '@/modules/messaging/components/PatientMessagesList';
 import {
   PATIENT_ROLES,
@@ -32,6 +33,7 @@ type SearchParams = Promise<{ tab?: string }>;
 const TAB_KEYS = {
   overview: 'tabOverview',
   sales: 'tabSales',
+  appointments: 'tabAppointments',
   messages: 'tabMessages',
   sick: 'tabSick',
 } as const;
@@ -225,6 +227,8 @@ export default async function PatientDetailPage({
             <div className="card p-5">
               <PatientSalesList patientId={patient.id} timeZone={tz} currency={clinic.currency} />
             </div>
+          ) : tab === 'appointments' ? (
+            <PatientAppointmentsList patientId={patient.id} timeZone={tz} />
           ) : tab === 'sick' ? (
             <PatientSickLeaveTab
               rows={sickRows}
