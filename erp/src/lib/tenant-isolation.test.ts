@@ -171,6 +171,26 @@ describe('tenant isolation across application entry points', () => {
     ).rejects.toBeInstanceOf(TenantMismatchError);
   });
 
+  it('rejects cross-tenant scalar FK references in server actions', async () => {
+    const { createUserAction } = await import('@/modules/users/actions');
+    const email = `cross-${randomUUID()}@example.test`;
+    const formData = new FormData();
+    formData.set('name', 'Cross Tenant User');
+    formData.set('email', email);
+    formData.set('role', 'RECEPTION');
+    formData.set('password', 'Vx7#kQ9!mR3$tY');
+    formData.set('staffId', ids.B.doctor); // staff row owned by tenant B
+
+    const result = await runWithTenant(tenantA, () => createUserAction(null, formData));
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toBe('validationError');
+      expect(result.fields?.staffId).toBe('unknown');
+    }
+    // Nothing was written under either tenant.
+    expect(await basePrisma.user.count({ where: { email } })).toBe(0);
+  });
+
   it('scopes update and delete by id', async () => {
     await expect(
       runWithTenant(tenantA, () =>

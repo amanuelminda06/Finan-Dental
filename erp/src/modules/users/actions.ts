@@ -19,6 +19,16 @@ function normalizeStaffId(raw: unknown): string | undefined {
   return value || undefined;
 }
 
+/** The scoped lookup returns null for a staff row owned by another tenant. */
+async function verifyStaffInTenant(staffId: string | undefined): Promise<void> {
+  if (!staffId) return;
+  const staff = await prisma.staff.findUnique({
+    where: { id: staffId },
+    select: { id: true },
+  });
+  if (!staff) throw new ValidationError({ staffId: 'unknown' });
+}
+
 function readCommonFields(formData: FormData, withPassword: boolean) {
   return {
     name: String(formData.get('name') ?? ''),
@@ -38,6 +48,8 @@ export async function createUserAction(
 
     const strength = passwordError(values.password, { email: values.email, name: values.name });
     if (strength) throw new ValidationError({ password: strength });
+
+    await verifyStaffInTenant(values.staffId);
 
     const passwordHash = await hash(values.password);
     let created;
@@ -90,6 +102,8 @@ export async function updateUserAction(
       select: { name: true, email: true, role: true, staffId: true },
     });
     if (!before) return fail('unknownError');
+
+    await verifyStaffInTenant(values.staffId);
 
     let updated;
     try {

@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { writeAudit } from '@/lib/audit';
 import { getTenantId } from '@/lib/tenant-context';
 import { ok, fail, withAuth, type ActionResult } from '@/lib/action';
-import { validate } from '@/lib/errors';
+import { validate, ValidationError } from '@/lib/errors';
 import { clinicDateKey, combineDateAndTime, dateKeyAdd } from '@/lib/datetime';
 import { getSettingsMap, timezoneFrom } from '@/modules/settings';
 import { normalizePhone } from '@/lib/phone';
@@ -164,6 +164,16 @@ export async function saveAppointmentAction(
       select: { id: true, active: true, isDoctor: true, fullName: true },
     });
     if (!doctor || !doctor.active || !doctor.isDoctor) return fail('doctorRequired');
+
+    // The scoped lookup returns null for a service owned by another tenant.
+    // Scalar FK fields are not validated by the Prisma extension, so verify it.
+    if (values.serviceId) {
+      const service = await prisma.service.findUnique({
+        where: { id: values.serviceId },
+        select: { id: true },
+      });
+      if (!service) throw new ValidationError({ serviceId: 'unknown' });
+    }
 
     const existing = values.id
       ? await prisma.appointment.findUnique({
@@ -352,6 +362,16 @@ export async function createFollowUpAction(
       select: { id: true, active: true },
     });
     if (!patient || !patient.active) return fail('patientRequired');
+
+    // createdFromAppointmentId is a plain pointer, not a DB relation, so the
+    // Prisma extension cannot scope it. Verify it explicitly before storing it.
+    if (values.appointmentId) {
+      const source = await prisma.appointment.findUnique({
+        where: { id: values.appointmentId },
+        select: { id: true },
+      });
+      if (!source) return fail('notFound');
+    }
 
     const settings = await getSettingsMap();
     const tz = timezoneFrom(settings);

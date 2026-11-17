@@ -133,6 +133,14 @@ export async function updateShiftAction(
     const before = await prisma.shift.findUnique({ where: { id } });
     if (!before) return fail('unknownError');
 
+    // Verify the form-supplied staffId belongs to this tenant (scalar FKs are
+    // not validated by the Prisma extension); the create path does the same.
+    const staff = await prisma.staff.findUnique({
+      where: { id: values.staffId },
+      select: { id: true },
+    });
+    if (!staff) return fail('staffRequired');
+
     const settings = await getSettingsMap();
     const tz = timezoneFrom(settings);
     const { startsAt, endsAt } = candidateInstants(
