@@ -28,9 +28,17 @@ const CREDENTIALS: Record<RoleKey, { email: string; password: string }> = {
   },
 };
 
-/** Password used after the forced first-login change (deterministic per role). */
-function derivedPassword(role: RoleKey): string {
-  return `${CREDENTIALS[role].password}-e2e1`;
+/**
+ * Password used after the forced first-login change. Deliberately independent
+ * of the seeded password and the account's email/name: the app rejects a
+ * password that repeats the user's name or email local part, and the seeded
+ * reception/staff local parts would otherwise leak into the derived value.
+ * Deterministic so a second run can sign in with it idempotently.
+ */
+const E2E_DERIVED_PASSWORD = 'Zx9!vL2#qM7';
+
+function derivedPassword(): string {
+  return E2E_DERIVED_PASSWORD;
 }
 
 function assertConfigured(role: RoleKey) {
@@ -71,7 +79,7 @@ async function completeForcedChange(page: Page, currentPassword: string, newPass
 export async function login(page: Page, role: RoleKey = 'OWNER') {
   assertConfigured(role);
   const { email, password } = CREDENTIALS[role];
-  const derived = derivedPassword(role);
+  const derived = derivedPassword();
 
   await page.goto(`/login/${LOGIN_PATH}`);
   await submitCredentials(page, email, password);
