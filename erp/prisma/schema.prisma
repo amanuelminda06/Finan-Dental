@@ -155,33 +155,39 @@ model User {
   createdAt          DateTime  @default(now()) @db.Timestamptz
   updatedAt          DateTime  @updatedAt @db.Timestamptz
 
-  patientSickLeaves  PatientSickLeave[]
+  patientSickLeaves PatientSickLeave[]
+  tenantId          String?
+  tenant            Tenant?            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([createdAt])
+  @@index([tenantId])
 }
 
 model Staff {
-  id              String          @id @default(cuid())
-  fullName        String
-  jobTitle        String
-  isDoctor        Boolean         @default(false)
-  specialty       String?
-  phone           String?
-  photoUrl        String?
-  showOnWebsite   Boolean         @default(false)
-  active          Boolean         @default(true)
+  id                   String          @id @default(cuid())
+  fullName             String
+  jobTitle             String
+  isDoctor             Boolean         @default(false)
+  specialty            String?
+  phone                String?
+  photoUrl             String?
+  showOnWebsite        Boolean         @default(false)
+  active               Boolean         @default(true)
   /// Annual leave entitlement in days (optional — no balance shown when null).
-  annualLeaveDays Int?
-  users           User[]
-  salesAsDoctor   Sale[]
-  shiftTemplates  ShiftTemplate[]
-  shifts          Shift[]
-  leaveRequests   LeaveRequest[]
+  annualLeaveDays      Int?
+  users                User[]
+  salesAsDoctor        Sale[]
+  shiftTemplates       ShiftTemplate[]
+  shifts               Shift[]
+  leaveRequests        LeaveRequest[]
   appointmentsAsDoctor Appointment[]
-  createdAt       DateTime        @default(now()) @db.Timestamptz
-  updatedAt       DateTime        @updatedAt @db.Timestamptz
+  createdAt            DateTime        @default(now()) @db.Timestamptz
+  updatedAt            DateTime        @updatedAt @db.Timestamptz
+  tenantId             String?
+  tenant               Tenant?         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([active, isDoctor])
+  @@index([tenantId])
 }
 
 /// A weekly recurring shift pattern (clinic-local wall-clock times).
@@ -200,8 +206,11 @@ model ShiftTemplate {
   validTo   DateTime? @db.Date
   createdAt DateTime  @default(now()) @db.Timestamptz
   updatedAt DateTime  @updatedAt @db.Timestamptz
+  tenantId  String?
+  tenant    Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([staffId, weekday])
+  @@index([tenantId])
 }
 
 /// A concrete worked shift. May cross midnight — stored as UTC instants.
@@ -217,9 +226,12 @@ model Shift {
   createdBy String
   createdAt DateTime    @default(now()) @db.Timestamptz
   updatedAt DateTime    @updatedAt @db.Timestamptz
+  tenantId  String?
+  tenant    Tenant?     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([staffId, startsAt])
   @@index([startsAt])
+  @@index([tenantId])
 }
 
 /// A staff leave request and its decision (only the OWNER decides).
@@ -240,9 +252,12 @@ model LeaveRequest {
   createdBy    String
   createdAt    DateTime    @default(now()) @db.Timestamptz
   updatedAt    DateTime    @updatedAt @db.Timestamptz
+  tenantId     String?
+  tenant       Tenant?     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([staffId, startDate])
   @@index([status])
+  @@index([tenantId])
 }
 
 /// A booked patient appointment with a doctor.
@@ -266,11 +281,14 @@ model Appointment {
   createdBy    String
   createdAt    DateTime          @default(now()) @db.Timestamptz
   updatedAt    DateTime          @updatedAt @db.Timestamptz
+  tenantId     String?
+  tenant       Tenant?           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([doctorId, startsAt])
   @@index([patientId, startsAt])
   @@index([status, startsAt])
   @@index([startsAt])
+  @@index([tenantId])
 }
 
 /// A scheduled recall/review for a patient (non-clinical reason text).
@@ -288,9 +306,12 @@ model FollowUp {
   createdBy                String
   createdAt                DateTime       @default(now()) @db.Timestamptz
   updatedAt                DateTime       @updatedAt @db.Timestamptz
+  tenantId                 String?
+  tenant                   Tenant?        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([status, dueDate])
   @@index([patientId])
+  @@index([tenantId])
 }
 
 model Setting {
@@ -298,6 +319,10 @@ model Setting {
   value     Json
   updatedBy String?
   updatedAt DateTime @updatedAt @db.Timestamptz
+  tenantId  String?
+  tenant    Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
 }
 
 /// Editable public-website copy (CMS lite). One row per content key, bilingual.
@@ -309,6 +334,10 @@ model SiteContent {
   /// User id of the last editor (no FK — users are never deleted).
   updatedBy String?
   updatedAt DateTime @updatedAt @db.Timestamptz
+  tenantId  String?
+  tenant    Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
 }
 
 model AuditLog {
@@ -321,11 +350,14 @@ model AuditLog {
   newJson   Json?
   ip        String?
   createdAt DateTime @default(now()) @db.Timestamptz
+  tenantId  String?
+  tenant    Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([entity, entityId])
   @@index([userId, createdAt])
   @@index([createdAt])
   @@index([entity, action, createdAt])
+  @@index([tenantId])
 }
 
 model Patient {
@@ -355,16 +387,19 @@ model Patient {
 
   sales Sale[]
 
-  appointments        Appointment[]
-  followUps           FollowUp[]
-  messages            MessageTask[]
-  sickLeaves          PatientSickLeave[]
+  appointments Appointment[]
+  followUps    FollowUp[]
+  messages     MessageTask[]
+  sickLeaves   PatientSickLeave[]
+  tenantId     String?
+  tenant       Tenant?            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([fullName])
   @@index([birthDate])
   @@index([active])
   @@index([createdAt])
   @@index([idNo])
+  @@index([tenantId])
 }
 
 model Tag {
@@ -374,6 +409,10 @@ model Tag {
   /// Hex colour, e.g. `#3B82F6`.
   color    String
   patients PatientTag[]
+  tenantId String?
+  tenant   Tenant?      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
 }
 
 model PatientTag {
@@ -381,8 +420,11 @@ model PatientTag {
   tagId     String
   patient   Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
   tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  tenantId  String?
+  tenant    Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@id([patientId, tagId])
+  @@index([tenantId])
 }
 
 /**
@@ -395,16 +437,23 @@ model PatientSickLeave {
   patient      Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
   startDate    DateTime @db.Date
   endDate      DateTime @db.Date
-  /** Reason for the sick leave (NON-CLINICAL only — no diagnoses or care details). */
+  /**
+   * Reason for the sick leave (NON-CLINICAL only — no diagnoses or care details).
+   */
   reason       String?
-  /** Free text. NON-CLINICAL ONLY — never store diagnoses or care details here. */
+  /**
+   * Free text. NON-CLINICAL ONLY — never store diagnoses or care details here.
+   */
   note         String?
   recordedById String
   recordedBy   User     @relation(fields: [recordedById], references: [id])
   createdAt    DateTime @default(now()) @db.Timestamptz
   updatedAt    DateTime @updatedAt @db.Timestamptz
+  tenantId     String?
+  tenant       Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([patientId, startDate])
+  @@index([tenantId])
 }
 
 /**
@@ -417,47 +466,53 @@ model StoredFile {
   mimeType  String
   data      Bytes
   createdAt DateTime @default(now()) @db.Timestamptz
+  tenantId  String?
+  tenant    Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([createdAt])
+  @@index([tenantId])
 }
 
 model Service {
-  id           String   @id @default(cuid())
+  id                  String   @id @default(cuid())
   /// English display name (historical, kept for completed sales and old reads).
-  name         String
+  name                String
   /// Current English display name (equals `name` for seeded services).
-  nameEn       String   @default("")
+  nameEn              String   @default("")
   /// Amharic display name (optional — falls back to `name`).
-  nameAm       String?
+  nameAm              String?
   /// Stable category key, validated against the app's fixed list.
-  category     String
+  category            String
   /// Price used for NEW sales. Existing sale lines keep their own snapshot.
-  currentPrice Decimal? @db.Decimal(12, 2)
-  active       Boolean  @default(true)
+  currentPrice        Decimal? @db.Decimal(12, 2)
+  active              Boolean  @default(true)
   /// Listed on the public website. The price is NEVER exposed publicly.
-  isPublic             Boolean @default(true)
+  isPublic            Boolean  @default(true)
   /// Website description (en); falls back to nothing when blank.
-  publicDescriptionEn  String?
+  publicDescriptionEn String?
   /// Website description (am); falls back to the en text when blank.
-  publicDescriptionAm  String?
+  publicDescriptionAm String?
   /// Optional short name printed on receipts in each language. Blank falls
   /// back to the full service name captured at sale time.
-  receiptLabelEn  String?
-  receiptLabelAm  String?
+  receiptLabelEn      String?
+  receiptLabelAm      String?
   /// Order on the public services page (lower appears first).
-  displayOrder    Int     @default(0)
+  displayOrder        Int      @default(0)
   /// Optional image shown on the public services page (site-relative path in
   /// `/public`, e.g. `/services/teeth-cleaning.jpg`).
-  imageUrl        String?
-  createdAt    DateTime @default(now()) @db.Timestamptz
-  updatedAt    DateTime @updatedAt @db.Timestamptz
+  imageUrl            String?
+  createdAt           DateTime @default(now()) @db.Timestamptz
+  updatedAt           DateTime @updatedAt @db.Timestamptz
 
   priceHistory ServicePriceHistory[]
   saleLines    SaleLine[]
   appointments Appointment[]
+  tenantId     String?
+  tenant       Tenant?               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([category])
   @@index([name])
+  @@index([tenantId])
 }
 
 model ServicePriceHistory {
@@ -469,8 +524,11 @@ model ServicePriceHistory {
   /// User id of the editor (no FK — users are never deleted).
   changedBy String
   changedAt DateTime @default(now()) @db.Timestamptz
+  tenantId  String?
+  tenant    Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([serviceId, changedAt])
+  @@index([tenantId])
 }
 
 model Sale {
@@ -500,7 +558,9 @@ model Sale {
   createdAt   DateTime  @default(now()) @db.Timestamptz
   updatedAt   DateTime  @updatedAt @db.Timestamptz
 
-  lines SaleLine[]
+  lines    SaleLine[]
+  tenantId String?
+  tenant   Tenant?    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([saleDate])
   @@index([status, saleDate])
@@ -509,6 +569,7 @@ model Sale {
   @@index([createdBy, saleDate])
   @@index([paymentMethod])
   @@index([status, voidRequestedBy])
+  @@index([tenantId])
 }
 
 model SaleLine {
@@ -525,17 +586,24 @@ model SaleLine {
   unitPrice           Decimal @db.Decimal(12, 2)
   /// unitPrice * qty, computed server-side only.
   lineTotal           Decimal @db.Decimal(12, 2)
+  tenantId            String?
+  tenant              Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([saleId])
   @@index([serviceId])
+  @@index([tenantId])
 }
 
 /// Gap-free receipt numbering: claimed with a single atomic upsert
 /// (INSERT … ON CONFLICT DO UPDATE … RETURNING) inside the sale transaction.
 model ReceiptCounter {
   /// Calendar year in the clinic timezone, e.g. 2026.
-  year       Int @id
-  lastNumber Int @default(0)
+  year       Int     @id
+  lastNumber Int     @default(0)
+  tenantId   String?
+  tenant     Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
 }
 
 /// Editable SMS wording. One row per (key, language). Amharic rows are drafts
@@ -551,8 +619,11 @@ model MessageTemplate {
   updatedBy String?
   createdAt DateTime           @default(now()) @db.Timestamptz
   updatedAt DateTime           @updatedAt @db.Timestamptz
+  tenantId  String?
+  tenant    Tenant?            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([key, language])
+  @@index([tenantId])
 }
 
 /// One prepared message for one patient. Generated idempotently: the unique
@@ -591,6 +662,8 @@ model MessageTask {
   campaignBatchId String?
   campaignBatch   CampaignBatch?     @relation(fields: [campaignBatchId], references: [id], onDelete: SetNull)
   createdAt       DateTime           @default(now()) @db.Timestamptz
+  tenantId        String?
+  tenant          Tenant?            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([sourceType, sourceId, templateKey, patientId])
   @@index([status, dueAt])
@@ -598,11 +671,13 @@ model MessageTask {
   @@index([campaignId])
   @@index([status, expiresAt])
   @@index([campaignBatchId])
+  @@index([tenantId])
 }
+
 /// A one-off batch of messages to a filtered group of patients. Each recipient
 /// gets their own MessageTask (never one group message).
 model Campaign {
-  id            String             @id @default(cuid())
+  id            String               @id @default(cuid())
   title         String
   /// Template used for every recipient (null when `customBody` is set).
   templateKey   MessageTemplateKey?
@@ -613,20 +688,24 @@ model Campaign {
   fixedLanguage String?
   /// Filter builder output (validated by the app, never trusted blindly).
   filterJson    Json
-  status        CampaignStatus     @default(DRAFT)
+  status        CampaignStatus       @default(DRAFT)
   /// How the campaign is delivered: per-patient tasks or group-chat batches.
   deliveryMode  CampaignDeliveryMode @default(INDIVIDUAL)
   /// Library item archived from this campaign's wording, if any.
   libraryItemId String?
-  libraryItem   MessageLibraryItem? @relation("CampaignLibrary", fields: [libraryItemId], references: [id], onDelete: SetNull)
-  expiresAt     DateTime?          @db.Timestamptz
+  libraryItem   MessageLibraryItem?  @relation("CampaignLibrary", fields: [libraryItemId], references: [id], onDelete: SetNull)
+  expiresAt     DateTime?            @db.Timestamptz
   /// User id of the creator (no FK — users are never deleted).
   createdBy     String
-  createdAt     DateTime           @default(now()) @db.Timestamptz
-  updatedAt     DateTime           @updatedAt @db.Timestamptz
+  createdAt     DateTime             @default(now()) @db.Timestamptz
+  updatedAt     DateTime             @updatedAt @db.Timestamptz
 
-  tasks   MessageTask[]
-  batches CampaignBatch[]
+  tasks    MessageTask[]
+  batches  CampaignBatch[]
+  tenantId String?
+  tenant   Tenant?         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
 }
 
 /// One group-chat batch of a GROUP campaign. Size is re-planable; the phone's
@@ -647,11 +726,14 @@ model CampaignBatch {
   createdAt   DateTime            @default(now()) @db.Timestamptz
   updatedAt   DateTime            @updatedAt @db.Timestamptz
 
-  tasks MessageTask[]
+  tasks    MessageTask[]
+  tenantId String?
+  tenant   Tenant?       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([campaignId, batchNumber])
   @@index([campaignId])
   @@index([status])
+  @@index([tenantId])
 }
 
 /// An in-progress composer message. Autosaved so the user can leave and resume.
@@ -665,34 +747,39 @@ model MessageDraft {
   language  String   @default("en")
   createdAt DateTime @default(now()) @db.Timestamptz
   updatedAt DateTime @updatedAt @db.Timestamptz
+  tenantId  String?
+  tenant    Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([createdBy, updatedAt])
+  @@index([tenantId])
 }
 
 /// Reusable message archive. Duplicates are prevented per language by the
 /// normalized hash; edited/hidden items are deactivated, never hard-deleted.
 model MessageLibraryItem {
-  id              String                 @id @default(cuid())
+  id             String                 @id @default(cuid())
   /// Auto from the first 40 characters of the body, editable.
-  title           String
-  body            String
+  title          String
+  body           String
   /// `en` or `am` (validated by the app).
-  language        String
-  category        MessageLibraryCategory @default(REMINDER)
+  language       String
+  category       MessageLibraryCategory @default(REMINDER)
   /// Hash of the trimmed, whitespace-collapsed, lowercased body.
-  normalizedHash  String
-  isFavorite      Boolean                @default(false)
-  useCount        Int                    @default(0)
-  lastUsedAt      DateTime?              @db.Timestamptz
+  normalizedHash String
+  isFavorite     Boolean                @default(false)
+  useCount       Int                    @default(0)
+  lastUsedAt     DateTime?              @db.Timestamptz
   /// User id of the creator (no FK — users are never deleted).
-  createdBy       String
-  active          Boolean                @default(true)
+  createdBy      String
+  active         Boolean                @default(true)
   /// Optional link between the en/am versions of the same message.
-  pairId          String?
-  createdAt       DateTime               @default(now()) @db.Timestamptz
-  updatedAt       DateTime               @updatedAt @db.Timestamptz
+  pairId         String?
+  createdAt      DateTime               @default(now()) @db.Timestamptz
+  updatedAt      DateTime               @updatedAt @db.Timestamptz
 
   campaigns Campaign[] @relation("CampaignLibrary")
+  tenantId  String?
+  tenant    Tenant?    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([normalizedHash, language])
   @@index([language, category])
@@ -700,6 +787,7 @@ model MessageLibraryItem {
   @@index([useCount])
   @@index([lastUsedAt])
   @@index([pairId])
+  @@index([tenantId])
 }
 
 /// A saved, named recipient filter ("Audience"). The member list is never
@@ -712,34 +800,90 @@ model Audience {
   createdBy  String
   createdAt  DateTime @default(now()) @db.Timestamptz
   updatedAt  DateTime @updatedAt @db.Timestamptz
+  tenantId   String?
+  tenant     Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([createdBy])
+  @@index([tenantId])
 }
 
 /// Feedback left through the public website's contact form. New rows are never
 /// public: they appear in the website's testimonials section only after the
 /// OWNER ticks "show on website" (`showOnWebsite`).
 model Feedback {
-  id        String  @id @default(cuid())
+  id            String   @id @default(cuid())
   /// Display name as typed by the visitor (published when approved).
-  name      String
+  name          String
   /// Optional reply address — CMS only, never exposed publicly.
-  email     String?
+  email         String?
   /// Optional 1–5 rating from the public form.
-  rating    Int?
+  rating        Int?
   /// The feedback text (published together with `name` when approved).
-  text      String
+  text          String
   /// Visitor locale at submission ('en' | 'am').
-  language  String  @default("en")
+  language      String   @default("en")
   /// Approved for the public website's testimonials section.
-  showOnWebsite Boolean @default(false)
+  showOnWebsite Boolean  @default(false)
   /// sha-256 of the visitor IP — the raw IP is never stored.
-  ipHash    String?
+  ipHash        String?
   /// Submitting actor: 'public-website' for the public form.
-  createdBy String
-  createdAt DateTime @default(now()) @db.Timestamptz
-  updatedAt DateTime @updatedAt @db.Timestamptz
+  createdBy     String
+  createdAt     DateTime @default(now()) @db.Timestamptz
+  updatedAt     DateTime @updatedAt @db.Timestamptz
+  tenantId      String?
+  tenant        Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([showOnWebsite, createdAt])
   @@index([createdAt])
+  @@index([tenantId])
+}
+
+enum TenantStatus {
+  TRIAL
+  ACTIVE
+  SUSPENDED
+}
+
+/// A clinic on the platform. Every business row carries an optional
+/// `tenantId`; this first step only adds the column and backfills it with the
+/// single existing clinic (slug `finan`). Routing and scoping come later.
+model Tenant {
+  id           String       @id @default(cuid())
+  slug         String       @unique
+  name         String
+  status       TenantStatus @default(TRIAL)
+  trialEndsAt  DateTime?    @db.Timestamptz
+  customDomain String?      @unique
+  loginSecret  String       @unique
+  createdAt    DateTime     @default(now()) @db.Timestamptz
+  updatedAt    DateTime     @updatedAt @db.Timestamptz
+
+  users               User[]
+  staffMembers        Staff[]
+  shiftTemplates      ShiftTemplate[]
+  shifts              Shift[]
+  leaveRequests       LeaveRequest[]
+  appointments        Appointment[]
+  followUps           FollowUp[]
+  settings            Setting[]
+  siteContents        SiteContent[]
+  auditLogs           AuditLog[]
+  patients            Patient[]
+  tags                Tag[]
+  patientTags         PatientTag[]
+  patientSickLeaves   PatientSickLeave[]
+  storedFiles         StoredFile[]
+  services            Service[]
+  servicePriceHistory ServicePriceHistory[]
+  sales               Sale[]
+  saleLines           SaleLine[]
+  receiptCounters     ReceiptCounter[]
+  messageTemplates    MessageTemplate[]
+  messageTasks        MessageTask[]
+  campaigns           Campaign[]
+  campaignBatches     CampaignBatch[]
+  messageDrafts       MessageDraft[]
+  messageLibraryItems MessageLibraryItem[]
+  audiences           Audience[]
+  feedbacks           Feedback[]
 }
