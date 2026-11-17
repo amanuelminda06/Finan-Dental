@@ -12,6 +12,7 @@
  */
 import { PrismaClient, type PaymentMethod, type SaleStatus } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
+import { ensureSeedTenant } from './seed-tenant';
 
 const prisma = new PrismaClient();
 
@@ -41,6 +42,7 @@ function chunk<T>(items: T[], size: number): T[][] {
 }
 
 async function main() {
+  const tenantId = await ensureSeedTenant(prisma);
   const markerPhone = '+251900000001';
   const existing = await prisma.patient.findUnique({ where: { phoneE164: markerPhone } });
   if (existing) {
@@ -74,6 +76,7 @@ async function main() {
   for (let i = 0; i < PATIENTS; i++) patientIds.push(randomUUID());
   const patientRows = patientIds.map((id, i) => ({
     id,
+    tenantId,
     fullName: `Load Patient ${String(i + 1).padStart(5, '0')}`,
     phoneE164: `+2519${String(10_000_000 + i).padStart(8, '0')}`,
     sex: (['MALE', 'FEMALE'] as const)[i % 2],
@@ -100,6 +103,7 @@ async function main() {
   console.log(`• creating ${SALES.toLocaleString()} sales…`);
   const sales: Array<{
     id: string;
+    tenantId: string;
     receiptNumber: string;
     patientId: string;
     doctorId: string | null;
@@ -114,6 +118,7 @@ async function main() {
   }> = [];
   const lines: Array<{
     id: string;
+    tenantId: string;
     saleId: string;
     serviceId: string;
     serviceNameSnapshot: string;
@@ -140,6 +145,7 @@ async function main() {
       total += lineTotal;
       lines.push({
         id: randomUUID(),
+        tenantId,
         saleId: id,
         serviceId: service.id,
         serviceNameSnapshot: `Service ${service.id.slice(-4)}`,
@@ -150,6 +156,7 @@ async function main() {
     }
     sales.push({
       id,
+      tenantId,
       receiptNumber: `${year}-${String(receiptNumber).padStart(6, '0')}`,
       patientId: patientIds[Math.floor(random() * patientIds.length)],
       doctorId: doctors.length && random() < 0.8 ? pick(doctors).id : null,
@@ -173,7 +180,7 @@ async function main() {
 
   await prisma.receiptCounter.upsert({
     where: { year },
-    create: { year, lastNumber: receiptNumber },
+    create: { tenantId, year, lastNumber: receiptNumber },
     update: { lastNumber: receiptNumber },
   });
 

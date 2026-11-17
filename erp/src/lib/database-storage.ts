@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { getTenantId } from '@/lib/tenant-context';
 import type { StorageProvider } from './storage.ts';
 
 function detectMime(data: Buffer): string {
@@ -23,6 +24,7 @@ export class DatabaseStorage implements StorageProvider {
   async put(key: string, data: Buffer): Promise<string> {
     await prisma.storedFile.create({
       data: {
+        tenantId: await getTenantId(),
         key,
         mimeType: detectMime(data),
         data: data as never,

@@ -6,6 +6,7 @@ import { writeAudit } from '@/lib/audit';
 import { ok, fail, withAuth, type ActionResult } from '@/lib/action';
 import { validate, ValidationError } from '@/lib/errors';
 import { storage } from '@/lib/storage';
+import { getTenantId } from '@/lib/tenant-context';
 import { photoExtension, staffFormSchema, type StaffFormValues } from './schemas';
 
 const PHOTO_URL_PREFIX = '/api/uploads/';
@@ -63,7 +64,7 @@ export async function createStaffAction(
     const photoUrl = photo ? await storePhoto(photo) : null;
 
     const created = await prisma.staff.create({
-      data: { ...auditFields(fields, photoUrl), active: true },
+      data: { tenantId: await getTenantId(), ...auditFields(fields, photoUrl), active: true },
     });
 
     await writeAudit({

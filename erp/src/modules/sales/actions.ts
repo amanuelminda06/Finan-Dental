@@ -3,6 +3,7 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { writeAudit } from '@/lib/audit';
+import { getTenantId } from '@/lib/tenant-context';
 import { ok, fail, withAuth, type ActionResult } from '@/lib/action';
 import { validate } from '@/lib/errors';
 import { formatMoney, toDecimalString } from '@/lib/money';
@@ -111,12 +112,14 @@ export async function createSaleAction(
     const settings = await getSettingsMap();
     const tz = timezoneFrom(settings);
     const now = new Date();
+    const tenantId = await getTenantId();
 
     const sale = await withReceiptRetry(() =>
       prisma.$transaction(async (tx) => {
-        const receiptNumber = await nextReceiptNumber(tx, now, tz);
+        const receiptNumber = await nextReceiptNumber(tx, now, tz, tenantId);
         return tx.sale.create({
           data: {
+            tenantId,
             receiptNumber,
             patientId,
             doctorId,
@@ -128,6 +131,7 @@ export async function createSaleAction(
             confirmedAt: now,
             lines: {
               create: computed.lines.map((line) => ({
+                tenantId,
                 serviceId: line.serviceId,
                 serviceNameSnapshot: line.serviceNameSnapshot,
                 qty: line.qty,

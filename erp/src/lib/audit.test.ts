@@ -11,6 +11,8 @@ vi.mock('next/headers', () => ({
   headers: () => headersMock(),
 }));
 
+vi.mock('./tenant-context', () => ({ getTenantId: async () => 'tenant_test' }));
+
 import { writeAudit, clientIp } from './audit';
 
 describe('audit clientIp', () => {
@@ -42,6 +44,7 @@ describe('writeAudit', () => {
     await writeAudit({ user: { id: 'u1', name: 'A' }, entity: 'Sale', entityId: 's1', action: 'VIEW' });
     expect(createMock).toHaveBeenCalledTimes(1);
     const data = createMock.mock.calls[0][0].data;
+    expect(data.tenantId).toBe('tenant_test');
     expect(data.userId).toBe('u1');
     expect(data.entity).toBe('Sale');
     expect(data.action).toBe('VIEW');

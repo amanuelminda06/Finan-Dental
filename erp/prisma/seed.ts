@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { hash } from '@node-rs/argon2';
 import type { Prisma } from '@prisma/client';
+import { ensureSeedTenant } from './seed-tenant';
 
 /** tsx does not load .env automatically — minimal loader for seed runs. */
 function loadEnv(): void {
@@ -72,11 +73,13 @@ async function main(): Promise<void> {
   const prisma = new PrismaClient();
 
   try {
+    const tenantId = await ensureSeedTenant(prisma);
+
     for (const setting of SETTINGS) {
       await prisma.setting.upsert({
         where: { key: setting.key },
         update: {},
-        create: { key: setting.key, value: setting.value as Prisma.InputJsonValue },
+        create: { tenantId, key: setting.key, value: setting.value as Prisma.InputJsonValue },
       });
     }
     console.log(`✓ ${SETTINGS.length} settings`);
@@ -85,6 +88,7 @@ async function main(): Promise<void> {
       where: { id: 'staff-doctor-1' },
       update: { fullName: 'Dr. Abebe Kebede', jobTitle: 'Ophthalmologist', isDoctor: true },
       create: {
+        tenantId,
         id: 'staff-doctor-1',
         fullName: 'Dr. Abebe Kebede',
         jobTitle: 'Ophthalmologist',
@@ -137,7 +141,7 @@ async function main(): Promise<void> {
       await prisma.user.upsert({
         where: { email: user.email },
         update: data,
-        create: { email: user.email, ...data },
+        create: { tenantId, email: user.email, ...data },
       });
       console.log(`✓ user ${user.email} (${user.role})`);
     }
@@ -154,7 +158,7 @@ async function main(): Promise<void> {
       const tag = await prisma.tag.upsert({
         where: { name },
         update: {},
-        create: { name, color: tagColorFor(name) },
+        create: { tenantId, name, color: tagColorFor(name) },
       });
       tagIds.set(name, tag.id);
     }
@@ -162,6 +166,7 @@ async function main(): Promise<void> {
     const rows = seedPatientRows();
     for (const row of rows) {
       const data = {
+        tenantId,
         fullName: row.fullName,
         phoneE164: row.phoneE164 ?? row.phone,
         sex: row.sex,
@@ -185,7 +190,7 @@ async function main(): Promise<void> {
         await prisma.patientTag.upsert({
           where: { patientId_tagId: { patientId: patient.id, tagId } },
           update: {},
-          create: { patientId: patient.id, tagId },
+          create: { tenantId, patientId: patient.id, tagId },
         });
       }
     }

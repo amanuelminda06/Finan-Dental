@@ -1,5 +1,6 @@
 import { brand } from '@/config/brand';
 import { prisma } from '@/lib/prisma';
+import { getTenantId } from '@/lib/tenant-context';
 import { clinicDateKey } from '@/lib/datetime';
 import { getSettingsMap, timezoneFrom } from '@/modules/settings';
 import {
@@ -209,6 +210,7 @@ export async function materializeCampaign(params: {
   for (let index = 0; index < sizes.length; index += 1) {
     const batch = await prisma.campaignBatch.create({
       data: {
+        tenantId: await getTenantId(),
         campaignId: params.campaignId,
         batchNumber: index + 1,
         size: sizes[index],

@@ -1,4 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs';
+import { ensureSeedTenant } from './seed-tenant';
 
 /** tsx does not load .env automatically — minimal loader for seed runs. */
 function loadEnv(): void {
@@ -49,27 +50,29 @@ async function main(): Promise<void> {
   const mode = process.argv[2] ?? 'block';
 
   try {
+    const tenantId = await ensureSeedTenant(prisma);
     await prisma.setting.upsert({
       where: { key: 'group_sms_allow_for_filtered' },
       update: { value: mode === 'allow' },
-      create: { key: 'group_sms_allow_for_filtered', value: mode === 'allow' },
+      create: { tenantId, key: 'group_sms_allow_for_filtered', value: mode === 'allow' },
     });
     await prisma.setting.upsert({
       where: { key: 'group_sms_max_recipients' },
       update: { value: 15 },
-      create: { key: 'group_sms_max_recipients', value: 15 },
+      create: { tenantId, key: 'group_sms_max_recipients', value: 15 },
     });
 
     if (mode === 'allow') {
       const tag = await prisma.tag.upsert({
         where: { name: TAG },
         update: {},
-        create: { name: TAG, color: '#0ea5e9' },
+        create: { tenantId, name: TAG, color: '#0ea5e9' },
       });
 
       for (let index = 0; index < PATIENT_COUNT; index += 1) {
         const phoneE164 = phoneFor(index);
         const data = {
+          tenantId,
           fullName: `Group E2E Patient ${index + 1}`,
           phoneE164,
           sex: index % 2 === 0 ? ('FEMALE' as const) : ('MALE' as const),
@@ -86,7 +89,7 @@ async function main(): Promise<void> {
         await prisma.patientTag.upsert({
           where: { patientId_tagId: { patientId: patient.id, tagId: tag.id } },
           update: {},
-          create: { patientId: patient.id, tagId: tag.id },
+          create: { tenantId, patientId: patient.id, tagId: tag.id },
         });
       }
       console.log(`✓ ${PATIENT_COUNT} tagged patients (tag: ${TAG})`);

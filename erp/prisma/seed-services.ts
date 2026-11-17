@@ -1,6 +1,9 @@
 import type { PrismaClient } from '@prisma/client';
 import { SERVICES } from '../src/config/services';
+import { ensureSeedTenant } from './seed-tenant';
+
 export async function seedServicesAndSales(prisma: PrismaClient): Promise<void> {
+  const tenantId = await ensureSeedTenant(prisma);
   const existing = await prisma.service.findMany({
     select: { id: true, name: true, nameEn: true, currentPrice: true, imageUrl: true },
   });
@@ -31,6 +34,7 @@ export async function seedServicesAndSales(prisma: PrismaClient): Promise<void> 
     } else {
       await prisma.service.create({
         data: {
+          tenantId,
           name: seed.nameEn,
           nameEn: seed.nameEn,
           nameAm: seed.nameAm,

@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { writeAudit } from '@/lib/audit';
+import { getTenantId } from '@/lib/tenant-context';
 import { ok, fail, withAuth, type ActionResult } from '@/lib/action';
 import { validate } from '@/lib/errors';
 import { clinicDateKey, combineDateAndTime, dateKeyAdd } from '@/lib/datetime';
@@ -68,6 +69,7 @@ async function resolvePatient(
   }
   const created = await prisma.patient.create({
     data: {
+      tenantId: await getTenantId(),
       fullName: name,
       phoneE164: phone,
       createdBy: actorId,
@@ -206,6 +208,7 @@ export async function saveAppointmentAction(
     if (!existing) {
       const appointment = await prisma.appointment.create({
         data: {
+          tenantId: await getTenantId(),
           patientId: patient.id,
           doctorId: doctor.id,
           startsAt,
@@ -357,6 +360,7 @@ export async function createFollowUpAction(
 
     const followUp = await prisma.followUp.create({
       data: {
+        tenantId: await getTenantId(),
         patientId: patient.id,
         dueDate: new Date(`${due}T00:00:00.000Z`),
         reason: values.reason || null,
@@ -542,6 +546,7 @@ export async function createPublicBooking(input: {
     if (doctors.length === 0) return { ok: false, error: 'noDoctorAvailable' };
     const doctor = await pickBookingDoctor(doctors, startsAt, endsAt, tz);
 
+    const tenantId = await getTenantId();
     const { appointmentId, serviceId } = await prisma.$transaction(async (tx) => {
       const existing = await tx.patient.findUnique({
         where: { phoneE164: input.phoneE164 },
@@ -552,6 +557,7 @@ export async function createPublicBooking(input: {
         : (
             await tx.patient.create({
               data: {
+                tenantId,
                 fullName: input.name,
                 phoneE164: input.phoneE164,
                 preferredLanguage: input.language === 'am' ? 'am' : 'en',
@@ -573,6 +579,7 @@ export async function createPublicBooking(input: {
 
       const appointment = await tx.appointment.create({
         data: {
+          tenantId,
           patientId,
           doctorId: doctor.id,
           startsAt,

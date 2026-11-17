@@ -1,4 +1,5 @@
 import type { PrismaClient } from '@prisma/client';
+import { ensureSeedTenant } from './seed-tenant';
 import {
   clinicDateKey,
   clinicTimeKey,
@@ -32,6 +33,7 @@ function latestWeekday(dateKey: string): string {
 }
 
 export async function seedAppointments(prisma: PrismaClient): Promise<void> {
+  const tenantId = await ensureSeedTenant(prisma);
   const setting = await prisma.setting.findUnique({ where: { key: 'timezone' } });
   const tz = typeof setting?.value === 'string' && setting.value ? setting.value : DEFAULT_TIMEZONE;
   const todayKey = clinicDateKey(new Date(), tz);
@@ -109,6 +111,7 @@ export async function seedAppointments(prisma: PrismaClient): Promise<void> {
     const service = services.length ? services[created.length % services.length] : null;
     await prisma.appointment.create({
       data: {
+        tenantId,
         id: opts.id,
         patientId: patientList[created.length % patientList.length].id,
         doctorId: opts.doctorId,
@@ -253,6 +256,7 @@ export async function seedAppointments(prisma: PrismaClient): Promise<void> {
   for (const row of followUps) {
     await prisma.followUp.create({
       data: {
+        tenantId,
         ...row,
         createdBy: creator,
         status: row.status as 'OPEN' | 'DONE' | 'CANCELLED',

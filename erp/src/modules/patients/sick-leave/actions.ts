@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { writeAudit } from '@/lib/audit';
+import { getTenantId } from '@/lib/tenant-context';
 import { ok, fail, withAuth, type ActionResult } from '@/lib/action';
 import { validate } from '@/lib/errors';
 import { PATIENT_ROLES } from '../roles';
@@ -29,6 +30,7 @@ export async function createPatientSickLeaveAction(
 
     const created = await prisma.patientSickLeave.create({
       data: {
+        tenantId: await getTenantId(),
         patientId: values.patientId,
         startDate: toDate(values.startDate),
         endDate: toDate(values.endDate),

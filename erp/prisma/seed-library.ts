@@ -1,5 +1,6 @@
 import type { Prisma, PrismaClient } from '@prisma/client';
 import { messageBodyHash } from '../src/modules/messaging/message-hash';
+import { ensureSeedTenant } from './seed-tenant';
 
 /**
  * Deterministic Message Library seeds: 10 reusable messages, each with an
@@ -127,6 +128,7 @@ export const LIBRARY_PAIRS: {
   ];
 
 export async function seedMessageLibrary(prisma: PrismaClient, createdBy: string): Promise<number> {
+  const tenantId = await ensureSeedTenant(prisma);
   for (const item of LIBRARY_PAIRS) {
     await prisma.messageLibraryItem.upsert({
       where: { id: item.id },
@@ -135,6 +137,7 @@ export async function seedMessageLibrary(prisma: PrismaClient, createdBy: string
         useCount: { increment: 0 },
       },
       create: {
+        tenantId,
         id: item.id,
         title: item.title,
         category: item.category,
@@ -148,6 +151,7 @@ export async function seedMessageLibrary(prisma: PrismaClient, createdBy: string
       where: { id: `${item.id}-am` },
       update: {},
       create: {
+        tenantId,
         id: `${item.id}-am`,
         title: item.title,
         category: item.category,
@@ -175,11 +179,13 @@ const AUDIENCES: { id: string; name: string; filter: Record<string, unknown> }[]
 ];
 
 export async function seedAudiences(prisma: PrismaClient, createdBy: string): Promise<number> {
+  const tenantId = await ensureSeedTenant(prisma);
   for (const audience of AUDIENCES) {
     await prisma.audience.upsert({
       where: { id: audience.id },
       update: { name: audience.name, filterJson: audience.filter as Prisma.InputJsonValue },
       create: {
+        tenantId,
         id: audience.id,
         name: audience.name,
         filterJson: audience.filter as Prisma.InputJsonValue,

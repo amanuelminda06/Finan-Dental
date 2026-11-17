@@ -1,17 +1,19 @@
 import type { PrismaClient } from '@prisma/client';
 import { SERVICES } from '../src/config/services';
 import { CONTENT_KEYS, DEFAULT_CONTENT } from '../src/modules/public-site/content';
+import { ensureSeedTenant } from './seed-tenant';
 
 /** Seed bilingual website defaults without overwriting clinic-edited copy. */
 export async function seedSiteContent(
   prisma: PrismaClient,
 ): Promise<{ keys: number; publicServices: number }> {
+  const tenantId = await ensureSeedTenant(prisma);
   for (const key of CONTENT_KEYS) {
     const value = DEFAULT_CONTENT[key];
     await prisma.siteContent.upsert({
       where: { key },
       update: {},
-      create: { key, valueEn: value.en, valueAm: value.am },
+      create: { tenantId, key, valueEn: value.en, valueAm: value.am },
     });
   }
 

@@ -1,4 +1,5 @@
 import type { PrismaClient } from '@prisma/client';
+import { ensureSeedTenant } from './seed-tenant';
 import {
   clinicDateKey,
   combineDateAndTime,
@@ -107,6 +108,7 @@ const STAFF_SHIFTS: ShiftPattern[] = [
 ];
 
 export async function seedHr(prisma: PrismaClient): Promise<void> {
+  const tenantId = await ensureSeedTenant(prisma);
   const setting = await prisma.setting.findUnique({ where: { key: 'timezone' } });
   const tz = typeof setting?.value === 'string' && setting.value ? setting.value : DEFAULT_TIMEZONE;
 
@@ -124,7 +126,7 @@ export async function seedHr(prisma: PrismaClient): Promise<void> {
     await prisma.staff.upsert({
       where: { id: seed.id },
       update: data,
-      create: { id: seed.id, ...data, photoUrl: seed.photoUrl ?? null },
+      create: { tenantId, id: seed.id, ...data, photoUrl: seed.photoUrl ?? null },
     });
   }
   await prisma.staff.update({
@@ -158,7 +160,7 @@ export async function seedHr(prisma: PrismaClient): Promise<void> {
         { staffId: 'staff-doctor-1', weekday: 3, startTime: '08:00', endTime: '16:00', validFrom },
         { staffId: 'staff-doctor-2', weekday: 2, startTime: '10:00', endTime: '18:00', validFrom },
         { staffId: 'staff-tech-1', weekday: 5, startTime: '20:00', endTime: '04:00', validFrom },
-      ],
+      ].map((row) => ({ ...row, tenantId })),
     });
     console.log('✓ HR shift templates (4)');
   } else {
@@ -198,7 +200,7 @@ export async function seedHr(prisma: PrismaClient): Promise<void> {
       }
     }
 
-    await prisma.shift.createMany({ data: rows });
+    await prisma.shift.createMany({ data: rows.map((row) => ({ ...row, tenantId })) });
     console.log(`✓ HR shifts (${rows.length}) over two weeks`);
   } else {
     console.log(`✓ HR shifts already seeded (${shiftCount}) — skipped`);
@@ -211,6 +213,7 @@ export async function seedHr(prisma: PrismaClient): Promise<void> {
     const approvedEndKey = dateKeyAdd(startKey, 9);
     await prisma.leaveRequest.create({
       data: {
+        tenantId,
         staffId: 'staff-doctor-2',
         type: 'ANNUAL',
         startDate: new Date(`${approvedStartKey}T00:00:00.000Z`),
@@ -226,6 +229,7 @@ export async function seedHr(prisma: PrismaClient): Promise<void> {
     });
     await prisma.leaveRequest.create({
       data: {
+        tenantId,
         staffId: 'staff-nurse-1',
         type: 'SICK',
         startDate: new Date(`${dateKeyAdd(startKey, 2)}T00:00:00.000Z`),

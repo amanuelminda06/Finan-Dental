@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { writeAudit } from '@/lib/audit';
+import { getTenantId } from '@/lib/tenant-context';
 import { ok, fail, withAuth, type ActionResult } from '@/lib/action';
 import { PUBLIC_FEEDBACK_ACTOR } from './constants';
 import { FEEDBACK_ROLES } from './roles';
@@ -25,6 +26,7 @@ export async function createPublicFeedback(input: {
   try {
     const created = await prisma.feedback.create({
       data: {
+        tenantId: await getTenantId(),
         name: input.name,
         email: input.email,
         rating: input.rating,

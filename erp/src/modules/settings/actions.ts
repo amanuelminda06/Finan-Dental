@@ -3,6 +3,7 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { writeAudit } from '@/lib/audit';
+import { getTenantId } from '@/lib/tenant-context';
 import { ok, withAuth, type ActionResult } from '@/lib/action';
 import { validate } from '@/lib/errors';
 import { SETTING_KEYS, settingsFormSchema, toSettingValues } from './schemas';
@@ -57,12 +58,13 @@ export async function saveSettingsAction(
     const map = toSettingValues(values);
 
     const before = await getSettingsMap();
+    const tenantId = await getTenantId();
     for (const key of SETTING_KEYS) {
       const value = map[key] as Prisma.InputJsonValue;
       await prisma.setting.upsert({
         where: { key },
         update: { value, updatedBy: actor.id },
-        create: { key, value, updatedBy: actor.id },
+        create: { tenantId, key, value, updatedBy: actor.id },
       });
     }
 

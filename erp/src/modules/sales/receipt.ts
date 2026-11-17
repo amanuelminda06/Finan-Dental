@@ -58,10 +58,11 @@ async function highestExistingReceiptNumber(
 export async function claimReceiptNumber(
   tx: Prisma.TransactionClient,
   year: number,
+  tenantId: string,
 ): Promise<number> {
   const rows = await tx.$queryRaw<Array<{ lastNumber: number }>>`
-    INSERT INTO "ReceiptCounter" ("year", "lastNumber")
-    VALUES (${year}, 1)
+    INSERT INTO "ReceiptCounter" ("year", "lastNumber", "tenantId")
+    VALUES (${year}, 1, ${tenantId})
     ON CONFLICT ("year") DO UPDATE SET "lastNumber" = "ReceiptCounter"."lastNumber" + 1
     RETURNING "lastNumber"
   `;
@@ -82,7 +83,8 @@ export async function nextReceiptNumber(
   tx: Prisma.TransactionClient,
   date: Date,
   timeZone: string,
+  tenantId: string,
 ): Promise<string> {
   const year = receiptYear(date, timeZone);
-  return formatReceiptNumber(year, await claimReceiptNumber(tx, year));
+  return formatReceiptNumber(year, await claimReceiptNumber(tx, year, tenantId));
 }

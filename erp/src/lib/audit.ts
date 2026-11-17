@@ -1,6 +1,7 @@
 import { headers } from 'next/headers';
 import { Prisma } from '@prisma/client';
 import { prisma } from './prisma';
+import { getTenantId } from './tenant-context';
 import { diffObjects, hasChanges, redact } from './audit-diff';
 
 export type AuditActor = { id: string; name?: string | null } | null | undefined;
@@ -56,6 +57,7 @@ export async function writeAudit(input: AuditInput): Promise<void> {
 
     await prisma.auditLog.create({
       data: {
+        tenantId: await getTenantId(),
         userId: input.user?.id ?? null,
         entity: input.entity,
         entityId: input.entityId,

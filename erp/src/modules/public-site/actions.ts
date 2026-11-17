@@ -4,6 +4,7 @@ import { withAuth, ok, type ActionResult } from '@/lib/action';
 import { validate } from '@/lib/errors';
 import { writeAudit } from '@/lib/audit';
 import { prisma } from '@/lib/prisma';
+import { getTenantId } from '@/lib/tenant-context';
 import { CONTENT_KEYS, resolveContent } from './content';
 import { contentEditSchema } from './schemas';
 import { CONTENT_ROLES } from './roles';
@@ -39,12 +40,19 @@ export async function saveSiteContentAction(
           : { en, am };
     }
 
+    const tenantId = await getTenantId();
     await prisma.$transaction(
       CONTENT_KEYS.map((key) =>
         prisma.siteContent.upsert({
           where: { key },
           update: { valueEn: next[key].en, valueAm: next[key].am, updatedBy: actor.id },
-          create: { key, valueEn: next[key].en, valueAm: next[key].am, updatedBy: actor.id },
+          create: {
+            tenantId,
+            key,
+            valueEn: next[key].en,
+            valueAm: next[key].am,
+            updatedBy: actor.id,
+          },
         }),
       ),
     );

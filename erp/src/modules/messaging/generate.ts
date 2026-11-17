@@ -1,5 +1,6 @@
 import { Prisma, type MessageTemplateKey, type MessageSourceType } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
+import { getDefaultTenantId, getTenantId } from '@/lib/tenant-context';
 import { clinicDateKey, combineDateAndTime, dateKeyAdd, endOfDay } from '@/lib/datetime';
 import { getSettingsMap, settingsFromMap } from '@/modules/settings';
 import type { BlockedReason } from './constants';
@@ -84,6 +85,8 @@ export type NewTaskInput = {
   sendBy: Date | null;
   expiresAt: Date | null;
   sourceStatus?: string | null;
+  /** Tenant of the row. Callers with a session may omit this; jobs pass the default tenant. */
+  tenantId?: string;
 };
 
 /** Creates one task unless the unique tuple already exists (returns existing). */
@@ -95,6 +98,7 @@ export async function createTask(input: NewTaskInput): Promise<'created' | 'exis
   try {
     await prisma.messageTask.create({
       data: {
+        tenantId: input.tenantId ?? (await getTenantId()),
         patientId: input.patient.id,
         templateKey: input.templateKey,
         sourceType: input.sourceType,
@@ -115,6 +119,14 @@ export async function createTask(input: NewTaskInput): Promise<'created' | 'exis
     if (isUniqueViolation(err)) return 'exists';
     throw err;
   }
+}
+
+/**
+ * Background job runs have no signed-in user, so they attribute their rows to
+ * the default tenant instead of the (possibly unrelated) request session.
+ */
+async function createJobTask(input: NewTaskInput): Promise<'created' | 'exists'> {
+  return createTask({ ...input, tenantId: await getDefaultTenantId() });
 }
 
 async function cancelPendingScope(
@@ -491,7 +503,7 @@ async function generateSameDay(now: Date, config: MessagingConfig): Promise<numb
       appointment.doctor.fullName,
       appointment.startsAt,
     );
-    const result = await createTask({
+    const result = await createJobTask({
       patient: appointment.patient,
       templateKey: 'APPT_SAME_DAY',
       sourceType: 'APPOINTMENT',
@@ -526,7 +538,7 @@ async function generateBirthdays(now: Date, config: MessagingConfig): Promise<nu
       reviewLink: config.reviewLink,
       timeZone: config.settings.timeZone,
     };
-    const result = await createTask({
+    const result = await createJobTask({
       patient: asMessagingPatient(patient),
       templateKey: 'BIRTHDAY',
       sourceType: 'BIRTHDAY',
@@ -577,7 +589,7 @@ async function generateThankYous(now: Date, config: MessagingConfig): Promise<nu
       appointment.doctor.fullName,
       appointment.startsAt,
     );
-    const result = await createTask({
+    const result = await createJobTask({
       patient: appointment.patient,
       templateKey: 'THANK_YOU',
       sourceType: 'APPOINTMENT',
@@ -632,7 +644,7 @@ async function generateFollowUps(now: Date, config: MessagingConfig): Promise<nu
       reviewLink: config.reviewLink,
       timeZone: config.settings.timeZone,
     };
-    const result = await createTask({
+    const result = await createJobTask({
       patient,
       templateKey: 'FOLLOWUP_DUE',
       sourceType: 'FOLLOWUP',
@@ -687,7 +699,7 @@ async function generateRecalls(now: Date, config: MessagingConfig): Promise<numb
       reviewLink: config.reviewLink,
       timeZone: config.settings.timeZone,
     };
-    const result = await createTask({
+    const result = await createJobTask({
       patient: asMessagingPatient(patient),
       templateKey: 'RECALL',
       sourceType: 'RECALL',
@@ -739,7 +751,7 @@ async function maybeSendDigest(now: Date, config: MessagingConfig): Promise<bool
   await prisma.setting.upsert({
     where: { key: 'digest_last_sent' },
     update: { value: todayKey },
-    create: { key: 'digest_last_sent', value: todayKey },
+    create: { tenantId: await getDefaultTenantId(), key: 'digest_last_sent', value: todayKey },
   });
   return true;
 }

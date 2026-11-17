@@ -6,6 +6,7 @@ import { writeAudit } from '@/lib/audit';
 import { ok, fail, withAuth, type ActionResult } from '@/lib/action';
 import { validate, ValidationError } from '@/lib/errors';
 import { storage } from '@/lib/storage';
+import { getTenantId } from '@/lib/tenant-context';
 import { toDecimalString } from '@/lib/money';
 import { AuthorizationError, requireRole } from '@/lib/require-role';
 import { SERVICES_ROLES } from './roles';
@@ -62,6 +63,7 @@ export async function createServiceAction(
 
     const created = await prisma.service.create({
       data: {
+        tenantId: await getTenantId(),
         name: values.nameEn,
         nameEn: values.nameEn,
         nameAm: values.nameAm || null,
@@ -168,7 +170,13 @@ export async function updateServiceAction(
     if (beforePrice !== newPrice) {
       if (beforePrice !== null && newPrice !== null) {
         await prisma.servicePriceHistory.create({
-          data: { serviceId: id, oldPrice: beforePrice, newPrice, changedBy: actor.id },
+          data: {
+            tenantId: await getTenantId(),
+            serviceId: id,
+            oldPrice: beforePrice,
+            newPrice,
+            changedBy: actor.id,
+          },
         });
       }
       await writeAudit({

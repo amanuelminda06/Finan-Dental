@@ -86,6 +86,11 @@ export async function verifyCredentials(credentials: unknown): Promise<Authentic
     return null;
   }
 
+  const tenantSlug = user.tenant?.slug;
+  if (!tenantSlug) {
+    throw new Error(`User ${user.id} has tenantId ${user.tenantId} but no matching Tenant row.`);
+  }
+
   await prisma.user.update({ where: { id: user.id }, data: stateAfterLoginSuccess(now) });
   await writeAudit({
     user: { id: user.id, name: user.name },
@@ -102,6 +107,6 @@ export async function verifyCredentials(credentials: unknown): Promise<Authentic
     role: user.role,
     mustChangePassword: user.mustChangePassword,
     tenantId: user.tenantId,
-    tenantSlug: user.tenant.slug,
+    tenantSlug,
   };
 }

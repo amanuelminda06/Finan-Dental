@@ -5,6 +5,7 @@ import { getTranslations } from 'next-intl/server';
 import { requirePageRole } from '@/lib/require-role';
 import { prisma } from '@/lib/prisma';
 import { clientIp } from '@/lib/audit';
+import { getTenantId } from '@/lib/tenant-context';
 import { formatInTz } from '@/lib/datetime';
 import { formatPhoneDisplay } from '@/lib/phone';
 import { getSettingsMap, timezoneFrom, settingsFromMap } from '@/modules/settings';
@@ -47,10 +48,12 @@ const VIEW_DEDUPE_MS = 60_000;
 
 const logPatientView = cache(async (patientId: string, userId: string) => {
   try {
+    const tenantId = await getTenantId();
     await prisma.$transaction(async (tx) => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`view:${patientId}:${userId}`}))`;
       const recent = await tx.auditLog.findFirst({
         where: {
+          tenantId,
           entity: 'Patient',
           entityId: patientId,
           action: 'VIEW',
@@ -62,6 +65,7 @@ const logPatientView = cache(async (patientId: string, userId: string) => {
       if (recent) return;
       await tx.auditLog.create({
         data: {
+          tenantId,
           userId,
           entity: 'Patient',
           entityId: patientId,

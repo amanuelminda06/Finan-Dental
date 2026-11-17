@@ -1,4 +1,5 @@
 import type { PrismaClient } from '@prisma/client';
+import { ensureSeedTenant } from './seed-tenant';
 
 /**
  * Seeded SMS templates (en + am). Amharic bodies are first-pass drafts marked
@@ -65,13 +66,14 @@ export const TEMPLATES: Record<string, Record<Language, string>> = {
 };
 
 export async function seedMessageTemplates(prisma: PrismaClient): Promise<number> {
+  const tenantId = await ensureSeedTenant(prisma);
   let count = 0;
   for (const [key, bodies] of Object.entries(TEMPLATES)) {
     for (const language of ['en', 'am'] as const) {
       await prisma.messageTemplate.upsert({
         where: { key_language: { key: key as never, language } },
         update: {},
-        create: { key: key as never, language, body: bodies[language], active: true },
+        create: { tenantId, key: key as never, language, body: bodies[language], active: true },
       });
       count += 1;
     }

@@ -4,6 +4,7 @@ import { hash } from '@node-rs/argon2';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { writeAudit } from '@/lib/audit';
+import { getTenantId } from '@/lib/tenant-context';
 import { ok, fail, withAuth, type ActionResult } from '@/lib/action';
 import { validate, ValidationError } from '@/lib/errors';
 import { generateTemporaryPassword, passwordError } from '@/lib/passwords';
@@ -43,6 +44,7 @@ export async function createUserAction(
     try {
       created = await prisma.user.create({
         data: {
+          tenantId: await getTenantId(),
           name: values.name,
           email: values.email,
           role: values.role,

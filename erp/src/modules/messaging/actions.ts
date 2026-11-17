@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { writeAudit } from '@/lib/audit';
+import { getTenantId } from '@/lib/tenant-context';
 import { ok, fail, withAuth, type ActionResult } from '@/lib/action';
 import { validate } from '@/lib/errors';
 import { getSettingsMap, timezoneFrom } from '@/modules/settings';
@@ -440,6 +441,7 @@ export async function createCampaignAction(
       const expiresAt = values.expiresAt ? new Date(`${values.expiresAt}T23:59:00.000Z`) : null;
       const campaign = await prisma.campaign.create({
         data: {
+          tenantId: await getTenantId(),
           title: finalTitle,
           templateKey,
           customBody: templateKey === 'CUSTOM' ? customBody : null,
@@ -597,6 +599,7 @@ export async function saveMessageDraftAction(
 
     const draft = await prisma.messageDraft.create({
       data: {
+        tenantId: await getTenantId(),
         createdBy: actor.id,
         title: values.title || null,
         body: values.body,
@@ -695,7 +698,7 @@ export async function saveLibraryItemAction(
         return ok({ id: values.id });
       }
       const item = await prisma.messageLibraryItem.create({
-        data: { ...data, createdBy: actor.id },
+        data: { ...data, tenantId: await getTenantId(), createdBy: actor.id },
         select: { id: true },
       });
       await writeAudit({
@@ -806,7 +809,12 @@ export async function saveAudienceAction(
     }
 
     const audience = await prisma.audience.create({
-      data: { name: values.name, filterJson: filter, createdBy: actor.id },
+      data: {
+        tenantId: await getTenantId(),
+        name: values.name,
+        filterJson: filter,
+        createdBy: actor.id,
+      },
       select: { id: true },
     });
     await writeAudit({
@@ -1067,6 +1075,7 @@ export async function markMessageSentAction(
     const now = new Date();
     const task = await prisma.messageTask.create({
       data: {
+        tenantId: await getTenantId(),
         patientId: patient.id,
         templateKey: 'CUSTOM',
         sourceType: 'MANUAL',

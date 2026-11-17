@@ -7,6 +7,7 @@ import { writeAudit } from '@/lib/audit';
 import { ok, fail, withAuth, type ActionResult } from '@/lib/action';
 import { validate, ValidationError } from '@/lib/errors';
 import { storage } from '@/lib/storage';
+import { getTenantId } from '@/lib/tenant-context';
 import { getSettingsMap } from '@/modules/settings/queries';
 import { PATIENT_ROLES } from './roles';
 import { patientFormSchema, idPhotoExtension } from './schemas';
@@ -128,6 +129,7 @@ export async function createPatientAction(
     try {
       created = await prisma.patient.create({
         data: {
+          tenantId: await getTenantId(),
           fullName: values.fullName,
           phoneE164: values.phone,
           sex: values.sex,
@@ -254,19 +256,22 @@ export async function setPatientTagsAction(
     const changed = before.length !== names.length || before.some((name) => !names.includes(name));
 
     if (changed) {
+      const tenantId = await getTenantId();
       const tagIds: string[] = [];
       for (const name of names) {
         const tag = await prisma.tag.upsert({
           where: { name },
           update: {},
-          create: { name, color: tagColorFor(name) },
+          create: { tenantId, name, color: tagColorFor(name) },
         });
         tagIds.push(tag.id);
       }
 
       await prisma.$transaction([
         prisma.patientTag.deleteMany({ where: { patientId: id } }),
-        ...tagIds.map((tagId) => prisma.patientTag.create({ data: { patientId: id, tagId } })),
+        ...tagIds.map((tagId) =>
+          prisma.patientTag.create({ data: { tenantId, patientId: id, tagId } }),
+        ),
       ]);
 
       await writeAudit({
@@ -411,6 +416,7 @@ export async function importPatientsAction(
     }
 
     // Import only fully valid rows — invalid ones stay in the error report.
+    const tenantId = await getTenantId();
     let imported = 0;
     for (const row of result.rows) {
       const values: ImportValues | null = row.values;
@@ -418,6 +424,7 @@ export async function importPatientsAction(
       try {
         const created = await prisma.patient.create({
           data: {
+            tenantId,
             fullName: values.fullName,
             phoneE164: values.phoneE164,
             sex: values.sex,
@@ -433,13 +440,13 @@ export async function importPatientsAction(
           const tag = await prisma.tag.upsert({
             where: { name },
             update: {},
-            create: { name, color: tagColorFor(name) },
+            create: { tenantId, name, color: tagColorFor(name) },
           });
           tagIds.push(tag.id);
         }
         if (tagIds.length > 0) {
           await prisma.patientTag.createMany({
-            data: tagIds.map((tagId) => ({ patientId: created.id, tagId })),
+            data: tagIds.map((tagId) => ({ tenantId, patientId: created.id, tagId })),
             skipDuplicates: true,
           });
         }

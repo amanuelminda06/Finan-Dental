@@ -86,9 +86,10 @@ test('capture PMS, CMS and MMS screenshots', async ({ page }) => {
     if (!patientId) {
       await page.getByRole('button', { name: 'Create patient' }).click();
       // Land on the detail page — not on /patients/new itself.
-      await page.waitForURL((url) => /^\/patients\/[^/]+$/.test(url.pathname), {
-        timeout: 20_000,
-      });
+      await page.waitForURL(
+        (url) => /^\/patients\/[^/]+$/.test(url.pathname) && url.pathname !== '/patients/new',
+        { timeout: 20_000 },
+      );
       patientId = new URL(page.url()).pathname.split('/').pop() ?? '';
     }
 

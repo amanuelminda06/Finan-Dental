@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { writeAudit } from '@/lib/audit';
+import { getTenantId } from '@/lib/tenant-context';
 import { ok, fail, withAuth, type ActionResult } from '@/lib/action';
 import { validate } from '@/lib/errors';
 import { clinicDateKey, combineDateAndTime, dateKeyAdd } from '@/lib/datetime';
@@ -86,6 +87,7 @@ export async function createShiftAction(
 
     const shift = await prisma.shift.create({
       data: {
+        tenantId: await getTenantId(),
         staffId: values.staffId,
         startsAt,
         endsAt,
@@ -228,6 +230,7 @@ export async function createTemplateAction(
 
     const template = await prisma.shiftTemplate.create({
       data: {
+        tenantId: await getTenantId(),
         staffId: values.staffId,
         weekday: values.weekday,
         startTime: values.startTime,
@@ -443,8 +446,10 @@ export async function applyTemplateAction(
           }),
       );
 
+      const tenantId = await getTenantId();
       await prisma.shift.createMany({
         data: rows.map((shift) => ({
+          tenantId,
           staffId: shift.staffId,
           startsAt: shift.startsAt,
           endsAt: shift.endsAt,
@@ -514,8 +519,10 @@ export async function copyLastWeekAction(
     );
 
     if (rows.length > 0) {
+      const tenantId = await getTenantId();
       await prisma.shift.createMany({
         data: rows.map((shift) => ({
+          tenantId,
           staffId: shift.staffId,
           startsAt: shift.startsAt,
           endsAt: shift.endsAt,
@@ -601,6 +608,7 @@ export async function requestLeaveAction(
 
     const created = await prisma.leaveRequest.create({
       data: {
+        tenantId: await getTenantId(),
         staffId,
         type: values.type,
         startDate: start,
