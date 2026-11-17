@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { brand } from '@/config/brand';
+import { tenantPath, type TenantRef } from '@/lib/tenant-path';
 
 /**
  * Public website SEO helpers. `PUBLIC_BASE_URL` is the canonical origin — it is
@@ -16,6 +17,8 @@ export function siteBaseUrl(): string {
 export type PageMetaInput = {
   title: string;
   description: string;
+  /** The clinic this page belongs to (slug or object with `slug`). */
+  tenant: TenantRef;
   /** Site-relative path starting with `/`. */
   path: string;
   /** Home uses the full title instead of the `%s · Clinic` template. */
@@ -27,17 +30,19 @@ export type PageMetaInput = {
  * Graph/Twitter tags. The Open Graph image comes from the segment's
  * `opengraph-image` file convention.
  */
-export function pageMetadata({ title, description, path, isHome }: PageMetaInput): Metadata {
-  const url = `${siteBaseUrl()}${path === '/' ? '' : path}`;
+export function pageMetadata({ title, description, tenant, path, isHome }: PageMetaInput): Metadata {
+  // Canonical/alternate paths are tenant-scoped; the OpenGraph URL is absolute.
+  const tenantPathname = tenantPath(tenant, path);
+  const url = `${siteBaseUrl()}${tenantPathname}`;
   return {
     title: isHome ? { absolute: brand.clinicName } : title,
     description,
     alternates: {
-      canonical: path,
+      canonical: tenantPathname,
       languages: {
-        en: `${path}?lang=en`,
-        am: `${path}?lang=am`,
-        'x-default': path,
+        en: `${tenantPathname}?lang=en`,
+        am: `${tenantPathname}?lang=am`,
+        'x-default': tenantPathname,
       },
     },
     openGraph: {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useTenantRouter as useRouter } from '@/components/tenant-navigation';
 import { useTranslations } from 'next-intl';
 import type { DraftRow } from '../queries';
 import { deleteMessageDraftAction } from '../actions';

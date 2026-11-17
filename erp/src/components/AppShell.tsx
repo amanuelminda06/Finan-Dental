@@ -1,7 +1,8 @@
 'use client';
 
-import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { TenantLink as Link, useTenantHref } from '@/components/tenant-navigation';
+import { usePathname } from 'next/navigation';
+import { useTenantRouter as useRouter } from '@/components/tenant-navigation';
 import { useEffect, useState } from 'react';
 import { SessionProvider, signOut } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
@@ -31,10 +32,11 @@ export default function AppShell({
 }: Props) {
   const pathname = usePathname();
   const router = useRouter();
+  const resolve = useTenantHref();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const forced = user.mustChangePassword && pathname !== '/change-password';
+  const forced = user.mustChangePassword && pathname !== resolve('/change-password');
 
   // Forced password change: bounce every page except /change-password (rule 3).
   useEffect(() => {

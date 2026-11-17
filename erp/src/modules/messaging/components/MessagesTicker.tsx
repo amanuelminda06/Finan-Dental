@@ -1,18 +1,20 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useTenantHref } from '@/components/tenant-navigation';
 
 /**
  * Polls the due-message count every minute and prefixes the browser tab title,
  * e.g. "(7) Finan Speciality Dental Clinic". Rendered once in the protected layout.
  */
 export default function MessagesTicker({ baseTitle }: { baseTitle: string }) {
+  const resolve = useTenantHref();
   useEffect(() => {
     let cancelled = false;
 
     async function poll() {
       try {
-        const res = await fetch('/api/messages/count', { cache: 'no-store' });
+        const res = await fetch(resolve('/api/messages/count'), { cache: 'no-store' });
         if (!res.ok) return;
         const data = (await res.json()) as { count?: number };
         if (cancelled) return;
@@ -29,7 +31,7 @@ export default function MessagesTicker({ baseTitle }: { baseTitle: string }) {
       cancelled = true;
       window.clearInterval(timer);
     };
-  }, [baseTitle]);
+  }, [baseTitle, resolve]);
 
   return null;
 }

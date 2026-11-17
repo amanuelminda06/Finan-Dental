@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import Link from 'next/link';
+import { TenantLink as Link } from '@/components/tenant-navigation';
 import { salePrefillQuery } from '@/modules/sales/prefill-query';
 
 type Props = {

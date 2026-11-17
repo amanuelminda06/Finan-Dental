@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import { TenantLink as Link, useTenantHref } from '@/components/tenant-navigation';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
@@ -28,7 +28,11 @@ export default function PublicHeader({ clinicName, phoneHref }: Props) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
-  const isActive = (href: string) => (href === '/' ? pathname === '/' : pathname.startsWith(href));
+  const resolve = useTenantHref();
+  const isActive = (href: string) => {
+    const target = resolve(href);
+    return href === '/' ? pathname === target : pathname.startsWith(target);
+  };
 
   const links = (onClick?: () => void, className = '') =>
     LINKS.map((link) => (

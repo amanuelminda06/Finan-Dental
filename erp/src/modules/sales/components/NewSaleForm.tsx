@@ -1,7 +1,7 @@
 'use client';
 
 import { useActionState, useEffect, useMemo, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useTenantRouter as useRouter } from '@/components/tenant-navigation';
 import { useTranslations } from 'next-intl';
 import ActionError from '@/components/ActionError';
 import { formatMoney, multiplyMoney, sumLineTotals, toDecimalString } from '@/lib/money';

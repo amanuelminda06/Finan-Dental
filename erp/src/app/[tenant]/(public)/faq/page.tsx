@@ -1,11 +1,14 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
+import { getRequestTenant } from '@/lib/tenant-request';
+import { TenantLink as Link } from '@/components/tenant-navigation';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { getSiteContent, isFaqItem, pageMetadata, parseItems, pick } from '@/modules/public-site';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('site');
+  const { slug } = await getRequestTenant();
   return pageMetadata({
+    tenant: slug,
     title: t('meta.faqTitle'),
     description: t('meta.faqDescription'),
     path: '/faq',

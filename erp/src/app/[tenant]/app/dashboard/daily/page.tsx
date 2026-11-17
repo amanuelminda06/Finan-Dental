@@ -1,5 +1,5 @@
 import { getTranslations } from 'next-intl/server';
-import Link from 'next/link';
+import { TenantLink as Link } from '@/components/tenant-navigation';
 import { requirePageRole } from '@/lib/require-role';
 import { formatMoney } from '@/lib/money';
 import { clinicDateKey, dateKeyAdd } from '@/lib/datetime';

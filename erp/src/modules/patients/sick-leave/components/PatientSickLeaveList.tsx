@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
+import { TenantLink as Link } from '@/components/tenant-navigation';
 import { useTranslations } from 'next-intl';
 import { formatDateRange } from '@/lib/datetime';
 import { deletePatientSickLeaveAction } from '../actions';

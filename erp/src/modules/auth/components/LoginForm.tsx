@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
+import { useTenantRouter as useRouter } from '@/components/tenant-navigation';
 import { getSession, signIn } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 import LocaleSwitcher from '@/components/LocaleSwitcher';

@@ -1,4 +1,5 @@
-import Link from 'next/link';
+import { TenantLink as Link } from '@/components/tenant-navigation';
+import { tenantServerHref } from '@/lib/tenant-server-path';
 import { getTranslations } from 'next-intl/server';
 import { requirePageRole } from '@/lib/require-role';
 import { prisma } from '@/lib/prisma';
@@ -85,7 +86,7 @@ export default async function FollowUpsPage({ searchParams }: { searchParams: Se
           </Link>
         ))}
 
-        <form method="get" action="/follow-ups" className="flex items-center gap-2">
+        <form method="get" action={await tenantServerHref('/follow-ups')} className="flex items-center gap-2">
           <input type="hidden" name="status" value={tab} />
           <AutoSubmitSelect
             name="patient"

@@ -1,3 +1,4 @@
+import { tenantServerUrl } from '@/lib/tenant-server-path';
 import type { NextRequest } from 'next/server';
 import { AuthorizationError, requireRole } from '@/lib/require-role';
 import { exportResponse, auditExport, isExportFormat } from '@/lib/export';
@@ -22,7 +23,7 @@ export async function GET(request: NextRequest) {
   } catch (err) {
     if (err instanceof AuthorizationError) {
       if (err.code === 'PASSWORD_CHANGE_REQUIRED') {
-        return Response.redirect(new URL('/change-password', request.url));
+        return Response.redirect(await tenantServerUrl(request, '/change-password'));
       }
       return new Response('Forbidden', { status: 403 });
     }

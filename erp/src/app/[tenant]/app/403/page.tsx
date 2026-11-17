@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import { TenantLink as Link } from '@/components/tenant-navigation';
 import { getTranslations } from 'next-intl/server';
 
 export default async function ForbiddenPage() {

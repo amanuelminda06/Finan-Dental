@@ -1,7 +1,7 @@
 'use client';
 
 import { useSyncExternalStore } from 'react';
-import { useRouter } from 'next/navigation';
+import { useTenantRouter as useRouter } from '@/components/tenant-navigation';
 import { useTranslations } from 'next-intl';
 import type { CampaignBatchRow, CampaignQueueItem } from '../queries';
 import { MESSAGE_STATUS_LABEL_KEYS } from '../constants';

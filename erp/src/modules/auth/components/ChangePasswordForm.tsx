@@ -1,7 +1,7 @@
 'use client';
 
 import { useActionState, useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useTenantRouter as useRouter } from '@/components/tenant-navigation';
 import { getSession, signIn } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 import { changePasswordAction } from '@/modules/auth/actions';

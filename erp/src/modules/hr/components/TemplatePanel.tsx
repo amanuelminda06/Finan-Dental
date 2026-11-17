@@ -1,7 +1,7 @@
 'use client';
 
 import { useActionState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useTenantRouter as useRouter } from '@/components/tenant-navigation';
 import { useTranslations } from 'next-intl';
 import type { ActionResult } from '@/lib/action';
 import type { TemplatePreview } from '../index';

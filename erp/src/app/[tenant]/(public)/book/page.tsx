@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { getRequestTenant } from '@/lib/tenant-request';
 import { getTranslations } from 'next-intl/server';
 import { clinicDateKey } from '@/lib/datetime';
 import {
@@ -11,7 +12,9 @@ import BookingForm from '@/modules/public-site/components/BookingForm';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('site');
+  const { slug } = await getRequestTenant();
   return pageMetadata({
+    tenant: slug,
     title: t('meta.bookTitle'),
     description: t('meta.bookDescription'),
     path: '/book',

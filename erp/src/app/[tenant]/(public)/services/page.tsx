@@ -1,13 +1,16 @@
 import type { Metadata } from 'next';
-import Image from 'next/image';
-import Link from 'next/link';
+import { getRequestTenant } from '@/lib/tenant-request';
+import TenantImage from '@/components/TenantImage';
+import { TenantLink as Link } from '@/components/tenant-navigation';
 import { getLocale, getTranslations } from 'next-intl/server';
 import Reveal from '@/components/Reveal';
 import { getPublicServices, pageMetadata, publicServiceImageUrl } from '@/modules/public-site';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('site');
+  const { slug } = await getRequestTenant();
   return pageMetadata({
+    tenant: slug,
     title: t('meta.servicesTitle'),
     description: t('meta.servicesDescription'),
     path: '/services',
@@ -39,7 +42,7 @@ export default async function ServicesPage() {
               <article className="card flex h-full flex-col overflow-hidden">
                 <div className="relative aspect-[3/2] w-full bg-slate-100">
                   {imageSrc ? (
-                    <Image
+                    <TenantImage
                       src={imageSrc}
                       alt={name}
                       fill

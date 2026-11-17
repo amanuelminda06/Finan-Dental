@@ -1,4 +1,4 @@
-import Image from 'next/image';
+import TenantImage from '@/components/TenantImage';
 
 type Props = {
   doctorId: string;
@@ -38,7 +38,7 @@ export default function DoctorAvatar({
 
   if (src) {
     return (
-      <Image
+      <TenantImage
         src={src}
         alt={alt}
         width={size}

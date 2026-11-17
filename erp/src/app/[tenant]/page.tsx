@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
-import Image from 'next/image';
+import TenantImage from '@/components/TenantImage';
 import { brand, telLink } from '@/config/brand';
-import Link from 'next/link';
+import { TenantLink as Link } from '@/components/tenant-navigation';
+import { getRequestTenant } from '@/lib/tenant-request';
+import { tenantAssetPath } from '@/lib/tenant-path';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { getPublicDoctorStatus } from '@/modules/hr';
 import {
@@ -25,7 +27,9 @@ import DoctorStatusBadge from '@/modules/public-site/components/DoctorStatusBadg
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('site');
+  const { slug } = await getRequestTenant();
   return pageMetadata({
+    tenant: slug,
     title: t('meta.homeTitle'),
     description: t('meta.homeDescription'),
     path: '/',
@@ -38,6 +42,7 @@ type DisplayTestimonial = { name: string; text: string; rating?: number | null }
 export default async function HomePage() {
   const t = await getTranslations('site');
   const locale = await getLocale();
+  const requestTenant = await getRequestTenant();
   const [content, services, profile, doctors, approvedFeedback] = await Promise.all([
     getSiteContent(),
     getPublicServices(),
@@ -90,7 +95,7 @@ export default async function HomePage() {
         <div
           className="absolute inset-0"
           style={{
-            backgroundImage: 'url(/hero.jpg)',
+            backgroundImage: `url(${tenantAssetPath(requestTenant.slug, '/hero.jpg')})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             filter: 'blur(3px)',
@@ -195,7 +200,7 @@ export default async function HomePage() {
                   <article key={service.id} className="card card-hover overflow-hidden">
                     <div className="relative aspect-[3/2] w-full bg-slate-100">
                       {imageSrc ? (
-                        <Image
+                        <TenantImage
                           src={imageSrc}
                           alt={name}
                           fill

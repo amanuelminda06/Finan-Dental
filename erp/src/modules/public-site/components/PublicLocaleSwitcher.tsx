@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useTenantRouter as useRouter } from '@/components/tenant-navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import type { Locale } from '@/i18n/config';
 

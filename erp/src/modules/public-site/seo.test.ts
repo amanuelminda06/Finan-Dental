@@ -30,15 +30,16 @@ describe('pageMetadata', () => {
     const meta = pageMetadata({
       title: 'About us',
       description: 'About the clinic.',
+      tenant: 'finan',
       path: '/about',
     });
-    expect(meta.alternates?.canonical).toBe('/about');
+    expect(meta.alternates?.canonical).toBe('/finan/about');
     expect(meta.alternates?.languages).toEqual({
-      en: '/about?lang=en',
-      am: '/about?lang=am',
-      'x-default': '/about',
+      en: '/finan/about?lang=en',
+      am: '/finan/about?lang=am',
+      'x-default': '/finan/about',
     });
-    expect(meta.openGraph?.url).toBe('https://finan.example.com/about');
+    expect(meta.openGraph?.url).toBe('https://finan.example.com/finan/about');
     expect(meta.twitter && 'card' in meta.twitter ? meta.twitter.card : undefined).toBe(
       'summary_large_image',
     );
@@ -49,10 +50,11 @@ describe('pageMetadata', () => {
     const meta = pageMetadata({
       title: 'Finan Speciality Dental Clinic — Eye care',
       description: 'Home.',
+      tenant: 'finan',
       path: '/',
       isHome: true,
     });
     expect(meta.title).toEqual({ absolute: 'Finan Speciality Dental Clinic' });
-    expect(meta.openGraph?.url).toBe('https://finan.example.com');
+    expect(meta.openGraph?.url).toBe('https://finan.example.com/finan');
   });
 });

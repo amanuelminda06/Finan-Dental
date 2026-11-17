@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { brand } from '@/config/brand';
 import { clinicDateKey } from '@/lib/datetime';
+import { getRequestTenant } from '@/lib/tenant-request';
+import { tenantPath } from '@/lib/tenant-path';
 import {
   getClinicProfile,
   getPublicServices,
@@ -24,11 +26,14 @@ import JsonLd from '@/modules/public-site/components/JsonLd';
 // export const instant = false;
 
 export async function generateMetadata(): Promise<Metadata> {
-  const profile = await getClinicProfile();
+  const [{ slug }, profile] = await Promise.all([getRequestTenant(), getClinicProfile()]);
   return {
     metadataBase: new URL(siteBaseUrl()),
     applicationName: profile.name,
-    openGraph: { siteName: profile.name },
+    openGraph: {
+      siteName: profile.name,
+      url: `${siteBaseUrl()}${tenantPath(slug)}`,
+    },
   };
 }
 
@@ -60,11 +65,12 @@ export default async function PublicLayout({ children }: { children: React.React
     clinicDateKey,
   );
 
+  const { slug } = await getRequestTenant();
   const jsonLd: Record<string, unknown> = {
     '@context': 'https://schema.org',
     '@type': 'MedicalClinic',
     name: clinicName,
-    url: siteBaseUrl(),
+    url: `${siteBaseUrl()}${tenantPath(slug)}`,
     telephone: `+251${phonePrimary.slice(1)}`,
     email: brand.email,
     ...(address

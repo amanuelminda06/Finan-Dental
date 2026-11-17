@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useTenantRouter as useRouter } from '@/components/tenant-navigation';
 import { useTranslations } from 'next-intl';
 import { LIBRARY_CATEGORY_LABEL_KEYS } from '../constants';
 import type { LibraryRow } from '../queries';

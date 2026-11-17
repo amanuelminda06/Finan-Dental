@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import { TenantLink as Link, useTenantHref } from '@/components/tenant-navigation';
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import type { NavModule } from '@/modules/nav';
@@ -13,9 +13,12 @@ type Props = {
 /** Collapsible module group: header (acronym + full name) with expand/collapse. */
 export default function NavModule({ module, pathname, className, onNavigate }: Props) {
   const t = useTranslations('nav');
-  const active = module.items.some(
-    (item) => pathname === item.href || pathname.startsWith(item.href + '/'),
-  );
+  const resolve = useTenantHref();
+  const isActiveHref = (href: string) => pathname === resolve(href);
+  const active = module.items.some((item) => {
+    const href = resolve(item.href);
+    return pathname === href || pathname.startsWith(`${href}/`);
+  });
   const [open, setOpen] = useState(active);
 
   const heading = module.acronym ? (
@@ -52,10 +55,10 @@ export default function NavModule({ module, pathname, className, onNavigate }: P
               key={item.href}
               href={item.href}
               onClick={onNavigate}
-              aria-current={pathname === item.href ? 'page' : undefined}
+              aria-current={isActiveHref(item.href) ? 'page' : undefined}
               className={
                 className +
-                (pathname === item.href
+                (isActiveHref(item.href)
                   ? ' bg-brand-100 text-slate-900'
                   : ' text-slate-600 hover:bg-brand-50 hover:text-brand-900')
               }

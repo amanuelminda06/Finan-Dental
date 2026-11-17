@@ -10,6 +10,9 @@ import { parseTenantSlug } from './tenant-slug';
 
 export type TenantRef = string | { slug: string };
 
+/** Which sibling tree a root-relative app path belongs to. */
+export type TenantArea = 'app' | 'public';
+
 function slugOf(tenant: TenantRef): string {
   const slug = typeof tenant === 'string' ? tenant : tenant.slug;
   if (!slug || /[\/?#]/.test(slug)) throw new Error(`Invalid tenant slug: ${slug}`);
@@ -73,4 +76,34 @@ export function tenantFromPath(pathname: string): string | null {
 export function isTenantPath(pathname: string, tenant: TenantRef): boolean {
   const prefix = tenantPath(tenant);
   return pathname === prefix || pathname.startsWith(`${prefix}/`);
+}
+
+/**
+ * Rewrite a legacy root-relative href into this tenant's URL tree.
+ *
+ * Rules, in order:
+ *  - Non-path values (`tel:`, `sms:`, `mailto:`, `https://`, `#…`) pass through.
+ *  - Already tenant-prefixed paths pass through (so server-built hrefs are
+ *    safe to hand to client links without double-prefixing).
+ *  - `/api/…` is always an API path under the tenant.
+ *  - `/static/…` is a shared asset under the tenant.
+ *  - `/` is the tenant's public home, from either area.
+ *  - Everything else is prefixed with the current area (`app` → `/[tenant]/app`,
+ *    `public` → `/[tenant]`).
+ */
+export function tenantHref(
+  href: string,
+  tenant: TenantRef,
+  area: TenantArea = 'public',
+): string {
+  if (!href || !href.startsWith('/') || href.startsWith('//')) return href;
+  const slug = slugOf(tenant);
+  const prefix = `/${slug}`;
+  if (href === prefix || href.startsWith(`${prefix}/`)) return href;
+  if (href === '/api' || href.startsWith('/api/')) {
+    return tenantApiPath(slug, href.slice('/api'.length) || '/');
+  }
+  if (href.startsWith('/static/')) return tenantAssetPath(slug, href.slice('/static'.length));
+  if (href === '/') return tenantPath(slug, '/');
+  return area === 'app' ? tenantAppPath(slug, href) : tenantPath(slug, href);
 }

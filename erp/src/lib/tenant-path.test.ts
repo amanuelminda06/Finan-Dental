@@ -5,6 +5,7 @@ import {
   tenantAppPath,
   tenantAssetPath,
   tenantFromPath,
+  tenantHref,
   tenantLoginPath,
   tenantPath,
 } from './tenant-path';
@@ -37,6 +38,38 @@ describe('tenantPath', () => {
 
   it('rejects slugs that would break the path scheme', () => {
     expect(() => tenantPath('/finan')).toThrow(/Invalid tenant slug/);
+  });
+});
+
+describe('tenantHref', () => {
+  it('prefixes app-area paths with the ERP tree', () => {
+    expect(tenantHref('/patients', 'finan', 'app')).toBe('/finan/app/patients');
+    expect(tenantHref('/dashboard/daily?day=2026-11-17', 'finan', 'app')).toBe(
+      '/finan/app/dashboard/daily?day=2026-11-17',
+    );
+  });
+
+  it('prefixes public-area paths with the site tree', () => {
+    expect(tenantHref('/about', 'finan', 'public')).toBe('/finan/about');
+  });
+
+  it('routes API, asset and home paths from either area', () => {
+    expect(tenantHref('/api/patients/export', 'finan', 'app')).toBe(
+      '/finan/api/patients/export',
+    );
+    expect(tenantHref('/api/public/doctors', 'finan', 'public')).toBe(
+      '/finan/api/public/doctors',
+    );
+    expect(tenantHref('/static/hero.jpg', 'finan', 'public')).toBe('/finan/static/hero.jpg');
+    expect(tenantHref('/', 'finan', 'app')).toBe('/finan');
+  });
+
+  it('passes through non-path and already-prefixed values', () => {
+    for (const href of ['tel:+251911', 'sms:+251911', 'https://example.com', '#main', '']) {
+      expect(tenantHref(href, 'finan', 'app')).toBe(href);
+    }
+    expect(tenantHref('/finan/app/patients', 'finan', 'app')).toBe('/finan/app/patients');
+    expect(tenantHref('/finan/api/search', 'finan', 'public')).toBe('/finan/api/search');
   });
 });
 

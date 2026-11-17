@@ -1,3 +1,6 @@
+import { tenantServerUrl } from '@/lib/tenant-server-path';
+import { tenantAppPath } from '@/lib/tenant-path';
+import { getRequestTenant } from '@/lib/tenant-request';
 import type { NextRequest } from 'next/server';
 import { AuthorizationError, requireRole } from '@/lib/require-role';
 import { prisma } from '@/lib/prisma';
@@ -30,7 +33,7 @@ export async function GET(request: NextRequest) {
   } catch (err) {
     if (err instanceof AuthorizationError) {
       if (err.code === 'PASSWORD_CHANGE_REQUIRED') {
-        return Response.redirect(new URL('/change-password', request.url));
+        return Response.redirect(await tenantServerUrl(request, '/change-password'));
       }
       return new Response('Forbidden', { status: 403 });
     }
@@ -107,25 +110,27 @@ export async function GET(request: NextRequest) {
   ]);
 
   void actor;
+  const { slug } = await getRequestTenant();
+  const appHref = (path: string) => tenantAppPath(slug, path);
 
   const response: SearchResponse = {
     patients: patients.map((patient) => ({
       id: patient.id,
       title: patient.fullName,
       subtitle: patient.phoneE164,
-      href: `/patients/${patient.id}`,
+      href: appHref(`/patients/${patient.id}`),
     })),
     sales: sales.map((sale) => ({
       id: sale.id,
       title: sale.receiptNumber,
       subtitle: `${sale.patient?.fullName ?? ''} · ${toDecimalString(sale.total)} · ${formatInTz(sale.saleDate, tz)}`,
-      href: `/sales/${sale.id}`,
+      href: appHref(`/sales/${sale.id}`),
     })),
     appointments: appointments.map((appointment) => ({
       id: appointment.id,
       title: appointment.patient.fullName,
       subtitle: `${clinicDateKey(appointment.startsAt, tz)} · ${appointment.doctor.fullName} · ${appointment.status}`,
-      href: `/appointments?view=day&day=${clinicDateKey(appointment.startsAt, tz)}`,
+      href: appHref(`/appointments?view=day&day=${clinicDateKey(appointment.startsAt, tz)}`),
     })),
   };
 

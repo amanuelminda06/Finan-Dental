@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import { TenantLink as Link } from '@/components/tenant-navigation';
 import { useActionState, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import ActionError from '@/components/ActionError';

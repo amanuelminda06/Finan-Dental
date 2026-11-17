@@ -3,6 +3,7 @@ import { getTranslations } from 'next-intl/server';
 import { brand } from '@/config/brand';
 import { auth, loginPath } from '@/auth';
 import AppShell from '@/components/AppShell';
+import { TenantAreaProvider } from '@/components/tenant-navigation';
 import { countDueTasks } from '@/modules/messaging/queries';
 import MessagesTicker from '@/modules/messaging/components/MessagesTicker';
 
@@ -24,19 +25,21 @@ export default async function ProtectedLayout({ children }: { children: React.Re
   const messageCount = canSeeMessages ? await countDueTasks().catch(() => 0) : 0;
 
   return (
-    <AppShell
-      user={{
-        name: user.name ?? user.email ?? '',
-        email: user.email ?? '',
-        role: user.role,
-        mustChangePassword: user.mustChangePassword,
-      }}
-      loginUrl={loginPath}
-      messageCount={messageCount}
-      trialBanner={brand.trialBanner}
-    >
-      {canSeeMessages ? <MessagesTicker baseTitle={brand.clinicName} /> : null}
-      {children}
-    </AppShell>
+    <TenantAreaProvider area="app">
+      <AppShell
+        user={{
+          name: user.name ?? user.email ?? '',
+          email: user.email ?? '',
+          role: user.role,
+          mustChangePassword: user.mustChangePassword,
+        }}
+        loginUrl={loginPath}
+        messageCount={messageCount}
+        trialBanner={brand.trialBanner}
+      >
+        {canSeeMessages ? <MessagesTicker baseTitle={brand.clinicName} /> : null}
+        {children}
+      </AppShell>
+    </TenantAreaProvider>
   );
 }

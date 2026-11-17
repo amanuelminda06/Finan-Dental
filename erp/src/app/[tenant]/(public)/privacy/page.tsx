@@ -1,10 +1,13 @@
 import type { Metadata } from 'next';
+import { getRequestTenant } from '@/lib/tenant-request';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { getSiteContent, pageMetadata, pick } from '@/modules/public-site';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('site');
+  const { slug } = await getRequestTenant();
   return pageMetadata({
+    tenant: slug,
     title: t('meta.privacyTitle'),
     description: t('meta.privacyDescription'),
     path: '/privacy',

@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import { TenantLink as Link, useTenantHref } from '@/components/tenant-navigation';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 
@@ -13,6 +13,7 @@ const GROUPS: GroupKey[] = ['patients', 'sales', 'appointments'];
 /** Debounced global search in the header (server route is role-gated). */
 export default function GlobalSearch() {
   const t = useTranslations('app');
+  const resolve = useTenantHref();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResponse | null>(null);
@@ -42,7 +43,7 @@ export default function GlobalSearch() {
     if (value.length < 2) return;
     timerRef.current = setTimeout(() => {
       setFetching(true);
-      void fetch(`/api/search?q=${encodeURIComponent(value)}`)
+      void fetch(resolve(`/api/search?q=${encodeURIComponent(value)}`))
         .then((response) => {
           if (!response.ok) throw new Error('search failed');
           return response.json() as Promise<SearchResponse>;
@@ -57,7 +58,7 @@ export default function GlobalSearch() {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [query]);
+  }, [query, resolve]);
 
   const hasQuery = query.trim().length >= 2;
   const total = results

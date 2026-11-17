@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTenantHref } from '@/components/tenant-navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import type { PublicService } from '@/modules/public-site';
 
@@ -30,6 +31,7 @@ type Props = {
 type Status = 'idle' | 'submitting' | 'success' | 'error';
 
 export default function BookingForm({ services, windows, minDate }: Props) {
+  const resolve = useTenantHref();
   const t = useTranslations('site');
   const locale = useLocale();
   const [status, setStatus] = useState<Status>('idle');
@@ -66,7 +68,7 @@ export default function BookingForm({ services, windows, minDate }: Props) {
     setFields({});
 
     try {
-      const response = await fetch('/api/public/requests', {
+      const response = await fetch(resolve('/api/public/requests'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

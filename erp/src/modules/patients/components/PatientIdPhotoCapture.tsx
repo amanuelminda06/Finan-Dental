@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useActionState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useTenantRouter as useRouter } from '@/components/tenant-navigation';
 import { useTranslations } from 'next-intl';
 import { capturePatientIdPhotoAction } from '@/modules/patients/actions';
 import { resizeImageFile } from '@/lib/image';

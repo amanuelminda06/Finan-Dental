@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { getRequestTenant } from '@/lib/tenant-request';
 import { getLocale, getTranslations } from 'next-intl/server';
 import {
   FeedbackForm,
@@ -25,7 +26,9 @@ const DAY_KEYS: Record<keyof WorkingHours, string> = {
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('site');
+  const { slug } = await getRequestTenant();
   return pageMetadata({
+    tenant: slug,
     title: t('meta.contactTitle'),
     description: t('meta.contactDescription'),
     path: '/contact',

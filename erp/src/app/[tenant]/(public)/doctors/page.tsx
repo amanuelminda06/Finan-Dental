@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
+import { getRequestTenant } from '@/lib/tenant-request';
+import { TenantLink as Link } from '@/components/tenant-navigation';
 import { getTranslations } from 'next-intl/server';
 import { getPublicDoctorStatus } from '@/modules/hr';
 import { getClinicProfile, getSiteContent, pageMetadata, pick } from '@/modules/public-site';
@@ -10,7 +11,9 @@ import { getLocale } from 'next-intl/server';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('site');
+  const { slug } = await getRequestTenant();
   return pageMetadata({
+    tenant: slug,
     title: t('meta.doctorsTitle'),
     description: t('meta.doctorsDescription'),
     path: '/doctors',

@@ -1,4 +1,4 @@
-import Image from 'next/image';
+import TenantImage from '@/components/TenantImage';
 
 type SiteLogoProps = {
   /** Rendered height in px; width follows the square 1:1 emblem ratio. */
@@ -14,8 +14,8 @@ export default function SiteLogo({
   className = '',
 }: SiteLogoProps) {
   return (
-    <Image
-      src="/finan-logo.png"
+    <TenantImage
+      src="/static/finan-logo.png"
       alt="Finan Speciality Dental Clinic"
       width={height}
       height={height}
@@ -34,8 +34,8 @@ type SiteLogoDarkProps = {
 /** Official Finan Speciality Dental Clinic logo (transparent background, safe on dark surfaces). */
 export function SiteLogoDark({ height = 40, className = '' }: SiteLogoDarkProps) {
   return (
-    <Image
-      src="/finan-logo-dark.png"
+    <TenantImage
+      src="/static/finan-logo-dark.png"
       alt="Finan Speciality Dental Clinic"
       width={height}
       height={height}

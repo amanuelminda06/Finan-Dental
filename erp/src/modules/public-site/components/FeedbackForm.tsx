@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTenantHref } from '@/components/tenant-navigation';
 import { useLocale, useTranslations } from 'next-intl';
 
 const SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
@@ -30,6 +31,7 @@ type Status = 'idle' | 'submitting' | 'success' | 'error';
  * clinic approves them with the "show on website" checkbox.
  */
 export default function FeedbackForm() {
+  const resolve = useTenantHref();
   const t = useTranslations('site');
   const locale = useLocale();
   const [status, setStatus] = useState<Status>('idle');
@@ -62,7 +64,7 @@ export default function FeedbackForm() {
     setFields({});
 
     try {
-      const response = await fetch('/api/public/feedback', {
+      const response = await fetch(resolve('/api/public/feedback'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
