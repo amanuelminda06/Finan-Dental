@@ -317,20 +317,20 @@ model FollowUp {
 }
 
 model Setting {
-  key       String   @id
+  key       String
   value     Json
   updatedBy String?
   updatedAt DateTime @updatedAt @db.Timestamptz
   tenantId  String
   tenant    Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
-  @@index([tenantId])
+  @@id([tenantId, key])
 }
 
 /// Editable public-website copy (CMS lite). One row per content key, bilingual.
 /// Amharic values are drafts that need a native-speaker review.
 model SiteContent {
-  key       String   @id
+  key       String
   valueEn   String   @db.Text
   valueAm   String   @db.Text
   /// User id of the last editor (no FK — users are never deleted).
@@ -339,7 +339,7 @@ model SiteContent {
   tenantId  String
   tenant    Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
-  @@index([tenantId])
+  @@id([tenantId, key])
 }
 
 model AuditLog {
@@ -604,12 +604,12 @@ model SaleLine {
 /// (INSERT … ON CONFLICT DO UPDATE … RETURNING) inside the sale transaction.
 model ReceiptCounter {
   /// Calendar year in the clinic timezone, e.g. 2026.
-  year       Int     @id
+  year       Int
   lastNumber Int     @default(0)
   tenantId   String
   tenant     Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
-  @@index([tenantId])
+  @@id([tenantId, year])
 }
 
 /// Editable SMS wording. One row per (key, language). Amharic rows are drafts

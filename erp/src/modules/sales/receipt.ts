@@ -5,7 +5,7 @@ import { clinicDateKey } from '@/lib/datetime';
  * Gap-free, per-year receipt numbers (`2026-000123`).
  *
  * The counter is claimed with ONE atomic statement:
- *   INSERT … ON CONFLICT ("year") DO UPDATE SET "lastNumber" = … + 1 RETURNING …
+ *   INSERT … ON CONFLICT ("tenantId","year") DO UPDATE SET "lastNumber" = … + 1 RETURNING …
  * Postgres takes a row lock for the conflicting row, so concurrent claims
  * serialize and never share a number. Called inside the sale transaction, so a
  * failed sale rolls the counter back too — no gaps.
@@ -64,7 +64,7 @@ export async function claimReceiptNumber(
   const rows = await tx.$queryRaw<Array<{ lastNumber: number }>>`
     INSERT INTO "ReceiptCounter" ("year", "lastNumber", "tenantId")
     VALUES (${year}, 1, ${tenantId})
-    ON CONFLICT ("year") DO UPDATE SET "lastNumber" = "ReceiptCounter"."lastNumber" + 1
+    ON CONFLICT ("tenantId","year") DO UPDATE SET "lastNumber" = "ReceiptCounter"."lastNumber" + 1
     RETURNING "lastNumber"
   `;
   const claimed = Number(rows[0]?.lastNumber ?? 1);
@@ -74,7 +74,7 @@ export async function claimReceiptNumber(
   // Repair the drifted counter inside the same transaction, so the next sale
   // continues from here instead of healing again.
   if (next !== claimed) {
-    await tx.$executeRaw`UPDATE "ReceiptCounter" SET "lastNumber" = ${next} WHERE "year" = ${year}`;
+    await tx.$executeRaw`UPDATE "ReceiptCounter" SET "lastNumber" = ${next} WHERE "year" = ${year} AND "tenantId" = ${tenantId}`;
   }
   return next;
 }

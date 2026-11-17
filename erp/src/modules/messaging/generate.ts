@@ -748,10 +748,11 @@ async function maybeSendDigest(now: Date, config: MessagingConfig): Promise<bool
     subject: `Finan Speciality Dental Clinic — ${due} message(s) still unsent`,
     body: `${due} prepared message(s) are still waiting to be sent from the clinic phone.`,
   });
+  const tenantId = await getDefaultTenantId();
   await prisma.setting.upsert({
-    where: { key: 'digest_last_sent' },
+    where: { tenantId_key: { tenantId, key: 'digest_last_sent' } },
     update: { value: todayKey },
-    create: { tenantId: await getDefaultTenantId(), key: 'digest_last_sent', value: todayKey },
+    create: { tenantId, key: 'digest_last_sent', value: todayKey },
   });
   return true;
 }

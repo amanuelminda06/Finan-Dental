@@ -11,7 +11,7 @@ export async function seedSiteContent(
   for (const key of CONTENT_KEYS) {
     const value = DEFAULT_CONTENT[key];
     await prisma.siteContent.upsert({
-      where: { key },
+      where: { tenantId_key: { tenantId, key } },
       update: {},
       create: { tenantId, key, valueEn: value.en, valueAm: value.am },
     });

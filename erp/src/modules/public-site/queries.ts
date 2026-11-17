@@ -1,5 +1,6 @@
 import { cache } from 'react';
 import { prisma } from '@/lib/prisma';
+import { getTenantId } from '@/lib/tenant-context';
 import { DEFAULT_TIMEZONE } from '@/lib/datetime';
 import { getSettingsMap, settingsFromMap, timezoneFrom } from '@/modules/settings';
 import { resolveContent, type SiteContentMap } from './content';
@@ -21,6 +22,7 @@ import {
 
 export const getSiteContent = cache(async (): Promise<SiteContentMap> => {
   const rows = await prisma.siteContent.findMany({
+    where: { tenantId: await getTenantId() },
     select: { key: true, valueEn: true, valueAm: true },
   });
   return resolveContent(rows);
@@ -29,7 +31,7 @@ export const getSiteContent = cache(async (): Promise<SiteContentMap> => {
 /** Public service catalogue: flagged + active only. The price is never selected. */
 export const getPublicServices = cache(async (): Promise<PublicService[]> => {
   const rows = await prisma.service.findMany({
-    where: { isPublic: true, active: true },
+    where: { tenantId: await getTenantId(), isPublic: true, active: true },
     select: {
       id: true,
       name: true,
@@ -54,7 +56,7 @@ export const getPublicServices = cache(async (): Promise<PublicService[]> => {
 export const getPublicFeedbackTestimonials = cache(
   async (): Promise<PublicFeedback[]> => {
     const rows = await prisma.feedback.findMany({
-      where: { showOnWebsite: true },
+      where: { tenantId: await getTenantId(), showOnWebsite: true },
       select: { id: true, name: true, text: true, rating: true },
       orderBy: { createdAt: 'desc' },
       take: 12,

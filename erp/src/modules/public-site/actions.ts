@@ -25,7 +25,9 @@ export async function saveSiteContentAction(
     }
     const values = validate(contentEditSchema, raw);
 
+    const tenantId = await getTenantId();
     const before = await prisma.siteContent.findMany({
+      where: { tenantId },
       select: { key: true, valueEn: true, valueAm: true },
     });
     const beforeMap = resolveContent(before);
@@ -40,11 +42,10 @@ export async function saveSiteContentAction(
           : { en, am };
     }
 
-    const tenantId = await getTenantId();
     await prisma.$transaction(
       CONTENT_KEYS.map((key) =>
         prisma.siteContent.upsert({
-          where: { key },
+          where: { tenantId_key: { tenantId, key } },
           update: { valueEn: next[key].en, valueAm: next[key].am, updatedBy: actor.id },
           create: {
             tenantId,

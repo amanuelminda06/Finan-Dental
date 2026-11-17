@@ -52,12 +52,12 @@ async function main(): Promise<void> {
   try {
     const tenantId = await ensureSeedTenant(prisma);
     await prisma.setting.upsert({
-      where: { key: 'group_sms_allow_for_filtered' },
+      where: { tenantId_key: { tenantId, key: 'group_sms_allow_for_filtered' } },
       update: { value: mode === 'allow' },
       create: { tenantId, key: 'group_sms_allow_for_filtered', value: mode === 'allow' },
     });
     await prisma.setting.upsert({
-      where: { key: 'group_sms_max_recipients' },
+      where: { tenantId_key: { tenantId, key: 'group_sms_max_recipients' } },
       update: { value: 15 },
       create: { tenantId, key: 'group_sms_max_recipients', value: 15 },
     });

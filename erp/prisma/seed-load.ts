@@ -181,7 +181,7 @@ async function main() {
   }
 
   await prisma.receiptCounter.upsert({
-    where: { year },
+    where: { tenantId_year: { tenantId, year } },
     create: { tenantId, year, lastNumber: receiptNumber },
     update: { lastNumber: receiptNumber },
   });

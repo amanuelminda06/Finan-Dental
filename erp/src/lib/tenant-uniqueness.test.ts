@@ -12,6 +12,7 @@ vi.mock('@/lib/audit', () => ({
 
 import { resetRateLimits } from '@/lib/ratelimit';
 import { verifyCredentials } from '@/modules/auth/services/verify-credentials';
+import { claimReceiptNumber, formatReceiptNumber } from '@/modules/sales/receipt';
 
 const prisma = new PrismaClient();
 let tenantA: string;
@@ -146,5 +147,65 @@ describe('per-tenant patient, tag, sale and storage uniqueness', () => {
     await expect(
       prisma.storedFile.create({ data: { ...data, tenantId: tenantA } }),
     ).rejects.toMatchObject({ code: 'P2002' });
+  });
+});
+
+describe('per-tenant setting, site-content and receipt counters', () => {
+  it('allows the same setting key in two tenants but rejects a duplicate in one tenant', async () => {
+    const key = `setting-${randomUUID()}`;
+    await prisma.setting.create({ data: { tenantId: tenantA, key, value: 'A' } });
+    await prisma.setting.create({ data: { tenantId: tenantB, key, value: 'B' } });
+
+    await expect(
+      prisma.setting.create({ data: { tenantId: tenantA, key, value: 'duplicate' } }),
+    ).rejects.toMatchObject({ code: 'P2002' });
+  });
+
+  it('allows the same site-content key in two tenants but rejects a duplicate in one tenant', async () => {
+    const key = `content-${randomUUID()}`;
+    const data = { key, valueEn: 'A', valueAm: 'A' };
+    await prisma.siteContent.create({ data: { ...data, tenantId: tenantA } });
+    await prisma.siteContent.create({ data: { ...data, tenantId: tenantB } });
+
+    await expect(
+      prisma.siteContent.create({ data: { ...data, tenantId: tenantA } }),
+    ).rejects.toMatchObject({ code: 'P2002' });
+  });
+
+  it('lets both tenants claim 2026-000001', async () => {
+    const a = await prisma.$transaction((tx) => claimReceiptNumber(tx, 2026, tenantA));
+    const b = await prisma.$transaction((tx) => claimReceiptNumber(tx, 2026, tenantB));
+    expect(formatReceiptNumber(2026, a)).toBe('2026-000001');
+    expect(formatReceiptNumber(2026, b)).toBe('2026-000001');
+  });
+
+  it('never collides when one tenant claims concurrently', async () => {
+    const claims = await Promise.all(
+      Array.from({ length: 10 }, () =>
+        prisma.$transaction((tx) => claimReceiptNumber(tx, 2027, tenantA)),
+      ),
+    );
+    expect(new Set(claims).size).toBe(claims.length);
+    expect(claims.sort((x, y) => x - y)).toEqual(
+      Array.from({ length: 10 }, (_, index) => index + 1),
+    );
+  });
+
+  it('clamps against only the claiming tenant\'s MAX(receiptNumber)', async () => {
+    await prisma.sale.create({
+      data: {
+        tenantId: tenantA,
+        receiptNumber: '2031-000500',
+        saleDate: new Date(),
+        paymentMethod: 'CASH',
+        total: 10,
+        createdBy: 'tenant-test',
+      },
+    });
+
+    const b = await prisma.$transaction((tx) => claimReceiptNumber(tx, 2031, tenantB));
+    const a = await prisma.$transaction((tx) => claimReceiptNumber(tx, 2031, tenantA));
+    expect(b).toBe(1);
+    expect(a).toBe(501);
   });
 });

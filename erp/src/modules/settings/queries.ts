@@ -1,11 +1,15 @@
 import { brand } from '@/config/brand';
 import { prisma } from '@/lib/prisma';
+import { getTenantId } from '@/lib/tenant-context';
 import { DEFAULT_TIMEZONE } from '@/lib/datetime';
 import { WEEKDAYS, type SettingsFormValues } from './schemas';
 
 /** All seeded settings as a plain key → value map. */
 export async function getSettingsMap(): Promise<Record<string, unknown>> {
-  const rows = await prisma.setting.findMany({ select: { key: true, value: true } });
+  const rows = await prisma.setting.findMany({
+    where: { tenantId: await getTenantId() },
+    select: { key: true, value: true },
+  });
   return Object.fromEntries(rows.map((row) => [row.key, row.value]));
 }
 

@@ -34,7 +34,9 @@ function latestWeekday(dateKey: string): string {
 
 export async function seedAppointments(prisma: PrismaClient): Promise<void> {
   const tenantId = await ensureSeedTenant(prisma);
-  const setting = await prisma.setting.findUnique({ where: { key: 'timezone' } });
+  const setting = await prisma.setting.findUnique({
+    where: { tenantId_key: { tenantId, key: 'timezone' } },
+  });
   const tz = typeof setting?.value === 'string' && setting.value ? setting.value : DEFAULT_TIMEZONE;
   const todayKey = clinicDateKey(new Date(), tz);
 

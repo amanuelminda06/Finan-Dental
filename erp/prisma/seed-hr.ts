@@ -109,7 +109,9 @@ const STAFF_SHIFTS: ShiftPattern[] = [
 
 export async function seedHr(prisma: PrismaClient): Promise<void> {
   const tenantId = await ensureSeedTenant(prisma);
-  const setting = await prisma.setting.findUnique({ where: { key: 'timezone' } });
+  const setting = await prisma.setting.findUnique({
+    where: { tenantId_key: { tenantId, key: 'timezone' } },
+  });
   const tz = typeof setting?.value === 'string' && setting.value ? setting.value : DEFAULT_TIMEZONE;
 
   // 1. Staff (upsert — safe to re-run).

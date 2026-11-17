@@ -62,7 +62,7 @@ export async function saveSettingsAction(
     for (const key of SETTING_KEYS) {
       const value = map[key] as Prisma.InputJsonValue;
       await prisma.setting.upsert({
-        where: { key },
+        where: { tenantId_key: { tenantId, key } },
         update: { value, updatedBy: actor.id },
         create: { tenantId, key, value, updatedBy: actor.id },
       });

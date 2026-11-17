@@ -77,7 +77,7 @@ async function main(): Promise<void> {
 
     for (const setting of SETTINGS) {
       await prisma.setting.upsert({
-        where: { key: setting.key },
+        where: { tenantId_key: { tenantId, key: setting.key } },
         update: {},
         create: { tenantId, key: setting.key, value: setting.value as Prisma.InputJsonValue },
       });
