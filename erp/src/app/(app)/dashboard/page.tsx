@@ -2,7 +2,8 @@ import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { requirePageRole } from '@/lib/require-role';
 import { formatMoney } from '@/lib/money';
-import { getSettingsMap, settingsFromMap } from '@/modules/settings';
+import { clinicDateKey } from '@/lib/datetime';
+import { getSettingsMap, timezoneFrom, settingsFromMap } from '@/modules/settings';
 import { getDashboardData } from '@/modules/dashboard';
 import { type PublicDoctorStatus } from '@/modules/hr';
 import type { Role } from '@prisma/client';
@@ -11,6 +12,7 @@ const QUICK_LINKS: Array<{ href: string; labelKey: string; roles: Role[] }> = [
   { href: '/patients', labelKey: 'patients', roles: ['OWNER', 'RECEPTION'] },
   { href: '/sales/new', labelKey: 'newSale', roles: ['OWNER', 'RECEPTION'] },
   { href: '/sales', labelKey: 'sales', roles: ['OWNER', 'RECEPTION'] },
+  { href: '/appointments', labelKey: 'appointments', roles: ['OWNER', 'RECEPTION'] },
   { href: '/follow-ups', labelKey: 'followUps', roles: ['OWNER', 'RECEPTION'] },
   { href: '/messages', labelKey: 'messages', roles: ['OWNER', 'RECEPTION'] },
   { href: '/schedule', labelKey: 'schedule', roles: ['OWNER', 'RECEPTION', 'STAFF'] },
@@ -64,8 +66,10 @@ export default async function DashboardPage() {
   const th = await getTranslations('hr');
 
   const [settings, data] = await Promise.all([getSettingsMap(), getDashboardData(user)]);
+  const tz = timezoneFrom(settings);
   const currency = settingsFromMap(settings).currency;
   const money = (value: string): string => formatMoney(value, currency);
+  const todayKey = clinicDateKey(new Date(), tz);
 
   const roleLabel =
     user.role === 'OWNER'
@@ -81,6 +85,11 @@ export default async function DashboardPage() {
     stats = [
       { href: '/dashboard/daily', labelKey: 'statRevenueToday', value: money(data.revenueToday) },
       { href: '/revenue', labelKey: 'statRevenueWeek', value: money(data.revenueWeek) },
+      {
+        href: `/appointments?view=day&day=${todayKey}`,
+        labelKey: 'statTodayAppointments',
+        value: String(data.todayAppointments),
+      },
       { href: '/sales/voids', labelKey: 'statPendingVoids', value: String(data.pendingVoids) },
       { href: '/leave/inbox', labelKey: 'statPendingLeave', value: String(data.pendingLeave) },
       {
@@ -93,6 +102,7 @@ export default async function DashboardPage() {
     ];
   } else if (user.role === 'RECEPTION') {
     stats = [
+      { href: `/appointments?view=day&day=${todayKey}`, labelKey: 'statTodayAppointments', value: String(data.todayAppointments) },
       {
         href: '/messages',
         labelKey: 'statMessagesDue',
@@ -103,6 +113,7 @@ export default async function DashboardPage() {
     ];
   } else if (data.staff) {
     stats = [
+      { href: '/appointments', labelKey: 'statMyAppointmentsToday', value: String(data.staff.appointmentsToday) },
       { href: '/schedule', labelKey: 'statMyShiftsWeek', value: String(data.staff.shiftsThisWeek) },
       {
         href: '/leave',
