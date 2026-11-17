@@ -1,9 +1,11 @@
 import { env } from '@/env';
 import { prisma } from '@/lib/prisma';
+import { getExplicitTenantId } from '@/lib/tenant-scope';
 
 /**
  * Resolves the tenant for the current request.
  *
+ * - An explicit `runWithTenant()` scope (jobs, seeds, tests) is authoritative.
  * - Signed-in requests use the tenant baked into the session JWT at sign-in.
  * - Anonymous flows (public booking/feedback, cron jobs) fall back to the
  *   tenant named by DEFAULT_TENANT_SLUG until host-based tenancy lands.
@@ -16,6 +18,8 @@ let defaultTenantId: string | null = null;
 
 /** Default tenant id, resolved once per process. */
 export async function getDefaultTenantId(): Promise<string> {
+  const explicit = getExplicitTenantId();
+  if (explicit) return explicit;
   if (defaultTenantId) return defaultTenantId;
   const slug = env.DEFAULT_TENANT_SLUG;
   const tenant = await prisma.tenant.findUnique({
@@ -33,6 +37,8 @@ export async function getDefaultTenantId(): Promise<string> {
 
 /** Tenant id for rows created during this request. */
 export async function getTenantId(): Promise<string> {
+  const explicit = getExplicitTenantId();
+  if (explicit) return explicit;
   // Imported lazily: auth.ts passes the login tenant into verifyCredentials,
   // so a static import here would create an auth → tenant-context → auth cycle.
   const { auth } = await import('@/auth');
