@@ -1,11 +1,12 @@
 import { randomUUID } from 'node:crypto';
 import type { PrismaClient } from '@prisma/client';
+import { assertTenantNotProtected } from '../src/lib/tenant-protection';
 
 let cachedTenantId: string | null = null;
 
 /** Read the slug directly so importing a seed helper never validates the whole app env. */
 function seedTenantSlug(): string {
-  const slug = process.env.DEFAULT_TENANT_SLUG ?? 'finan';
+  const slug = process.env.DEFAULT_TENANT_SLUG ?? 'finandentalclinic';
   if (!/^[a-z0-9](?:[a-z0-9-]{1,38})[a-z0-9]$/.test(slug)) {
     throw new Error(`Invalid DEFAULT_TENANT_SLUG: "${slug}"`);
   }
@@ -21,10 +22,17 @@ function seedTenantSlug(): string {
 export async function ensureSeedTenant(prisma: PrismaClient): Promise<string> {
   if (cachedTenantId) return cachedTenantId;
   const slug = seedTenantSlug();
-  const tenant = await prisma.tenant.upsert({
+  await assertTenantNotProtected(prisma, slug);
+  const existing = await prisma.tenant.findUnique({
     where: { slug },
-    update: {},
-    create: {
+    select: { id: true },
+  });
+  if (existing) {
+    cachedTenantId = existing.id;
+    return cachedTenantId;
+  }
+  const tenant = await prisma.tenant.create({
+    data: {
       slug,
       name: slug === 'finan' ? 'Finan Speciality Dental Clinic' : slug,
       loginSecret: `${slug}-${randomUUID()}`,

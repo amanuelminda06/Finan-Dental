@@ -858,6 +858,8 @@ model Tenant {
   name         String
   status       TenantStatus @default(TRIAL)
   trialEndsAt  DateTime?    @db.Timestamptz
+  /// Platform tenant: never deleted, reset or overwritten by seed/CLI tooling.
+  protected    Boolean      @default(false)
   customDomain String?      @unique
   loginSecret  String       @unique
   createdAt    DateTime     @default(now()) @db.Timestamptz

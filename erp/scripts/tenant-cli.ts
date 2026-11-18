@@ -16,6 +16,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { hash } from '@node-rs/argon2';
 import { PrismaClient, type TenantStatus } from '@prisma/client';
 import { parseTenantSlug } from '../src/lib/tenant-slug';
+import { assertTenantNotProtected } from '../src/lib/tenant-protection';
 
 function loadEnv(): void {
   const url = new URL('../.env', import.meta.url);
@@ -201,6 +202,7 @@ async function main(): Promise<void> {
       case 'tenant:reset-demo': {
         const slug = slugArg(args[0]);
         const tenant = await requireTenant(prisma, slug);
+        await assertTenantNotProtected(prisma, slug);
         await clearDemoData(prisma, tenant.id);
         const template = await applyDentalTemplate(prisma, tenant.id, {
           clinicName: tenant.name,
@@ -217,6 +219,7 @@ async function main(): Promise<void> {
       case 'tenant:delete': {
         const slug = slugArg(args[0]);
         const tenant = await requireTenant(prisma, slug);
+        await assertTenantNotProtected(prisma, slug);
         if (tenant.status === 'ACTIVE' && !args.includes('--force')) {
           fail(
             `Refusing to delete ACTIVE tenant "${slug}" without --force. ` +
