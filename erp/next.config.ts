@@ -41,6 +41,12 @@ const nextConfig: NextConfig = {
   experimental: {
     agentUpgrade: 'security',
   },
+  // The superadmin create-tenant action copies starter images from public/
+  // into each tenant's own storage. Trace them into server functions so the
+  // files exist on disk in the Vercel runtime, not just on the static CDN.
+  outputFileTracingIncludes: {
+    '/*': ['./public/**/*'],
+  },
   turbopack: {
     rules: {
       '*.css': {

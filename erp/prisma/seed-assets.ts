@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises';
-import { fileURLToPath } from 'node:url';
+import { seedAssetPath } from '../src/lib/seed-asset-path';
 import { storage } from '../src/lib/storage';
 import { runWithTenant } from '../src/lib/tenant-scope';
 import { SERVICES } from '../src/config/services';
@@ -19,10 +19,6 @@ export type SeedAssetKeys = {
   serviceImageUrls: Record<string, string>;
 };
 
-function publicPath(file: string): string {
-  return fileURLToPath(new URL(`../public/${file}`, import.meta.url));
-}
-
 function slug(name: string): string {
   return name
     .toLowerCase()
@@ -33,7 +29,7 @@ function slug(name: string): string {
 
 async function copy(tenantId: string, source: string, key: string): Promise<string | null> {
   try {
-    const bytes = await readFile(publicPath(source));
+    const bytes = await readFile(seedAssetPath(source));
     await storage.put(key, bytes);
     return key;
   } catch (error) {

@@ -151,6 +151,8 @@ tagline, address, phones, email, socials, colors, logo, hero, doctor information
 SMS sender and languages. All metadata, JSON-LD, OpenGraph, CSS variables, public
 images and rendered message previews follow those tenant-owned values. Static
 files in `public/` are only seed defaults copied into each tenant's storage.
+`next.config.ts` traces that directory into server functions so superadmin tenant
+creation can read the defaults on Vercel as well as from the CLI.
 
 ## 6. Cron fan-out
 
