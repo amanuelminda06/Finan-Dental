@@ -36,6 +36,22 @@ case "$DB_HOST" in
   *) echo "Refusing to run smoke against non-local database host: ${DB_HOST:-<unset>}"; exit 1 ;;
 esac
 echo "Database: $DB_HOST:$DB_PORT/$DB_NAME"
+
+# Provision the isolation tenants through the same CLI used in production docs.
+# The script refuses hosted databases and never prints a secret or password.
+npx tsx scripts/seed-e2e-tenants.ts > /tmp/opencode/e2e-seed.log 2>&1 || {
+  cat /tmp/opencode/e2e-seed.log; exit 1;
+}
+SNAPSHOT=${E2E_TENANT_SNAPSHOT:-/tmp/opencode/erp-e2e-tenants.json}
+[ -f "$SNAPSHOT" ] || { echo "Missing tenant snapshot: $SNAPSHOT"; exit 1; }
+snap() { # snap <tenant slug> <dotted field>
+  SNAPSHOT="$SNAPSHOT" node --input-type=module -e "
+import { readFileSync } from 'node:fs';
+const s = JSON.parse(readFileSync(process.env.SNAPSHOT, 'utf8'));
+const value = process.argv[2].split('.').reduce((o, k) => o?.[k], s.tenants[process.argv[1]]);
+process.stdout.write(value == null ? '' : String(value));" "$1" "$2";
+}
+
 OWNER_EMAIL=$(grep '^OWNER_EMAIL=' .env | cut -d= -f2- | tr -d '\"')
 RECEPTION_EMAIL=$(grep '^RECEPTION_EMAIL=' .env | cut -d= -f2- | tr -d '\"')
 STAFF_EMAIL=$(grep '^STAFF_EMAIL=' .env | cut -d= -f2- | tr -d '\"')
@@ -46,7 +62,7 @@ check() { # check <desc> <expected> <actual>
   else FAIL=$((FAIL+1)); echo "✗ $1 (expected: $2, got: $3)"; fi
 }
 contains() { # contains <desc> <needle> <file>
-  if grep -qi "$2" "$3"; then PASS=$((PASS+1)); echo "✓ $1";
+  if grep -qi -- "$2" "$3"; then PASS=$((PASS+1)); echo "✓ $1";
   else FAIL=$((FAIL+1)); echo "✗ $1 (missing: $2)"; fi
 }
 login() { # login <jar> <email> <password>
@@ -114,6 +130,9 @@ contains "audit page renders" "Audit" /tmp/opencode/audit.html
 code=$(curl -s -b "$JAR" -o /tmp/opencode/settings.html -w '%{http_code}' "$APP/settings")
 check "owner /settings → 200" 200 "$code"
 contains "settings timezone field" "Africa/Addis_Ababa" /tmp/opencode/settings.html
+code=$(curl -s -b "$JAR" -o /tmp/opencode/branding.html -w '%{http_code}' "$APP/branding")
+check "owner /branding → 200" 200 "$code"
+contains "OWNER branding form renders" "Clinic branding" /tmp/opencode/branding.html
 
 # 5. Owner CSV export
 code=$(curl -s -b "$JAR" -o /tmp/opencode/audit.csv -w '%{http_code}' "$API/audit/export")
@@ -441,6 +460,65 @@ if grep -q "/$TENANT_SLUG/" /tmp/opencode/tenant-b-sitemap.xml; then FAIL=$((FAI
 code=$(curl -s -o /tmp/opencode/tenant-b-robots.txt -w '%{http_code}' "$SECOND_PUB/robots.txt")
 check "tenant B robots → 200" 200 "$code"
 contains "B robots sitemap scoped" "/$SECOND_TENANT/sitemap.xml" /tmp/opencode/tenant-b-robots.txt
+
+# 11f. Per-tenant branding, tenant-owned images and rendered message text
+A_CLINIC=$(snap "$TENANT_SLUG" clinicName)
+B_CLINIC=$(snap "$SECOND_TENANT" clinicName)
+A_ID=$(snap "$TENANT_SLUG" id)
+B_ID=$(snap "$SECOND_TENANT" id)
+A_PRIMARY=$(snap "$TENANT_SLUG" colors.primary)
+B_PRIMARY=$(snap "$SECOND_TENANT" colors.primary)
+A_HERO=$(snap "$TENANT_SLUG" heroUrl)
+B_HERO=$(snap "$SECOND_TENANT" heroUrl)
+A_SERVICE_IMAGE=$(snap "$TENANT_SLUG" serviceImageUrl)
+B_SERVICE_IMAGE=$(snap "$SECOND_TENANT" serviceImageUrl)
+
+code=$(curl -s -o /tmp/opencode/brand-home-a.html -w '%{http_code}' "$PUB")
+check "branding: tenant A home → 200" 200 "$code"
+code=$(curl -s -o /tmp/opencode/brand-home-b.html -w '%{http_code}' "$SECOND_PUB")
+check "branding: tenant B home → 200" 200 "$code"
+contains "A home shows A clinic" "$A_CLINIC" /tmp/opencode/brand-home-a.html
+contains "B home shows B clinic" "$B_CLINIC" /tmp/opencode/brand-home-b.html
+if grep -Fq "$B_CLINIC" /tmp/opencode/brand-home-a.html; then FAIL=$((FAIL+1)); echo "✗ A home leaks B clinic name"; else PASS=$((PASS+1)); echo "✓ A home leaks no B clinic name"; fi
+if grep -Fq "$A_CLINIC" /tmp/opencode/brand-home-b.html; then FAIL=$((FAIL+1)); echo "✗ B home leaks A clinic name"; else PASS=$((PASS+1)); echo "✓ B home leaks no A clinic name"; fi
+contains "A CSS brand colour" "--finan-brand-primary:$A_PRIMARY" /tmp/opencode/brand-home-a.html
+contains "B CSS brand colour" "--finan-brand-primary:$B_PRIMARY" /tmp/opencode/brand-home-b.html
+if [ "$A_PRIMARY" = "$B_PRIMARY" ]; then FAIL=$((FAIL+1)); echo "✗ tenants share a brand colour"; else PASS=$((PASS+1)); echo "✓ tenants have different brand colours"; fi
+
+# Each clinic's hero/service images live in its own storage key and URL tree.
+contains "A hero is tenant-owned" "$A_ID" /tmp/opencode/brand-home-a.html
+contains "B hero is tenant-owned" "$B_ID" /tmp/opencode/brand-home-b.html
+if grep -Fq "$B_ID" /tmp/opencode/brand-home-a.html; then FAIL=$((FAIL+1)); echo "✗ A home leaks B storage key"; else PASS=$((PASS+1)); echo "✓ A home leaks no B storage key"; fi
+if grep -Fq "$A_ID" /tmp/opencode/brand-home-b.html; then FAIL=$((FAIL+1)); echo "✗ B home leaks A storage key"; else PASS=$((PASS+1)); echo "✓ B home leaks no A storage key"; fi
+[ -n "$A_HERO" ] || { echo "Tenant A has no hero URL in snapshot"; exit 1; }
+[ -n "$B_HERO" ] || { echo "Tenant B has no hero URL in snapshot"; exit 1; }
+code=$(curl -s -o /tmp/opencode/hero-a.bin -w '%{http_code}' "$PUB$A_HERO")
+check "A brand asset → 200" 200 "$code"
+code=$(curl -s -o /tmp/opencode/hero-b.bin -w '%{http_code}' "$SECOND_PUB$B_HERO")
+check "B brand asset → 200" 200 "$code"
+code=$(curl -s -o /dev/null -w '%{http_code}' "$SECOND_PUB/api/public/assets/$A_ID/seed-hero.jpg")
+check "A asset key under B URL → 404" 404 "$code"
+code=$(curl -s -o /dev/null -w '%{http_code}' "$PUB/api/public/assets/$B_ID/seed-hero.jpg")
+check "B asset key under A URL → 404" 404 "$code"
+
+# Service rows are tenant-owned too: the second clinic renamed its starter service.
+curl -s -o /tmp/opencode/brand-services-a.html "$PUB/services"
+curl -s -o /tmp/opencode/brand-services-b.html "$SECOND_PUB/services"
+contains "A services show A catalogue" "Free Consultation" /tmp/opencode/brand-services-a.html
+contains "B services show B catalogue" "Bright Dental Whitening" /tmp/opencode/brand-services-b.html
+if grep -Fq "Bright Dental Whitening" /tmp/opencode/brand-services-a.html; then FAIL=$((FAIL+1)); echo "✗ A services leak B service"; else PASS=$((PASS+1)); echo "✓ A services leak no B service"; fi
+if grep -Fq "Free Consultation" /tmp/opencode/brand-services-b.html; then FAIL=$((FAIL+1)); echo "✗ B services leak A service"; else PASS=$((PASS+1)); echo "✓ B services leak no A service"; fi
+case "$A_SERVICE_IMAGE" in *"/$A_ID/"*) PASS=$((PASS+1)); echo "✓ A service image is tenant-owned";; *) FAIL=$((FAIL+1)); echo "✗ A service image key: $A_SERVICE_IMAGE";; esac
+case "$B_SERVICE_IMAGE" in *"/$B_ID/"*) PASS=$((PASS+1)); echo "✓ B service image is tenant-owned";; *) FAIL=$((FAIL+1)); echo "✗ B service image key: $B_SERVICE_IMAGE";; esac
+
+# Rendered SMS/reminder text is produced from each tenant's own clinic name.
+snap "$TENANT_SLUG" reminder > /tmp/opencode/reminder-a.txt
+snap "$SECOND_TENANT" reminder > /tmp/opencode/reminder-b.txt
+contains "A reminder uses A clinic" "$A_CLINIC" /tmp/opencode/reminder-a.txt
+contains "B reminder uses B clinic" "$B_CLINIC" /tmp/opencode/reminder-b.txt
+if grep -Fq "$B_CLINIC" /tmp/opencode/reminder-a.txt; then FAIL=$((FAIL+1)); echo "✗ A reminder leaks B clinic"; else PASS=$((PASS+1)); echo "✓ A reminder leaks no B clinic"; fi
+if grep -Fq "$A_CLINIC" /tmp/opencode/reminder-b.txt; then FAIL=$((FAIL+1)); echo "✗ B reminder leaks A clinic"; else PASS=$((PASS+1)); echo "✓ B reminder leaks no A clinic"; fi
+if cmp -s /tmp/opencode/reminder-a.txt /tmp/opencode/reminder-b.txt; then FAIL=$((FAIL+1)); echo "✗ tenants share identical reminder text"; else PASS=$((PASS+1)); echo "✓ reminder text differs per tenant"; fi
 
 # 12. Cleanup + server still alive
 sql "await p.user.update({ where: { tenantId_email: { tenantId: '$TENANT_ID', email: '$STAFF_EMAIL' } }, data: { failedLoginCount: 0, lockedUntil: null } }); console.log('unlocked');"

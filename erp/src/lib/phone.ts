@@ -51,6 +51,15 @@ export function isValidPhone(input: string): boolean {
   return normalizePhone(input) !== null;
 }
 
+/** Safe `tel:` href for a tenant-owned phone value (null when unusable). */
+export function telLink(phone: string | null | undefined): string | null {
+  if (!phone) return null;
+  const normalized = normalizePhone(phone);
+  if (normalized) return `tel:${normalized}`;
+  const cleaned = phone.trim().replace(/[^\d+]/g, '');
+  return cleaned.replace(/\D/g, '').length >= 6 ? `tel:${cleaned}` : null;
+}
+
 /** Human display for stored E.164 numbers: `+251912345678` → `0912345678`. */
 export function formatPhoneDisplay(e164: string): string {
   return e164.startsWith('+251') ? `0${e164.slice(4)}` : e164;

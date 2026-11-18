@@ -3,21 +3,28 @@ import { getRequestTenant } from '@/lib/tenant-request';
 import { TenantLink as Link } from '@/components/tenant-navigation';
 import { getTranslations } from 'next-intl/server';
 import { pageMetadata } from '@/modules/public-site';
+import { getTenantBrand } from '@/modules/tenant-brand/queries';
+import TenantImage from '@/components/TenantImage';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('site');
-  const { slug } = await getRequestTenant();
+  const [{ slug }, brand] = await Promise.all([getRequestTenant(), getTenantBrand()]);
   return pageMetadata({
     tenant: slug,
+    clinicName: brand.clinicName,
     title: t('meta.aboutTitle'),
-    description: t('meta.aboutDescription'),
+    description: t('meta.aboutDescription', { clinic: brand.clinicName }),
     path: '/about',
   });
 }
 
 export default async function AboutPage() {
   const t = await getTranslations('site');
-  const body = t('meta.aboutDescription').split(/\n{2,}/).map((paragraph) => paragraph.trim()).filter(Boolean);
+  const brand = await getTenantBrand();
+  const body = t('meta.aboutDescription', { clinic: brand.clinicName })
+    .split(/\n{2,}/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean);
 
   return (
     <div className="mx-auto w-full max-w-4xl px-4 py-14 sm:px-6">
@@ -44,6 +51,29 @@ export default async function AboutPage() {
           </div>
         ))}
       </div>
+
+      {brand.doctorName ? (
+        <section className="mt-10 rounded-2xl border border-slate-200 bg-white p-6">
+          <div className="flex flex-wrap items-center gap-5">
+            {brand.doctorPhotoUrl ? (
+              <TenantImage
+                src={brand.doctorPhotoUrl}
+                alt={brand.doctorName}
+                width={96}
+                height={96}
+                className="h-24 w-24 rounded-full object-cover"
+              />
+            ) : null}
+            <div>
+              <h2 className="text-xl font-semibold text-slate-900">{brand.doctorName}</h2>
+              {brand.doctorTitle ? (
+                <p className="text-sm font-medium text-brand-800">{brand.doctorTitle}</p>
+              ) : null}
+              {brand.doctorBio ? <p className="mt-2 text-slate-600">{brand.doctorBio}</p> : null}
+            </div>
+          </div>
+        </section>
+      ) : null}
 
       <div className="mt-10 flex flex-wrap gap-3">
         <Link

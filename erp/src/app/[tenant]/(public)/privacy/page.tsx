@@ -2,14 +2,16 @@ import type { Metadata } from 'next';
 import { getRequestTenant } from '@/lib/tenant-request';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { getSiteContent, pageMetadata, pick } from '@/modules/public-site';
+import { getTenantBrand } from '@/modules/tenant-brand/queries';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('site');
-  const { slug } = await getRequestTenant();
+  const [{ slug }, brand] = await Promise.all([getRequestTenant(), getTenantBrand()]);
   return pageMetadata({
     tenant: slug,
+    clinicName: brand.clinicName,
     title: t('meta.privacyTitle'),
-    description: t('meta.privacyDescription'),
+    description: t('meta.privacyDescription', { clinic: brand.clinicName }),
     path: '/privacy',
   });
 }

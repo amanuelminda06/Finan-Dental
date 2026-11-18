@@ -31,6 +31,7 @@ describe('pageMetadata', () => {
       title: 'About us',
       description: 'About the clinic.',
       tenant: 'finan',
+      clinicName: 'Finan Speciality Dental Clinic',
       path: '/about',
     });
     expect(meta.alternates?.canonical).toBe('/finan/about');
@@ -51,6 +52,7 @@ describe('pageMetadata', () => {
       title: 'Finan Speciality Dental Clinic — Eye care',
       description: 'Home.',
       tenant: 'finan',
+      clinicName: 'Finan Speciality Dental Clinic',
       path: '/',
       isHome: true,
     });

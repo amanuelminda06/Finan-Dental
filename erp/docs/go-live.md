@@ -4,13 +4,17 @@ Work top to bottom. Do not launch with unchecked items in **Critical**.
 
 ## Critical (must pass)
 
-- [ ] **Deployment** steps 1–3 done (`docs/deployment.md`); app reachable over HTTPS.
+- [ ] **Deployment** steps 1–3 done (`docs/deployment.md`, or
+      `docs/deploy-vercel-neon.md` for Vercel + Neon); app reachable over HTTPS.
 - [ ] `npm run typecheck && npm run lint && npm run messages && npm test` all green.
-- [ ] `npm run build` succeeds; `bash scripts/smoke.sh` passes (173 checks).
+- [ ] `npm run build` succeeds; `bash scripts/smoke.sh` passes with no new failures.
 - [ ] `npm run security:scan` shows **0** "needs manual review" endpoints.
 - [ ] `npm run audit:deps` reports no high/critical advisories.
 - [ ] Production `.env`: real `AUTH_SECRET`, random `LOGIN_SECRET_PATH`, real
-      owner email, strong passwords; `.env` is **not** in git.
+      owner email, strong passwords, `DIRECT_URL` for migrations/CLI; `.env` is
+      **not** in git.
+- [ ] First tenant created with `npm run tenant:create` (no demo data); its
+      one-time password and login path stored in the clinic password manager.
 - [ ] All seeded demo passwords changed; `mustChangePassword` cleared for the
       real accounts after first login.
 - [ ] Backup job scheduled **and** a restore has been rehearsed into a scratch
@@ -21,16 +25,21 @@ Work top to bottom. Do not launch with unchecked items in **Critical**.
 
 ## Content & clinic readiness
 
+- [ ] OWNER completed `/<tenant>/app/branding`: clinic name, short name,
+      tagline, address, phones, email, socials, colors, logo, hero, doctor info,
+      SMS sender and languages. No Finan-specific value remains in another
+      clinic's URL tree.
 - [ ] Clinic supplies final hero/about/hours/contact/footer/privacy copy
-      (`docs/go-live.md` → "Public site content").
+      (see "Public site content" below).
 - [ ] Amharic copy reviewed by a native speaker (currently marked draft).
 - [ ] Doctor profiles: correct staff flagged as doctors, `showOnWebsite`,
       specialty, photo (≤ 2 MB PNG/JPEG/WebP) — verify no phone/email leaks on
       `/doctors`.
 - [ ] Service catalogue: public services + descriptions set; prices never shown.
 - [ ] Consent-approved testimonials (or the section left empty).
-- [ ] Settings: clinic name, timezone (`Africa/Addis_Ababa`), currency,
-      opening hours, contact numbers, working-hour windows checked.
+- [ ] Settings: timezone (`Africa/Addis_Ababa`), currency, opening hours,
+      contact numbers and working-hour windows checked. The clinic name fallback
+      comes from the tenant's branding row.
 - [ ] Privacy policy reviewed (the shipped text is an explicit placeholder).
 
 ## People & process
@@ -49,6 +58,8 @@ Work top to bottom. Do not launch with unchecked items in **Critical**.
 - [ ] Confirm `/<tenant>/api/public/doctors` loads on the live site with correct statuses.
 - [ ] Confirm `/` redirects to the default tenant and each tenant's
       `sitemap.xml`/`robots.txt` lists only its own URLs.
+- [ ] Confirm each tenant's metadata, CSS colors, logo/hero and rendered SMS
+      preview show only that clinic's branding.
 - [ ] Confirm the messages badge / outbox matches what reception expects.
 
 ## Public site content (clinic to provide)

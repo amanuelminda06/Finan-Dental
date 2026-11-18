@@ -12,7 +12,6 @@ import LocaleSwitcher from '@/components/LocaleSwitcher';
 import GlobalSearch from '@/components/GlobalSearch';
 import NavModule from '@/components/NavModule';
 import { NAV_MODULES, type NavModule as NavModuleDef } from '@/modules/nav';
-import { brand } from '@/config/brand';
 
 type Props = {
   user: { name: string; email: string; role: Role; mustChangePassword: boolean };
@@ -20,6 +19,10 @@ type Props = {
   /** Messages due now or overdue → shown as a badge on /messages. */
   messageCount?: number;
   trialBanner?: boolean;
+  trialBannerText?: string;
+  /** Tenant-owned identity passed down from the server layout. */
+  shortName?: string;
+  logoUrl?: string | null;
   children: React.ReactNode;
 };
 
@@ -28,6 +31,9 @@ export default function AppShell({
   loginUrl,
   messageCount = 0,
   trialBanner = false,
+  trialBannerText = 'Trial / Demo data',
+  shortName = 'Clinic',
+  logoUrl = null,
   children,
 }: Props) {
   const pathname = usePathname();
@@ -68,6 +74,9 @@ export default function AppShell({
       user={user}
       loginUrl={loginUrl}
       trialBanner={trialBanner}
+      trialBannerText={trialBannerText}
+      shortName={shortName}
+      logoUrl={logoUrl}
       modules={modules}
       forced={forced}
       drawerOpen={drawerOpen}
@@ -97,6 +106,9 @@ function Shell({
   loginUrl,
   modules,
   trialBanner,
+  trialBannerText,
+  shortName,
+  logoUrl,
   forced,
   drawerOpen,
   setDrawerOpen,
@@ -105,7 +117,6 @@ function Shell({
   pathname,
   children,
 }: ShellProps) {
-  const t = useTranslations('app');
   const tn = useTranslations('nav');
   const tc = useTranslations('common');
 
@@ -116,7 +127,7 @@ function Shell({
     <div className="min-h-screen">
       {trialBanner ? (
         <div role="status" className="bg-amber-100 px-4 py-1 text-center text-xs font-semibold text-slate-900">
-          Trial / Demo data
+          {trialBannerText}
         </div>
       ) : null}
       <header className="sticky top-0 z-30 border-b border-slate-200 bg-white">
@@ -135,8 +146,8 @@ function Shell({
             href="/dashboard"
             className="flex items-center gap-2 text-sm font-semibold text-slate-900"
           >
-            <SiteLogo height={28} className="rounded-md" />
-            <span className="hidden sm:inline">{brand.shortName}</span>
+            <SiteLogo height={28} className="rounded-md" src={logoUrl} alt={shortName} label={shortName} />
+            <span className="hidden sm:inline">{shortName}</span>
           </Link>
 
           {user.role !== 'STAFF' ? (
@@ -227,7 +238,7 @@ function Shell({
           />
           <nav className="absolute left-0 top-0 h-full w-64 bg-white p-3 shadow-xl">
             <div className="mb-3 flex items-center justify-between px-2">
-              <span className="text-sm font-semibold">{brand.shortName}</span>
+              <span className="text-sm font-semibold">{shortName}</span>
               <button
                 type="button"
                 className="btn-secondary"

@@ -31,7 +31,6 @@ import { groupAllowed } from './recipient-filter';
 import { resolveRecipients, searchPickablePatients, type PickablePatient } from './recipients';
 import { renderMessage } from './render';
 import { randomUUID } from 'node:crypto';
-import { brand } from '@/config/brand';
 import { messageBodyHash, titleFromBody } from './message-hash';
 import { validateMessageBody, validateTemplateBody } from './templates';
 
@@ -1011,7 +1010,7 @@ export async function prepareMessageAction(
     const language = String(formData.get('language') ?? 'en');
     const settings = await getSettingsMap();
     const clinicName =
-      typeof settings.clinic_name === 'string' ? settings.clinic_name : brand.clinicName;
+      typeof settings.clinic_name === 'string' ? settings.clinic_name : 'Clinic';
     const reviewLink = typeof settings.review_link === 'string' ? settings.review_link : '';
     const timeZone = timezoneFrom(settings);
 

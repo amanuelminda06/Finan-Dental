@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { expect, type Page } from '@playwright/test';
 
 /**
@@ -133,4 +134,47 @@ export async function login(page: Page, role: RoleKey = 'OWNER') {
 export async function expectForbidden(page: Page, path: string) {
   await page.goto(appUrl(path));
   await expect(page).toHaveURL(/\/403/);
+}
+
+export type E2eTenant = {
+  slug: string;
+  id: string;
+  name: string;
+  clinicName: string;
+  loginPath: string;
+  ownerEmail?: string;
+  ownerPassword?: string;
+  colors: { primary: string; secondary: string; accent: string };
+  heroUrl: string | null;
+  logoUrl: string | null;
+  serviceNames: string[];
+  serviceImageUrl: string | null;
+  reminder: string;
+};
+
+export type E2eTenantSnapshot = {
+  generatedAt: string;
+  database: string;
+  tenants: Record<string, E2eTenant>;
+};
+
+/** Local-only snapshot written by `scripts/seed-e2e-tenants.ts`. */
+export function tenantSnapshot(): E2eTenantSnapshot {
+  const path = process.env.E2E_TENANT_SNAPSHOT ?? '/tmp/opencode/erp-e2e-tenants.json';
+  return JSON.parse(readFileSync(path, 'utf8')) as E2eTenantSnapshot;
+}
+
+/** Sign in as the deterministic OWNER created for the second e2e tenant. */
+export async function loginSecondTenant(page: Page): Promise<E2eTenant> {
+  const snapshot = tenantSnapshot();
+  const tenant = snapshot.tenants[SECOND_TENANT];
+  if (!tenant?.ownerEmail || !tenant.ownerPassword) {
+    throw new Error(`No local OWNER credentials for ${SECOND_TENANT}; run scripts/seed-e2e-tenants.ts`);
+  }
+  await page.goto(tenant.loginPath);
+  await page.locator('#email').fill(tenant.ownerEmail);
+  await page.locator('#password').fill(tenant.ownerPassword);
+  await page.getByRole('button', { name: /sign in/i }).click();
+  await expect(page).toHaveURL(/\/dashboard/);
+  return tenant;
 }

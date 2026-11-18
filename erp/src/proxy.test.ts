@@ -49,7 +49,7 @@ const ROUTES = [
 
 type OverrideHeaders = Record<string, string>;
 
-function requestFor(path: string, extra: OverrideHeaders = {}, sessionTenant = ''): NextRequest {
+function requestFor(path: string, extra: OverrideHeaders = {}): NextRequest {
   return new NextRequest(`https://clinic.test${path}`, {
     headers: {
       // Values a malicious client may send. None may survive the proxy.

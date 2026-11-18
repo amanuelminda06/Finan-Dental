@@ -10,9 +10,10 @@ import {
   workingHoursLines,
   type WorkingHours,
 } from '@/modules/public-site';
-import { telHref, telegramHref, whatsappHref } from '@/modules/public-site/format';
+import { telegramHref, whatsappHref } from '@/modules/public-site/format';
 import Map from '@/modules/public-site/components/MapLazy';
-import { brand, telLink } from '@/config/brand';
+import { telLink } from '@/lib/phone';
+import { getTenantBrand } from '@/modules/tenant-brand/queries';
 
 const DAY_KEYS: Record<keyof WorkingHours, string> = {
   mon: 'dayMon',
@@ -26,9 +27,10 @@ const DAY_KEYS: Record<keyof WorkingHours, string> = {
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('site');
-  const { slug } = await getRequestTenant();
+  const [{ slug }, brand] = await Promise.all([getRequestTenant(), getTenantBrand()]);
   return pageMetadata({
     tenant: slug,
+    clinicName: brand.clinicName,
     title: t('meta.contactTitle'),
     description: t('meta.contactDescription'),
     path: '/contact',
@@ -39,18 +41,24 @@ export default async function ContactPage() {
   const t = await getTranslations('site');
   const ts = await getTranslations('settings');
   const locale = await getLocale();
-  const [content, profile] = await Promise.all([getSiteContent(), getClinicProfile()]);
+  const [content, profile, tenantBrand] = await Promise.all([
+    getSiteContent(),
+    getClinicProfile(),
+    getTenantBrand(),
+  ]);
 
-  const address = brand.address;
-  const phonePrimary = brand.phones[0];
+  const address = tenantBrand.address;
+  const phonePrimary = tenantBrand.phones[0] ?? null;
   const phonePrimaryHref = telLink(phonePrimary);
-  const phoneBackup = brand.phones[1];
-  const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(brand.address)}`;
+  const phoneBackup = tenantBrand.phones[1] ?? null;
+  const mapUrl = address
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`
+    : null;
   const mapLat = pick(locale, content.map_lat);
   const mapLng = pick(locale, content.map_lng);
   const mapZoom = pick(locale, content.map_zoom);
   const whatsapp = whatsappHref(phonePrimary);
-  const telegram = telegramHref(brand.telegram);
+  const telegram = telegramHref(tenantBrand.socials.telegram);
   const hours = workingHoursLines(
     profile.workingHours,
     (day) => ts(DAY_KEYS[day] as never),
@@ -62,7 +70,9 @@ export default async function ContactPage() {
       <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
         {t('contact.title')}
       </h1>
-      <p className="mt-3 max-w-2xl text-lg text-slate-600">{t('contact.intro')}</p>
+      <p className="mt-3 max-w-2xl text-lg text-slate-600">
+        {t('contact.intro', { clinic: tenantBrand.clinicName })}
+      </p>
 
       <div className="mt-10 grid gap-6 lg:grid-cols-3">
         <div className="rounded-2xl border border-slate-200 bg-white p-6">
@@ -85,10 +95,14 @@ export default async function ContactPage() {
           {phonePrimary && phonePrimaryHref ? (
             <>
               <a href={phonePrimaryHref} className="mt-3 block text-lg font-semibold text-brand-900">
-                +251 {phonePrimary.slice(1, 3)} {phonePrimary.slice(3, 6)} {phonePrimary.slice(6)}
+                {phonePrimary}
               </a>
               {phoneBackup ? (
-                <p className="mt-2 text-sm text-slate-600"><a href={telLink(phoneBackup)}>{t('phoneBackupLabel', { number: `+251 ${phoneBackup.slice(1, 3)} ${phoneBackup.slice(3, 6)} ${phoneBackup.slice(6)}` })}</a></p>
+                <p className="mt-2 text-sm text-slate-600">
+                  <a href={telLink(phoneBackup) ?? '#'}>
+                    {t('phoneBackupLabel', { number: phoneBackup })}
+                  </a>
+                </p>
               ) : null}
             </>
           ) : (
@@ -153,7 +167,7 @@ export default async function ContactPage() {
             />
             <p className="mt-2">
               <a
-                href={mapUrl}
+                href={mapUrl ?? '#'}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-900 hover:bg-slate-50"

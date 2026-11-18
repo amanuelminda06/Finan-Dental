@@ -25,6 +25,14 @@ export function telegramHref(raw: string | null | undefined): string | null {
   return handle ? `https://t.me/${handle}` : null;
 }
 
+/** Social profile link from a full URL, `@handle` or bare handle. */
+export function socialHref(raw: string | null | undefined, host: string): string | null {
+  if (!raw) return null;
+  if (/^https?:\/\//i.test(raw)) return raw;
+  const handle = raw.replace(/^@/, '').replace(/[^A-Za-z0-9._]/g, '');
+  return handle ? `https://${host}/${handle}` : null;
+}
+
 /** Formats the next shift instant (clinic time) as e.g. "Mon 14:30". */
 export function formatNextAvailable(
   iso: string,

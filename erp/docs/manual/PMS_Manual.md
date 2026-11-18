@@ -1,5 +1,5 @@
 # Patient Management System (PMS) Manual
-**Finan Speciality Dental Clinic - ERP**
+**Clinic ERP — PMS manual**
 
 Version 1.0 | November 2026
 
@@ -20,7 +20,7 @@ Version 1.0 | November 2026
 
 ## 1. Introduction
 
-The Patient Management System (PMS) is the core module for managing patient records, tracking sales, monitoring revenue, and handling follow-up activities at Finan Speciality Dental Clinic.
+The Patient Management System (PMS) is the core module for managing patient records, tracking sales, monitoring revenue, and handling follow-up activities for the current tenant clinic.
 
 ---
 

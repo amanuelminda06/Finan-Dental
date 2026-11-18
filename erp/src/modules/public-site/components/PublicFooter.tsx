@@ -1,7 +1,6 @@
 import { TenantLink as Link } from '@/components/tenant-navigation';
 import { getTranslations } from 'next-intl/server';
 import Map from './MapLazy';
-import { brand, telLink } from '@/config/brand';
 import { SocialIcon } from './SocialIcon';
 
 type SocialLink = {
@@ -51,7 +50,7 @@ export default async function PublicFooter({
     <footer className="border-t-2 border-brand-600 bg-slate-50">
       <div className="mx-auto grid w-full max-w-6xl gap-6 px-4 py-10 sm:px-6 md:grid-cols-3">
         <div>
-          <p className="mt-2 text-sm text-slate-600">{t('footerAbout')}</p>
+          <p className="mt-2 text-sm text-slate-600">{t('footerAbout', { clinic: clinicName })}</p>
           {footerNote ? <p className="mt-1 text-xs text-slate-500">{footerNote}</p> : null}
           {socials.length ? (
             <div className="mt-3 flex flex-wrap gap-2">
@@ -92,14 +91,14 @@ export default async function PublicFooter({
             {t('footerContact')}
           </h2>
           <ul className="mt-2 space-y-1 text-sm text-slate-600">
-            <li>{brand.address}</li>
-            {brand.phones.map((number) => (
-              <li key={number}>
-                <a href={telLink(number)} className="hover:text-brand-900">
-                  +251 {number.slice(1, 3)} {number.slice(3, 6)} {number.slice(6)}
+            <li>{address || t('contact.pending')}</li>
+            {phone ? (
+              <li>
+                <a href={phoneHref ?? '#'} className="hover:text-brand-900">
+                  {phone}
                 </a>
               </li>
-            ))}
+            ) : null}
           </ul>
           {hoursText ? (
             <p className="mt-2 text-xs text-slate-500">{hoursText}</p>
@@ -114,7 +113,7 @@ export default async function PublicFooter({
                 title={clinicName}
               />
               <a
-                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(brand.address)}`}
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address || clinicName)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="mt-1 inline-flex items-center gap-1 rounded border border-slate-300 bg-white px-2.5 py-1 text-xs font-semibold text-slate-900 hover:bg-slate-50"

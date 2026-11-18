@@ -1,10 +1,9 @@
 import { redirect } from 'next/navigation';
-import { getTranslations } from 'next-intl/server';
-import { brand } from '@/config/brand';
 import { auth, getLoginPath } from '@/auth';
 import { assertSessionTenant } from '@/lib/session-tenant';
 import AppShell from '@/components/AppShell';
 import { TenantAreaProvider } from '@/components/tenant-navigation';
+import { getTenantBrand } from '@/modules/tenant-brand/queries';
 import { countDueTasks } from '@/modules/messaging/queries';
 import MessagesTicker from '@/modules/messaging/components/MessagesTicker';
 
@@ -22,8 +21,8 @@ export default async function ProtectedLayout({ children }: { children: React.Re
   if (!user?.id) redirect(await getLoginPath());
   await assertSessionTenant(user.tenantId);
   const loginPath = await getLoginPath();
+  const brand = await getTenantBrand();
 
-  const t = await getTranslations('app');
   const canSeeMessages = user.role === 'OWNER' || user.role === 'RECEPTION';
   const messageCount = canSeeMessages ? await countDueTasks().catch(() => 0) : 0;
 
@@ -39,6 +38,9 @@ export default async function ProtectedLayout({ children }: { children: React.Re
         loginUrl={loginPath}
         messageCount={messageCount}
         trialBanner={brand.trialBanner}
+        trialBannerText={brand.trialBannerText}
+        shortName={brand.shortName}
+        logoUrl={brand.logoUrl}
       >
         {canSeeMessages ? <MessagesTicker baseTitle={brand.clinicName} /> : null}
         {children}

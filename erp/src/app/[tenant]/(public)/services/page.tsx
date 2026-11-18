@@ -5,14 +5,16 @@ import { TenantLink as Link } from '@/components/tenant-navigation';
 import { getLocale, getTranslations } from 'next-intl/server';
 import Reveal from '@/components/Reveal';
 import { getPublicServices, pageMetadata, publicServiceImageUrl } from '@/modules/public-site';
+import { getTenantBrand } from '@/modules/tenant-brand/queries';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('site');
-  const { slug } = await getRequestTenant();
+  const [{ slug }, brand] = await Promise.all([getRequestTenant(), getTenantBrand()]);
   return pageMetadata({
     tenant: slug,
+    clinicName: brand.clinicName,
     title: t('meta.servicesTitle'),
-    description: t('meta.servicesDescription'),
+    description: t('meta.servicesDescription', { clinic: brand.clinicName }),
     path: '/services',
   });
 }

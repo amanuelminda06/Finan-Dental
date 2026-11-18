@@ -7,9 +7,9 @@ import { TEMPLATE_LABEL_KEYS, TEMPLATE_VARIABLES, TEMPLATE_SAFETY_NOTE_KEY } fro
 import { countSms, previewTemplate, unknownVariables } from '../templates';
 import { saveMessageTemplateAction } from '../actions';
 
-type Props = { templates: TemplateRow[] };
+type Props = { templates: TemplateRow[]; clinicName?: string };
 
-export default function TemplateEditor({ templates }: Props) {
+export default function TemplateEditor({ templates, clinicName }: Props) {
   const t = useTranslations('messages');
   const tc = useTranslations('common');
   const [selectedId, setSelectedId] = useState(templates[0]?.id ?? '');
@@ -20,7 +20,10 @@ export default function TemplateEditor({ templates }: Props) {
 
   const count = useMemo(() => countSms(body), [body]);
   const unknown = useMemo(() => unknownVariables(body), [body]);
-  const preview = useMemo(() => previewTemplate(body).text, [body]);
+  const preview = useMemo(
+    () => previewTemplate(body, clinicName ? { clinic: clinicName } : {}).text,
+    [body, clinicName],
+  );
 
   function selectTemplate(id: string) {
     const row = templates.find((item) => item.id === id) ?? null;
