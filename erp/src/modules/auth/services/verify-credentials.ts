@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { clientIp, writeAudit } from '@/lib/audit';
 import { isLocked, nextLoginStateAfterFailure, stateAfterLoginSuccess } from '@/lib/login-policy';
 import { checkRateLimit, tenantRateLimitKey } from '@/lib/ratelimit';
+import { resolveTrialRole } from '@/lib/trial-credentials';
 
 /** Valid argon2 hash of a throwaway string — equalizes timing when no user matches. */
 const DUMMY_HASH = '$argon2id$v=19$m=19456,t=2,p=1$c29tZXNhbHRzYWx0$c29tZWhhc2hlZGhhc2h2YWx1ZQ';
@@ -18,8 +19,39 @@ export type AuthenticatedUser = {
   tenantSlug: string;
 };
 
+const USER_INCLUDE = { tenant: { select: { slug: true } } } as const;
+
 /**
- * Credentials check for Auth.js (email + password, argon2).
+ * Resolve the login identifier inside this tenant only. A trial short name
+ * (owner/reception/doctor) maps to a role; everything else must be a full
+ * email. The doctor short name prefers the user linked to a doctor profile so
+ * the public doctors feed and appointment selector keep working.
+ */
+async function findLoginUser(tenantId: string, identifier: string) {
+  const trialRole = resolveTrialRole(identifier);
+  if (!trialRole) {
+    return prisma.user.findUnique({
+      where: { tenantId_email: { tenantId, email: identifier } },
+      include: USER_INCLUDE,
+    });
+  }
+  if (trialRole === 'STAFF') {
+    const doctor = await prisma.user.findFirst({
+      where: { tenantId, role: 'STAFF', staff: { isDoctor: true } },
+      orderBy: { createdAt: 'asc' },
+      include: USER_INCLUDE,
+    });
+    if (doctor) return doctor;
+  }
+  return prisma.user.findFirst({
+    where: { tenantId, role: trialRole },
+    orderBy: { createdAt: 'asc' },
+    include: USER_INCLUDE,
+  });
+}
+
+/**
+ * Credentials check for Auth.js (identifier + password, argon2).
  * - rate-limits by IP before touching the database
  * - locks the account for 15 minutes after 5 failed attempts
  * - audits every failure and success
@@ -30,19 +62,17 @@ export async function verifyCredentials(
   tenantId: string,
 ): Promise<AuthenticatedUser | null> {
   const raw = credentials as { email?: unknown; password?: unknown } | null | undefined;
-  const email = String(raw?.email ?? '')
+  const identifier = String(raw?.email ?? '')
     .trim()
     .toLowerCase();
   const password = String(raw?.password ?? '');
-  if (!email || !password) return null;
+  if (!identifier || !password) return null;
 
   const ip = await clientIp();
   if (!checkRateLimit(tenantRateLimitKey('login', tenantId, ip))) return null;
 
-  const user = await prisma.user.findUnique({
-    where: { tenantId_email: { tenantId, email } },
-    include: { tenant: { select: { slug: true } } },
-  });
+  // Short trial names are tenant-scoped, never global.
+  const user = await findLoginUser(tenantId, identifier);
   const passwordOk = await verify(user?.passwordHash ?? DUMMY_HASH, password);
   const now = new Date();
 
@@ -57,7 +87,7 @@ export async function verifyCredentials(
     await writeAudit({
       user: user ? { id: user.id, name: user.name } : null,
       entity: 'User',
-      entityId: user?.id ?? `email:${email}`,
+      entityId: user?.id ?? `email:${identifier}`,
       action: 'LOGIN_FAILED',
       new: { reason: user ? 'invalidPassword' : 'unknownEmail' },
       ip,

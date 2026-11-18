@@ -117,6 +117,8 @@
   "loginTitle": "የክሊኒክ መግቢያ",
   "loginSubtitle": "ለተፈቀደላቸው ሠራተኞች ብቻ",
   "email": "ኢሜይል",
+  "identifier": "ኢሜይል ወይም የሙከራ ተጠቃሚ",
+  "trialHint": "የሙከራ ግቢ፡ owner / owner123, reception / reception123, doctor / doctor123",
   "password": "የይለፍ ቃል",
   "signIn": "ግባ",
   "signingIn": "በመግባት ላይ…",

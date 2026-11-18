@@ -117,6 +117,8 @@
   "loginTitle": "Clinic sign in",
   "loginSubtitle": "Authorised staff only",
   "email": "Email",
+  "identifier": "Email or trial username",
+  "trialHint": "Trial logins — owner / owner123, reception / reception123, doctor / doctor123",
   "password": "Password",
   "signIn": "Sign in",
   "signingIn": "Signing in…",

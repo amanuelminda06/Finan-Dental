@@ -48,19 +48,21 @@ export default function LoginForm() {
           <form onSubmit={onSubmit} className="mt-6 space-y-4">
             <div>
               <label className="label" htmlFor="email">
-                {t('email')}
+                {t('identifier')}
               </label>
               <input
                 className="input-field"
                 id="email"
                 name="email"
-                type="email"
-                autoComplete="email"
+                type="text"
+                autoCapitalize="none"
+                autoComplete="username"
                 autoFocus
                 required
                 disabled={pending}
                 aria-invalid={!!error}
               />
+              <p className="mt-1 text-xs text-slate-500">{t('trialHint')}</p>
             </div>
 
             <div>
