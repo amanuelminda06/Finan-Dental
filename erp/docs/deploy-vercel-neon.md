@@ -40,6 +40,12 @@ Import the repository with:
 - **Install command:** `npm ci`
 - **Build command:** `npm run build`
 
+Keep **Root directory** set to `erp` for Git-backed deployments: Vercel clones
+the repository root, where `package.json` lives in `erp/`. Clearing it makes the
+build finish without an app and every route returns 404. A CLI deploy uploaded
+from `erp/` needs the opposite (root directory unset), so prefer Git deploys for
+`main` and do not change this setting just to run `vercel --prod` once.
+
 Set these project environment variables for Production (and separately for any
 Preview environment, using that branch's pooled/direct URLs):
 
