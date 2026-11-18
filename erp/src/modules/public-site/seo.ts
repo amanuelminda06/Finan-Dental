@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import { brand } from '@/config/brand';
 import { tenantPath, type TenantRef } from '@/lib/tenant-path';
 
 /**
@@ -19,6 +18,8 @@ export type PageMetaInput = {
   description: string;
   /** The clinic this page belongs to (slug or object with `slug`). */
   tenant: TenantRef;
+  /** This clinic's editable name — never read from a global config. */
+  clinicName: string;
   /** Site-relative path starting with `/`. */
   path: string;
   /** Home uses the full title instead of the `%s · Clinic` template. */
@@ -30,12 +31,19 @@ export type PageMetaInput = {
  * Graph/Twitter tags. The Open Graph image comes from the segment's
  * `opengraph-image` file convention.
  */
-export function pageMetadata({ title, description, tenant, path, isHome }: PageMetaInput): Metadata {
+export function pageMetadata({
+  title,
+  description,
+  tenant,
+  clinicName,
+  path,
+  isHome,
+}: PageMetaInput): Metadata {
   // Canonical/alternate paths are tenant-scoped; the OpenGraph URL is absolute.
   const tenantPathname = tenantPath(tenant, path);
   const url = `${siteBaseUrl()}${tenantPathname}`;
   return {
-    title: isHome ? { absolute: brand.clinicName } : title,
+    title: isHome ? { absolute: clinicName } : title,
     description,
     alternates: {
       canonical: tenantPathname,
@@ -47,7 +55,7 @@ export function pageMetadata({ title, description, tenant, path, isHome }: PageM
     },
     openGraph: {
       type: 'website',
-      siteName: brand.clinicName,
+      siteName: clinicName,
       title,
       description,
       url,

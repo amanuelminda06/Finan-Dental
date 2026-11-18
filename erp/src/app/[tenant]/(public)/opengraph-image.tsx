@@ -1,16 +1,17 @@
 import { ImageResponse } from 'next/og';
-import { brand } from '@/config/brand';
+import { getTenantBrand } from '@/modules/tenant-brand/queries';
 
-export const alt = `${brand.clinicName} — dental care in Addis Ababa`;
+/** File-convention alts are static; the generated image itself is per tenant. */
+export const alt = 'Clinic branding';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
 /**
- * Default social share image for the public website. Generated locally (no
- * external asset) so it always matches the brand; localised text is avoided so
- * the image stays cacheable across locales.
+ * Default social share image. Colours, clinic name, tagline and location come
+ * from the current tenant's editable brand, so two clinics never share art.
  */
 export default async function OpengraphImage() {
+  const brand = await getTenantBrand();
   return new ImageResponse(
     <div
       style={{
@@ -21,7 +22,7 @@ export default async function OpengraphImage() {
         justifyContent: 'space-between',
         background: `linear-gradient(135deg, ${brand.colors.primary} 0%, ${brand.colors.secondary} 100%)`,
         padding: '72px',
-        color: 'white',
+        color: brand.colors.accent,
         fontFamily: 'Arial, sans-serif',
       }}
     >
@@ -38,19 +39,19 @@ export default async function OpengraphImage() {
             fontSize: 44,
           }}
         >
-          +
+          {(brand.shortName.trim()[0] ?? 'C').toUpperCase()}
         </div>
         <div style={{ fontSize: 34, fontWeight: 600 }}>{brand.clinicName}</div>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
         <div style={{ fontSize: 68, fontWeight: 700, lineHeight: 1.05 }}>
-          Dental care for every smile
+          {brand.tagline || 'Dental care for every smile'}
         </div>
         <div style={{ fontSize: 30, opacity: 0.92 }}>
           Consultations · Cleaning · Restorative and specialist dental care
         </div>
       </div>
-      <div style={{ fontSize: 26, opacity: 0.9 }}>Addis Amhara, Ethiopia</div>
+      <div style={{ fontSize: 26, opacity: 0.9 }}>{brand.address || 'Ethiopia'}</div>
     </div>,
     size,
   );

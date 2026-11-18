@@ -1,9 +1,8 @@
 import type { Metadata } from 'next';
 import TenantImage from '@/components/TenantImage';
-import { brand, telLink } from '@/config/brand';
 import { TenantLink as Link } from '@/components/tenant-navigation';
+import { telLink } from '@/lib/phone';
 import { getRequestTenant } from '@/lib/tenant-request';
-import { tenantAssetPath } from '@/lib/tenant-path';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { getPublicDoctorStatus } from '@/modules/hr';
 import {
@@ -20,6 +19,7 @@ import {
   type WorkingHours,
 } from '@/modules/public-site';
 import { publicServiceImageUrl, workingHoursLines } from '@/modules/public-site/format';
+import { getTenantBrand } from '@/modules/tenant-brand/queries';
 import Reveal from '@/components/Reveal';
 import SiteLogo from '@/components/SiteLogo';
 import DoctorAvatar from '@/modules/public-site/components/DoctorAvatar';
@@ -27,11 +27,12 @@ import DoctorStatusBadge from '@/modules/public-site/components/DoctorStatusBadg
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('site');
-  const { slug } = await getRequestTenant();
+  const [{ slug }, brand] = await Promise.all([getRequestTenant(), getTenantBrand()]);
   return pageMetadata({
     tenant: slug,
-    title: t('meta.homeTitle'),
-    description: t('meta.homeDescription'),
+    clinicName: brand.clinicName,
+    title: t('meta.homeTitle', { clinic: brand.clinicName }),
+    description: t('meta.homeDescription', { clinic: brand.clinicName }),
     path: '/',
     isHome: true,
   });
@@ -42,18 +43,17 @@ type DisplayTestimonial = { name: string; text: string; rating?: number | null }
 export default async function HomePage() {
   const t = await getTranslations('site');
   const locale = await getLocale();
-  const requestTenant = await getRequestTenant();
-  const [content, services, profile, doctors, approvedFeedback] = await Promise.all([
+  const [content, services, profile, doctors, approvedFeedback, tenantBrand] = await Promise.all([
     getSiteContent(),
     getPublicServices(),
     getClinicProfile(),
     getPublicDoctorStatus(),
     getPublicFeedbackTestimonials(),
+    getTenantBrand(),
   ]);
 
-  const phonePrimary = brand.phones[0];
+  const phonePrimary = tenantBrand.phones[0] ?? null;
   const phonePrimaryHref = telLink(phonePrimary);
-  const phoneBackup = brand.phones[1];
   const featured = services.slice(0, 6);
   const onDuty = doctors.filter((doctor) => doctor.status === 'ON_DUTY_NOW');
   const shownDoctors = (onDuty.length ? onDuty : doctors).slice(0, 4);
@@ -72,7 +72,7 @@ export default async function HomePage() {
     pick(locale, content.announcements_items),
     isAnnouncementItem,
   );
-  const address = brand.address;
+  const address = tenantBrand.address;
   const ts = await getTranslations('settings');
   const DAY_KEYS: Record<keyof WorkingHours, string> = {
     mon: 'dayMon',
@@ -92,17 +92,19 @@ export default async function HomePage() {
   return (
     <>
       <section className="relative overflow-hidden bg-white -mt-16">
-        <div
-          className="absolute inset-0"
-          style={{
-            backgroundImage: `url(${tenantAssetPath(requestTenant.slug, '/hero.jpg')})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            filter: 'blur(3px)',
-            transform: 'scale(1.05)',
-          }}
-          aria-hidden="true"
-        />
+        {tenantBrand.heroUrl ? (
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage: `url(${tenantBrand.heroUrl})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              filter: 'blur(3px)',
+              transform: 'scale(1.05)',
+            }}
+            aria-hidden="true"
+          />
+        ) : null}
         <div
           className="absolute inset-0 bg-gradient-to-r from-white via-white/80 to-white/20"
           aria-hidden="true"
@@ -114,12 +116,17 @@ export default async function HomePage() {
               <SiteLogo
                 height={60}
                 priority
+                src={tenantBrand.logoUrl}
+                alt={tenantBrand.clinicName}
+                label={tenantBrand.shortName}
               />
               <div>
                 <p className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-                  {brand.clinicName}
+                  {tenantBrand.clinicName}
                 </p>
-                <p className="text-base font-medium text-brand-800">{t('clinicNameAm')}</p>
+                {tenantBrand.tagline ? (
+                  <p className="text-base font-medium text-brand-800">{tenantBrand.tagline}</p>
+                ) : null}
               </div>
             </div>
             <p className="mt-5 inline-flex rounded-full bg-white px-3 py-1 text-sm font-medium text-brand-800 ring-1 ring-brand-100">
@@ -301,7 +308,9 @@ export default async function HomePage() {
         <div className="mx-auto w-full max-w-6xl px-4 py-14 sm:px-6">
           <div className="accent-line mb-4" aria-hidden="true" />
           <h2 className="text-2xl font-bold text-slate-900 sm:text-3xl">{t('meta.aboutTitle')}</h2>
-          <p className="mt-2 max-w-2xl text-slate-600">{t('meta.aboutDescription')}</p>
+          <p className="mt-2 max-w-2xl text-slate-600">
+            {t('meta.aboutDescription', { clinic: tenantBrand.clinicName })}
+          </p>
           <div className="mt-8 grid gap-5 sm:grid-cols-2">
             <Reveal delay={40} className="card card-hover p-6">
               <h3 className="text-lg font-semibold text-slate-900">{t('home.why1Title')}</h3>
@@ -378,7 +387,7 @@ export default async function HomePage() {
                   href={phonePrimaryHref}
                   className="rounded-xl border border-brand-200 px-6 py-3 text-base font-semibold text-brand-primary-contrast transition-colors hover:bg-brand-700"
                 >
-                  +251 {phonePrimary.slice(1, 3)} {phonePrimary.slice(3, 6)} {phonePrimary.slice(6)}
+                  {phonePrimary}
                 </a>
               ) : null}
             </div>

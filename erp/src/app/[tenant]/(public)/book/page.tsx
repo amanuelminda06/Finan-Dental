@@ -9,14 +9,16 @@ import {
   pageMetadata,
 } from '@/modules/public-site';
 import BookingForm from '@/modules/public-site/components/BookingForm';
+import { getTenantBrand } from '@/modules/tenant-brand/queries';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('site');
-  const { slug } = await getRequestTenant();
+  const [{ slug }, brand] = await Promise.all([getRequestTenant(), getTenantBrand()]);
   return pageMetadata({
     tenant: slug,
+    clinicName: brand.clinicName,
     title: t('meta.bookTitle'),
-    description: t('meta.bookDescription'),
+    description: t('meta.bookDescription', { clinic: brand.clinicName }),
     path: '/book',
   });
 }

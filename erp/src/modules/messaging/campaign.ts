@@ -1,4 +1,3 @@
-import { brand } from '@/config/brand';
 import { prisma } from '@/lib/prisma';
 import { getTenantId } from '@/lib/tenant-context';
 import { clinicDateKey } from '@/lib/datetime';
@@ -200,7 +199,7 @@ export async function materializeCampaign(params: {
   if (preview.overCap) return { eligible: eligible.length, created: 0, overCap: true, batches: 0 };
 
   const bodies = await loadTemplateBodies(await getTenantId());
-  const clinicName = typeof map.clinic_name === 'string' ? map.clinic_name : brand.clinicName;
+  const clinicName = typeof map.clinic_name === 'string' ? map.clinic_name : 'Clinic';
   const reviewLink = typeof map.review_link === 'string' ? map.review_link : '';
 
   const batchSize =

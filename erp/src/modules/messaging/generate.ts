@@ -746,7 +746,7 @@ async function maybeSendDigest(now: Date, config: MessagingConfig): Promise<bool
   const { getEmailProvider } = await import('./email');
   await getEmailProvider().send({
     to,
-    subject: `Finan Speciality Dental Clinic — ${due} message(s) still unsent`,
+    subject: `${config.clinicName} — ${due} message(s) still unsent`,
     body: `${due} prepared message(s) are still waiting to be sent from the clinic phone.`,
   });
   const tenantId = await getTenantId();

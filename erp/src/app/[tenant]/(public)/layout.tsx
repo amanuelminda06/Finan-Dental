@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { getLocale, getTranslations } from 'next-intl/server';
-import { brand } from '@/config/brand';
 import { clinicDateKey } from '@/lib/datetime';
+import { telLink } from '@/lib/phone';
 import { getRequestTenant } from '@/lib/tenant-request';
 import { tenantPath } from '@/lib/tenant-path';
 import {
@@ -12,7 +12,8 @@ import {
   pick,
   siteBaseUrl,
 } from '@/modules/public-site';
-import { telLink } from '@/config/brand';
+import { socialHref, telegramHref } from '@/modules/public-site/format';
+import { getTenantBrand } from '@/modules/tenant-brand/queries';
 import PublicHeader from '@/modules/public-site/components/PublicHeader';
 import PublicFooter from '@/modules/public-site/components/PublicFooter';
 import AnnouncementBanner from '@/modules/public-site/components/AnnouncementBanner';
@@ -26,37 +27,53 @@ import JsonLd from '@/modules/public-site/components/JsonLd';
 // export const instant = false;
 
 export async function generateMetadata(): Promise<Metadata> {
-  const [{ slug }, profile] = await Promise.all([getRequestTenant(), getClinicProfile()]);
+  const [tenant, brand] = await Promise.all([getRequestTenant(), getTenantBrand()]);
   return {
     metadataBase: new URL(siteBaseUrl()),
-    applicationName: profile.name,
+    applicationName: brand.clinicName,
     openGraph: {
-      siteName: profile.name,
-      url: `${siteBaseUrl()}${tenantPath(slug)}`,
+      siteName: brand.clinicName,
+      url: `${siteBaseUrl()}${tenantPath(tenant.slug)}`,
     },
   };
 }
 
 export default async function PublicLayout({ children }: { children: React.ReactNode }) {
-  const [content, profile, services] = await Promise.all([
+  const [content, profile, services, brand, tenant] = await Promise.all([
     getSiteContent(),
     getClinicProfile(),
     getPublicServices(),
+    getTenantBrand(),
+    getRequestTenant(),
   ]);
   const locale = await getLocale();
   const t = await getTranslations('site');
 
   const clinicName = brand.clinicName;
   const address = brand.address;
-  const phonePrimary = brand.phones[0];
+  const phonePrimary = brand.phones[0] ?? null;
   const phoneHref = telLink(phonePrimary);
   const hoursText = null;
   const footerNote = pick(locale, content.footer_note) || null;
   const announcementText = pick(locale, content.announcement_text);
 
   const socials = [
-    { href: `https://t.me/${brand.telegram.slice(1)}`, label: 'Telegram', platform: 'telegram' as const },
-  ];
+    {
+      href: telegramHref(brand.socials.telegram),
+      label: 'Telegram',
+      platform: 'telegram' as const,
+    },
+    {
+      href: socialHref(brand.socials.instagram, 'instagram.com'),
+      label: 'Instagram',
+      platform: 'instagram' as const,
+    },
+    {
+      href: socialHref(brand.socials.tiktok, 'tiktok.com'),
+      label: 'TikTok',
+      platform: 'tiktok' as const,
+    },
+  ].filter((item): item is { href: string; label: string; platform: 'telegram' | 'instagram' | 'tiktok' } => !!item.href);
 
   const showAnnouncement = isAnnouncementVisible(
     content,
@@ -65,14 +82,13 @@ export default async function PublicLayout({ children }: { children: React.React
     clinicDateKey,
   );
 
-  const { slug } = await getRequestTenant();
   const jsonLd: Record<string, unknown> = {
     '@context': 'https://schema.org',
     '@type': 'MedicalClinic',
     name: clinicName,
-    url: `${siteBaseUrl()}${tenantPath(slug)}`,
-    telephone: `+251${phonePrimary.slice(1)}`,
-    email: brand.email,
+    url: `${siteBaseUrl()}${tenantPath(tenant.slug)}`,
+    ...(phoneHref ? { telephone: phoneHref.slice(4) } : {}),
+    ...(brand.email ? { email: brand.email } : {}),
     ...(address
       ? {
           address: {
@@ -103,7 +119,12 @@ export default async function PublicLayout({ children }: { children: React.React
       >
         {t('skipToContent')}
       </a>
-      <PublicHeader clinicName={clinicName} phoneHref={phoneHref} />
+      <PublicHeader
+        clinicName={clinicName}
+        phoneHref={phoneHref}
+        logoUrl={brand.logoUrl}
+        tagline={brand.tagline}
+      />
       <main id="main" className="flex-1">
         {showAnnouncement ? <AnnouncementBanner text={announcementText} /> : null}
         {children}

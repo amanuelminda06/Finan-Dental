@@ -3,14 +3,16 @@ import { getRequestTenant } from '@/lib/tenant-request';
 import { TenantLink as Link } from '@/components/tenant-navigation';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { getSiteContent, isFaqItem, pageMetadata, parseItems, pick } from '@/modules/public-site';
+import { getTenantBrand } from '@/modules/tenant-brand/queries';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('site');
-  const { slug } = await getRequestTenant();
+  const [{ slug }, brand] = await Promise.all([getRequestTenant(), getTenantBrand()]);
   return pageMetadata({
     tenant: slug,
+    clinicName: brand.clinicName,
     title: t('meta.faqTitle'),
-    description: t('meta.faqDescription'),
+    description: t('meta.faqDescription', { clinic: brand.clinicName }),
     path: '/faq',
   });
 }

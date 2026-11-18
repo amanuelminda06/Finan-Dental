@@ -80,6 +80,7 @@ export const NAV_MODULES: NavModule[] = [
       { href: '/dashboard/services', labelKey: 'services', roles: ['OWNER'] },
       { href: '/dashboard/content', labelKey: 'websiteContent', roles: ['OWNER'] },
       { href: '/dashboard/feedback', labelKey: 'feedback', roles: ['OWNER'] },
+      { href: '/branding', labelKey: 'branding', roles: ['OWNER'] },
       { href: '/settings', labelKey: 'settings', roles: ['OWNER'] },
     ],
   },

@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale } from 'next-intl/server';
 import { Noto_Sans_Ethiopic } from 'next/font/google';
-import { brand } from '@/config/brand';
+import { brandCssVars, neutralTenantBrand } from '@/modules/tenant-brand/defaults';
 import './globals.css';
 
 const notoSansEthiopic = Noto_Sans_Ethiopic({ subsets: ['ethiopic', 'latin'], variable: '--font-noto-sans-ethiopic' });
@@ -11,11 +11,10 @@ const notoSansEthiopic = Noto_Sans_Ethiopic({ subsets: ['ethiopic', 'latin'], va
 // design) — opt out of the static-shell requirement for the whole app.
 // export const instant = false;
 
-export async function generateMetadata(): Promise<Metadata> {
-  return {
-    title: { default: brand.clinicName, template: `%s · ${brand.clinicName}` },
-  };
-}
+/** Neutral fallback used only outside a clinic URL tree. */
+export const metadata: Metadata = {
+  title: { default: 'Clinic', template: '%s · Clinic' },
+};
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const locale = await getLocale();
@@ -23,15 +22,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html
       lang={locale}
       className={notoSansEthiopic.variable}
-      style={
-        {
-          '--finan-brand-primary': brand.colors.primary,
-          '--finan-brand-secondary': brand.colors.secondary,
-          '--finan-brand-accent': brand.colors.accent,
-          '--finan-brand-primary-contrast': '#FFFFFF',
-          '--finan-brand-secondary-contrast': '#0F172A',
-        } as React.CSSProperties
-      }
+      style={brandCssVars(neutralTenantBrand({ clinicName: 'Clinic' })) as React.CSSProperties}
     >
       <body className="min-h-screen bg-slate-50 text-slate-900 antialiased">
         <NextIntlClientProvider>{children}</NextIntlClientProvider>

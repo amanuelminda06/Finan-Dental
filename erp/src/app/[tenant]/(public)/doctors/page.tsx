@@ -8,14 +8,16 @@ import { telHref } from '@/modules/public-site/format';
 import DoctorAvatar from '@/modules/public-site/components/DoctorAvatar';
 import DoctorStatusBadge from '@/modules/public-site/components/DoctorStatusBadge';
 import { getLocale } from 'next-intl/server';
+import { getTenantBrand } from '@/modules/tenant-brand/queries';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('site');
-  const { slug } = await getRequestTenant();
+  const [{ slug }, brand] = await Promise.all([getRequestTenant(), getTenantBrand()]);
   return pageMetadata({
     tenant: slug,
+    clinicName: brand.clinicName,
     title: t('meta.doctorsTitle'),
-    description: t('meta.doctorsDescription'),
+    description: t('meta.doctorsDescription', { clinic: brand.clinicName }),
     path: '/doctors',
   });
 }

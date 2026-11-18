@@ -1,16 +1,27 @@
-import { brand } from '@/config/brand';
 import { prisma } from '@/lib/prisma';
 import { getTenantId } from '@/lib/tenant-context';
 import { DEFAULT_TIMEZONE } from '@/lib/datetime';
+import { getTenantBrand } from '@/modules/tenant-brand/queries';
 import { WEEKDAYS, type SettingsFormValues } from './schemas';
 
 /** All seeded settings as a plain key → value map. */
 export async function getSettingsMap(): Promise<Record<string, unknown>> {
-  const rows = await prisma.setting.findMany({
-    where: { tenantId: await getTenantId() },
-    select: { key: true, value: true },
-  });
-  return Object.fromEntries(rows.map((row) => [row.key, row.value]));
+  const [rows, brand] = await Promise.all([
+    prisma.setting.findMany({
+      where: { tenantId: await getTenantId() },
+      select: { key: true, value: true },
+    }),
+    getTenantBrand(),
+  ]);
+  const map: Record<string, unknown> = Object.fromEntries(
+    rows.map((row) => [row.key, row.value]),
+  );
+  // Legacy tenants may not have a clinic_name setting; the editable brand is
+  // the per-tenant source of truth for the fallback.
+  if (typeof map.clinic_name !== 'string' || !map.clinic_name) {
+    map.clinic_name = brand.clinicName;
+  }
+  return map;
 }
 
 /**
@@ -72,7 +83,7 @@ export function settingsFromMap(map: Record<string, unknown>): SettingsFormValue
   ) as SettingsFormValues['working_hours'];
 
   return {
-    clinic_name: str(map.clinic_name, brand.clinicName),
+    clinic_name: str(map.clinic_name, 'Clinic'),
     currency: str(map.currency, 'ETB'),
     timezone: safeTimezone(map.timezone),
     working_hours,
