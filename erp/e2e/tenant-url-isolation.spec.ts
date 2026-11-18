@@ -42,15 +42,26 @@ test.describe('URL tenant isolation', () => {
     await walk(`/${SECOND_TENANT}/sitemap.xml`);
     await walk(`/${SECOND_TENANT}/robots.txt`);
 
-    // Tenant A's secret login path is not valid at tenant B's URL.
+    // No /login/* path at B is valid for a session issued by A — not A's
+    // secret, and not an arbitrary path that might be B's own secret.
     const secret = loginUrl().split('/').pop();
     await walk(`/${SECOND_TENANT}/login/${secret}`);
+    await walk(`/${SECOND_TENANT}/login/another-clinic-secret`);
   });
 
   test('anonymous visitors see per-tenant public data and SEO', async ({ request }) => {
-    // Public pages for both tenants are reachable without a session.
-    expect((await request.get(tenantUrl('/about'))).status()).toBe(200);
-    expect((await request.get(`/${SECOND_TENANT}/about`)).status()).toBe(200);
+    // Every public page on both tenants must resolve — asset rewrites must not
+    // swallow a real page such as `/<tenant>/services` or `/<tenant>/doctors`.
+    for (const path of PUBLIC_PATHS) {
+      expect((await request.get(tenantUrl(path))).status(), `A ${path}`).toBe(200);
+      expect((await request.get(`/${SECOND_TENANT}${path}`)).status(), `B ${path}`).toBe(200);
+    }
+
+    // Public data is scoped: A publishes services, B is seeded with none.
+    const servicesA = await (await request.get(tenantUrl('/services'))).text();
+    const servicesB = await (await request.get(`/${SECOND_TENANT}/services`)).text();
+    expect(servicesA).toContain('Free Consultation');
+    expect(servicesB).not.toContain('Free Consultation');
 
     const sitemapA = await (await request.get(`${tenantUrl('/sitemap.xml')}`)).text();
     const sitemapB = await (await request.get(`/${SECOND_TENANT}/sitemap.xml`)).text();

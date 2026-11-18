@@ -7,9 +7,12 @@ const val = (k) => {
   return m ? m.slice(k.length + 1).replace(/^"|"$/g, '') : '';
 };
 
-const BASE = 'http://127.0.0.1:3101';
+const ORIGIN = 'http://127.0.0.1:3101';
+const TENANT = val('DEFAULT_TENANT_SLUG') || 'finan';
+const BASE = `${ORIGIN}/${TENANT}`;
+const APP_PATH = `/${TENANT}/app`;
 const SECRET = val('LOGIN_SECRET_PATH');
-const LOGIN = `/login/${SECRET}`;
+const LOGIN = `/${TENANT}/login/${SECRET}`;
 const DB = 'postgresql://postgres:postgres@127.0.0.1:5433/vision_erp_test';
 
 const jar = new Map();
@@ -68,7 +71,7 @@ r = await req('/login/guessme');
 check('A3 /login/anything returns 404', r.status === 404, `status=${r.status}`);
 
 // ---- B: unauthenticated access redirects to the secret URL ----
-r = await req('/dashboard');
+r = await req(`${APP_PATH}/dashboard`);
 const loc = r.headers.get('location') || '';
 check('B1 /dashboard without session redirects to secret login', [302, 307].includes(r.status) && loc === LOGIN, `status=${r.status} loc=${loc}`);
 
@@ -81,7 +84,7 @@ const ownerLogin = async () =>
       csrfToken: csrf.csrfToken,
       email: val('OWNER_EMAIL'),
       password: val('OWNER_PASSWORD'),
-      callbackUrl: BASE + '/dashboard',
+      callbackUrl: `${ORIGIN}${APP_PATH}/dashboard`,
     }).toString(),
   });
 
@@ -94,7 +97,7 @@ check('C4 session cookie Path=/', /Path=\//i.test(sc), '');
 const maxAge = /Max-Age=(\d+)/i.exec(sc)?.[1];
 check('C5 session cookie Max-Age≈12h', maxAge && +maxAge === 43200, `maxAge=${maxAge}`);
 
-r = await req('/dashboard');
+r = await req(`${APP_PATH}/dashboard`);
 check('C6 owner reaches /dashboard with session', r.status === 200, `status=${r.status}`);
 
 r = await req('/api/auth/session');
@@ -174,7 +177,7 @@ r = await req('/api/auth/session');
 const rs = await r.json();
 check('G2 reception session flags forced password change', rs.user?.mustChangePassword === true, JSON.stringify(rs.user));
 
-r = await req('/dashboard');
+r = await req(`${APP_PATH}/dashboard`);
 const rloc = r.headers.get('location') || '';
 const body = await r.text();
 const flightRedirect = (body.match(/NEXT_REDIRECT;replace;([^;\\\\"']+)/) || [])[1] || '';
@@ -186,7 +189,7 @@ check(
 
 // ---- G4: role gate precedence (mustChangePassword → change-password, not 403)
 await db.query(`update "User" set "mustChangePassword"=true where email=$1`, [val('RECEPTION_EMAIL')]);
-r = await req('/users');
+r = await req(`${APP_PATH}/users`);
 const usersBody = await r.text();
 const usersFlight = (usersBody.match(/NEXT_REDIRECT;replace;([^;\\\\"']+)/) || [])[1] || '';
 check('G4 mustChangePassword takes precedence (redirects to /change-password before FORBIDDEN)',
@@ -196,10 +199,10 @@ check('G4 mustChangePassword takes precedence (redirects to /change-password bef
 // ---- H: logout clears the session ----
 rc = await req('/api/auth/signout', {
   method: 'POST',
-  body: new URLSearchParams({ csrfToken: receptCsrf, callbackUrl: BASE + LOGIN }).toString(),
+  body: new URLSearchParams({ csrfToken: receptCsrf, callbackUrl: `${ORIGIN}${LOGIN}` }).toString(),
 });
 check('H1 sign-out clears the session cookie', !jar.has('authjs.session-token'), '');
-r = await req('/dashboard');
+r = await req(`${APP_PATH}/dashboard`);
 check('H2 /dashboard protected again after logout', [302, 307].includes(r.status) && (r.headers.get('location') || '') === LOGIN, `status=${r.status}`);
 
 await db.end();
