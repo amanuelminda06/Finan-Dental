@@ -25,60 +25,43 @@ Captured at commit `c786978` (the commit immediately before
 ## Result
 
 Baseline: **128 passed, 37 failed**.
-Current clean seed at `8e6f98d`: **128 passed, 37 failed**.
-The failing check names and values are identical, so **all 37 current failures
-are pre-existing**. No tenancy regression was introduced and no regression fix
-is required.
+Current clean seed on `multitenant`: **159 passed, 20 failed**.
+The current script refreshes stale fixture assertions (patient names/phone and
+service name) to match the seed at this commit and adds tenant URL/isolation
+checks, so check names are not identical. Every remaining failure is in a
+category already present at baseline; no tenancy regression was introduced.
 
-## Classification of the 37 failures
+## Classification of the 20 current failures
 
-All are pre-existing. Sub-causes:
+All are pre-existing categories. Sub-causes:
 
 | Sub-cause | Failures | Examples |
 | --- | --- | --- |
-| Stale redirect-shape expectations (the app intentionally renders `NEXT_REDIRECT` in the RSC flight payload with HTTP 200/307 differences under `cacheComponents`) | 9 | `no session / → 307`, reception/staff role redirects |
-| Stale seed-fixture names in assertions | 5 | `Almaz Tesfaye`, `Fatuma Hassan`, `Bekele Wolde`, `Eye Consultation` |
+| Stale redirect-shape expectations (the app intentionally renders `NEXT_REDIRECT` in the RSC flight payload; `cacheComponents` makes HTTP status differ from the flight payload) | 7 | `reception /users (no force)`, reception/staff role redirects |
 | Missing confirmed sales after a clean seed | 4 | `sales list has receipts`, `owner sale detail` |
 | Public booking fails closed without Turnstile keys (environment, not code) | 4 | `public booking valid → 200`, `public booking auto-created a CONFIRMED appointment` |
 | CSV/template header drift | 3 | `CSV header`, `template columns`, `consent filter → 11 rows` |
-| Other stale page/detail assertions already present at baseline | 12 | detail-page content, `/services/new` 404, campaign form, `/403` redirects |
+| Other stale page assertions already present at baseline | 2 | `owner /messages/campaigns/new → 200`, `staff /messages forbidden` |
 
-### Full failing check names (same at baseline and current)
+### Full failing check names (current)
 
-1. `no session / → 307`
-2. `redirect target:`
-3. `reception /users → 200 (flight redirect)`
-4. `reception forced-change redirect`
-5. `reception /users (no force) → 200 (flight redirect)`
-6. `staff forced-change redirect`
-7. `seed patient row`
-8. `phone search finds the patient`
-9. `owner patient detail → 200`
-10. `tap-to-call shows stored E.164`
-11. `non-clinical notes hint`
-12. `consent block`
-13. `detail page wrote no VIEW audit`
-14. `CSV header`
-15. `consent filter → 11 rows`
-16. `template columns`
-17. `staff /patients → 200 (flight redirect)`
-18. `seeded service row`
-19. `owner /services/new → 200`
-20. `sales list has receipts`
-21. `owner sale detail → 200`
-22. `sale receipt renders`
-23. `sale audit trail`
-24. `reception /revenue → 200 (flight redirect)`
-25. `reception /services forbidden`
-26. `staff /sales → 200 (flight redirect)`
-27. `staff /leave/inbox → 200 (flight redirect)`
-28. `appointments list shows patient`
-29. `week view renders patient`
-30. `overdue tab lists overdue patient`
-31. `public booking valid → 200`
-32. `public booking returns ok`
-33. `public booking names the slot`
-34. `public booking auto-created a CONFIRMED appointment`
-35. `staff /appointments → 200 (flight redirect)`
-36. `owner /messages/campaigns/new → 200`
-37. `staff /messages forbidden (missing: NEXT_REDIRECT;replace;/403)`
+1. `reception /users (no force) → 200 (flight redirect)`
+2. `CSV header`
+3. `consent filter → 11 rows`
+4. `template columns`
+5. `staff /patients → 200 (flight redirect)`
+6. `sales list has receipts`
+7. `owner sale detail → 200`
+8. `sale receipt renders`
+9. `sale audit trail`
+10. `reception /revenue → 200 (flight redirect)`
+11. `reception /dashboard/services → 200 (flight redirect)`
+12. `staff /sales → 200 (flight redirect)`
+13. `staff /leave/inbox → 200 (flight redirect)`
+14. `public booking valid → 200`
+15. `public booking returns ok`
+16. `public booking names the slot`
+17. `public booking auto-created a CONFIRMED appointment`
+18. `staff /appointments → 200 (flight redirect)`
+19. `owner /messages/campaigns/new → 200`
+20. `staff /messages forbidden`

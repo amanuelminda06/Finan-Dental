@@ -45,7 +45,7 @@ const schema = z.object({
   NEXT_PUBLIC_TURNSTILE_SITE_KEY: z.string().min(1).optional(),
   NEXT_PUBLIC_TRIAL_BANNER: z.enum(['true', 'false']).optional(),
   SMS_SENDER_NAME: z.string().min(1).max(11).optional(),
-  /** Tenant used by anonymous flows (public site, jobs) until host routing lands. */
+  /** Default clinic for `/` and scripts/tests; never a fallback for request scoping. */
   DEFAULT_TENANT_SLUG: z
     .string()
     .regex(

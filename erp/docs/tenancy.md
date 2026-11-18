@@ -39,13 +39,16 @@ Every clinic owns a URL prefix. The bare root is the only tenantless route.
 3. The slug is looked up with the **unscoped** client (`basePrisma`) and checked
    with `isTenantServing()` (status `TRIAL`/`ACTIVE`, unexpired trial). Missing
    or not-serving → 404.
-4. For `/<tenant>/app/...`, the NextAuth JWT is decoded with `next-auth/jwt`
-   using the tenant-specific cookie name/secret. A session whose `tenantId`
-   differs from the URL tenant → 404. APIs and public pages are not gated on a
-   session here; their own handlers enforce roles.
+4. The NextAuth JWT is decoded with `next-auth/jwt` using the tenant-specific
+   cookie name/secret on **every** tenant request, including the login endpoint:
+   a session whose `tenantId` differs from the URL tenant → 404. APIs and public
+   pages are not otherwise gated here; their own handlers enforce roles.
 5. The proxy overwrites (never trusts incoming) three internal headers:
    `x-finan-tenant-id`, `x-finan-tenant-slug`, `x-finan-login-path`. Browser-
-   supplied values are discarded.
+   supplied values are discarded. Every tenant request gets the login-path
+   header, not just the login page: `getLoginPath()` is used by redirects from
+   pages, actions and APIs, so a missing header must fail closed with 404 rather
+   than substitute the default tenant's secret.
 6. `?lang=en|am` is forwarded as `x-locale` and persisted in a cookie scoped to
    `/<tenant>`, so language preferences do not leak across clinics.
 
@@ -53,9 +56,16 @@ Every clinic owns a URL prefix. The bare root is the only tenantless route.
 (`tenantPath`, `tenantAppPath`, `tenantApiPath`, `tenantAssetPath`,
 `tenantLoginPath`, `tenantHref`). Client components keep root-relative literals
 and go through `TenantLink` / `useTenantRouter` / `useTenantHref` /
-`TenantImage` (`src/components/tenant-navigation.tsx`), so no link, redirect,
-fetch, image URL, form action, sitemap, robots or opengraph URL is hardcoded to
-the root.
+`useTenantHrefIn` (`src/components/tenant-navigation.tsx`) and the image wrappers
+`TenantImage` / `TenantImg`, so no link, redirect, fetch, image URL, form action,
+sitemap, robots or opengraph URL is hardcoded to the root. Stored image URLs are
+public assets even in the ERP, so the wrappers resolve them with an explicit
+`area: 'public'` instead of inheriting the caller's `app` area.
+
+Next 16 only emits `robots.ts` metadata from the root of `app`, so the nested
+`app/[tenant]/robots.ts` is shared config rather than a route. It is serialized
+by `app/[tenant]/robots.txt/route.ts` at `/<tenant>/robots.txt`; both the config
+and the route handler are covered by unit and e2e tests.
 
 ## How scoping works (data layer)
 
@@ -107,7 +117,16 @@ request handlers therefore rely on the proxy headers and use
   passes the `tenant` route param) and returns a JWT carrying `tenantId` and
   `tenantSlug`. Credentials from A cannot sign in at B.
 - The secret login URL is read from `Tenant.loginSecret`. The proxy injects it
-  as a header; `getLoginPath()` uses that header. A's secret at B's URL 404s.
+  as a header; `getLoginPath()` uses that header and fails closed (404) inside
+  a request rather than substituting the default tenant. A's secret at B's URL
+  404s.
+- Auth.js defaults to the root `/api/auth` on **both** sides. `TenantAuthProvider`
+  in the tenant layout sets `SessionProvider`'s client `basePath` to
+  `/<tenant>/api/auth`, so `signIn`, `getSession` and `signOut` from the login,
+  change-password and ERP screens all call **this clinic's** API tree. On the
+  server, `auth.ts` uses Auth.js v5's per-request config factory to set the same
+  `basePath` from the proxy's tenant header; without it Auth.js cannot parse the
+  action in `/<tenant>/api/auth/*` and answers "Bad request." (400).
 - `assertSessionTenant()` (`src/lib/session-tenant.ts`) is called by
   `requireAuth()` / `requireRole()` and additionally by layouts, the uploads
   route and the message-count API. A session with no or a foreign tenant 404s.
@@ -195,8 +214,11 @@ a rationale here. Application features must use the scoped `@/lib/prisma`.
   `src/lib/tenant-isolation.test.ts` (two temporary tenants across lists,
   detail-by-id, updates/deletes, export, search, uploads, public feeds, cron),
   `src/lib/session-tenant.test.ts` (foreign/missing session 404s),
-  `src/lib/ratelimit.test.ts` (per-tenant budgets) and
-  `src/modules/public-site/tenant-seo.test.ts` (per-tenant sitemap/robots).
+  `src/lib/ratelimit.test.ts` (per-tenant budgets),
+  `src/lib/tenant-request.test.ts` (request-context detection and fail-closed
+  login path), `src/lib/tenant-path.test.ts` (stored image paths resolve to the
+  public tree) and `src/modules/public-site/tenant-seo.test.ts` (per-tenant
+  sitemap, robots config and the `robots.txt` route handler).
   DB-backed tests self-guard to `127.0.0.1:5433/vision_erp` and refuse any
   other database.
 - `npx tsx scripts/seed-e2e-tenants.ts` — local-only; creates `finan` (with the
