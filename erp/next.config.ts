@@ -38,6 +38,9 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   // cacheComponents: false,
   // partialPrefetching: true,
+  experimental: {
+    agentUpgrade: 'security',
+  },
   turbopack: {
     rules: {
       '*.css': {
