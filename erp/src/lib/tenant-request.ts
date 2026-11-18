@@ -32,6 +32,16 @@ export async function getRequestTenantId(): Promise<string | null> {
   }
 }
 
+/** True when called inside a request (headers are available). */
+export async function hasRequestContext(): Promise<boolean> {
+  try {
+    await headers();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** This clinic's secret login URL, injected by the proxy from Tenant.loginSecret. */
 export async function getRequestLoginPath(): Promise<string> {
   const headerList = await headers();

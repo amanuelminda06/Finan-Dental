@@ -77,37 +77,34 @@ export async function proxy(request: NextRequest) {
   });
   if (!tenant || !isTenantServing(tenant)) return notFound();
 
+  // A session belongs to the clinic that issued it. Check this before the
+  // login branch too: a user signed in to A gets a plain 404 at B's login
+  // endpoint, never B's form (and never a redirect that reveals B).
+  const sessionTenant = await sessionTenantId(request);
+  if (sessionTenant && sessionTenant !== tenant.id) return notFound();
+
   // Login is reachable only at this clinic's own secret path.
   const loginPath = tenantLoginPath(slug, tenant.loginSecret);
+  const loginPrefix = `${tenantPath(slug)}/login`;
+  if (
+    pathname.startsWith(loginPrefix) &&
+    pathname !== loginPath &&
+    pathname !== `${loginPath}/`
+  ) {
+    return notFound();
+  }
   if (pathname === `${loginPath}/`) {
     const url = request.nextUrl.clone();
     url.pathname = loginPath;
     return NextResponse.redirect(url);
   }
-  if (pathname === loginPath) {
-    const headers = new Headers(request.headers);
-    headers.set(TENANT_ID_HEADER, tenant.id);
-    headers.set(TENANT_SLUG_HEADER, tenant.slug);
-    headers.set(TENANT_LOGIN_PATH_HEADER, loginPath);
-    if (isLocale(lang ?? undefined)) headers.set('x-locale', lang as string);
-    const response = NextResponse.next({ request: { headers } });
-    if (isLocale(lang ?? undefined)) {
-      response.cookies.set(LOCALE_COOKIE, lang as string, {
-        path: tenantPath(slug),
-        maxAge: 60 * 60 * 24 * 365,
-        sameSite: 'lax',
-      });
-    }
-    return response;
-  }
-  if (pathname.startsWith(`${tenantPath(slug)}/login`)) return notFound();
-
-  const sessionTenant = await sessionTenantId(request);
-  if (sessionTenant && sessionTenant !== tenant.id) return notFound();
 
   const headers = new Headers(request.headers);
   headers.set(TENANT_ID_HEADER, tenant.id);
   headers.set(TENANT_SLUG_HEADER, tenant.slug);
+  // Every request needs this: getLoginPath() is used by redirects from pages,
+  // actions and APIs, and must never fall back to another tenant's secret.
+  headers.set(TENANT_LOGIN_PATH_HEADER, loginPath);
   if (isLocale(lang ?? undefined)) headers.set('x-locale', lang as string);
   const response = NextResponse.next({ request: { headers } });
   if (isLocale(lang ?? undefined)) {

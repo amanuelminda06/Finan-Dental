@@ -4,7 +4,7 @@ import { TenantLink as Link, useTenantHref } from '@/components/tenant-navigatio
 import { usePathname } from 'next/navigation';
 import { useTenantRouter as useRouter } from '@/components/tenant-navigation';
 import { useEffect, useState } from 'react';
-import { SessionProvider, signOut } from 'next-auth/react';
+import { signOut } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 import type { Role } from '@prisma/client';
 import SiteLogo from '@/components/SiteLogo';
@@ -64,22 +64,20 @@ export default function AppShell({
   })).filter((module) => module.items.length > 0);
 
   return (
-    <SessionProvider>
-      <Shell
-        user={user}
-        loginUrl={loginUrl}
-        trialBanner={trialBanner}
-        modules={modules}
-        forced={forced}
-        drawerOpen={drawerOpen}
-        setDrawerOpen={setDrawerOpen}
-        menuOpen={menuOpen}
-        setMenuOpen={setMenuOpen}
-        pathname={pathname}
-      >
-        {children}
-      </Shell>
-    </SessionProvider>
+    <Shell
+      user={user}
+      loginUrl={loginUrl}
+      trialBanner={trialBanner}
+      modules={modules}
+      forced={forced}
+      drawerOpen={drawerOpen}
+      setDrawerOpen={setDrawerOpen}
+      menuOpen={menuOpen}
+      setMenuOpen={setMenuOpen}
+      pathname={pathname}
+    >
+      {children}
+    </Shell>
   );
 }
 

@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { TenantPathProvider } from '@/components/tenant-navigation';
+import TenantAuthProvider from '@/components/TenantAuthProvider';
 import { getRequestTenant } from '@/lib/tenant-request';
 
 /**
@@ -21,5 +22,9 @@ export default async function TenantLayout({
 }) {
   const [{ tenant: slug }, requestTenant] = await Promise.all([params, getRequestTenant()]);
   if (requestTenant.slug !== slug) notFound();
-  return <TenantPathProvider slug={slug}>{children}</TenantPathProvider>;
+  return (
+    <TenantPathProvider slug={slug}>
+      <TenantAuthProvider slug={slug}>{children}</TenantAuthProvider>
+    </TenantPathProvider>
+  );
 }

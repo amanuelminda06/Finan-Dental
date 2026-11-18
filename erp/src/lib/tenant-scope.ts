@@ -1,9 +1,9 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 
 /**
- * Explicit tenant scope for code that has no request session (seeds, jobs,
- * integration tests). Request code leaves this unset so the Prisma extension
- * resolves the tenant from the session JWT.
+ * Explicit tenant scope for code with no URL request (seeds, jobs, tests).
+ * Request code leaves this unset so the Prisma extension resolves the tenant
+ * from the proxy-injected URL headers, never from a session or a default.
  */
 const tenantStorage = new AsyncLocalStorage<string>();
 

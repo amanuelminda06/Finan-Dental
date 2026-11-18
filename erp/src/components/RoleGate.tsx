@@ -14,7 +14,7 @@ type Props = {
  * UI-only role gate: hides content the signed-in user's role does not allow.
  * Server-side enforcement always uses requireRole()/requirePageRole() — this
  * component is decoration, never the security boundary.
- * Requires a SessionProvider ancestor (AppShell renders one).
+ * Requires a SessionProvider ancestor (the tenant layout renders one).
  */
 export default function RoleGate({ roles, children, fallback = null }: Props) {
   const { data, status } = useSession();
