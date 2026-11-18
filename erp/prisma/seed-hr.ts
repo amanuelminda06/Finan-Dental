@@ -131,19 +131,40 @@ export async function seedHr(prisma: PrismaClient, tenantIdOverride?: string): P
       create: { tenantId, id: seed.id, ...data, photoUrl: seed.photoUrl ?? null },
     });
   }
-  await prisma.staff.update({
+
+  // The dental template may create the lead doctor with a generated id. Prefer
+  // the legacy deterministic id when it belongs to this tenant, else use the
+  // tenant's first doctor; never assume `staff-doctor-1` exists.
+  const legacyDoctor = await prisma.staff.findUnique({
     where: { id: 'staff-doctor-1' },
+    select: { tenantId: true },
+  });
+  const firstDoctor =
+    legacyDoctor?.tenantId === tenantId
+      ? null
+      : await prisma.staff.findFirst({
+          where: { tenantId, isDoctor: true },
+          orderBy: { createdAt: 'asc' },
+          select: { id: true },
+        });
+  const primaryDoctorId = firstDoctor?.id ?? 'staff-doctor-1';
+  await prisma.staff.update({
+    where: { id: primaryDoctorId },
     data: { annualLeaveDays: 20 },
   });
 
   // Backfill demo profile photos only where none is set (never clobber uploads).
-  for (const [id, photoUrl] of Object.entries(DOCTOR_PHOTOS)) {
+  const doctorPhotos: Record<string, string> = {
+    [primaryDoctorId]: '/doctors/dr-abebe-kebede.png',
+    ...DOCTOR_PHOTOS,
+  };
+  for (const [id, photoUrl] of Object.entries(doctorPhotos)) {
     await prisma.staff.updateMany({ where: { id, photoUrl: null }, data: { photoUrl } });
   }
   console.log(`✓ HR staff (${HR_STAFF.length + 1})`);
 
   const owner = await prisma.user.findFirst({
-    where: { role: 'OWNER' },
+    where: { tenantId, role: 'OWNER' },
     orderBy: { createdAt: 'asc' },
     select: { id: true },
   });
@@ -158,8 +179,8 @@ export async function seedHr(prisma: PrismaClient, tenantIdOverride?: string): P
     const validFrom = new Date(`${startKey}T00:00:00.000Z`);
     await prisma.shiftTemplate.createMany({
       data: [
-        { staffId: 'staff-doctor-1', weekday: 1, startTime: '08:00', endTime: '16:00', validFrom },
-        { staffId: 'staff-doctor-1', weekday: 3, startTime: '08:00', endTime: '16:00', validFrom },
+        { staffId: primaryDoctorId, weekday: 1, startTime: '08:00', endTime: '16:00', validFrom },
+        { staffId: primaryDoctorId, weekday: 3, startTime: '08:00', endTime: '16:00', validFrom },
         { staffId: 'staff-doctor-2', weekday: 2, startTime: '10:00', endTime: '18:00', validFrom },
         { staffId: 'staff-tech-1', weekday: 5, startTime: '20:00', endTime: '04:00', validFrom },
       ].map((row) => ({ ...row, tenantId })),
@@ -186,14 +207,15 @@ export async function seedHr(prisma: PrismaClient, tenantIdOverride?: string): P
       if (weekday === 0) continue; // closed on Sundays
 
       for (const pattern of STAFF_SHIFTS) {
-        const overnight = pattern.staffId === 'staff-tech-1' && weekday === 5;
+        const staffId = pattern.staffId === 'staff-doctor-1' ? primaryDoctorId : pattern.staffId;
+        const overnight = staffId === 'staff-tech-1' && weekday === 5;
         const start = overnight ? '20:00' : pattern.start;
         const end = overnight ? '04:00' : pattern.end;
         const startsAt = combineDateAndTime(dateKey, start, tz);
         const endKey = end <= start ? dateKeyAdd(dateKey, 1) : dateKey;
         const endsAt = combineDateAndTime(endKey, end, tz);
         rows.push({
-          staffId: pattern.staffId,
+          staffId,
           startsAt,
           endsAt,
           source: 'MANUAL',
