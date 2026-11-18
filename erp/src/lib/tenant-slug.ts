@@ -21,6 +21,7 @@ export const RESERVED_SLUGS: readonly string[] = [
   'erp',
   'admin',
   'administrator',
+  'superadmin',
   '_next',
   'static',
   'public',

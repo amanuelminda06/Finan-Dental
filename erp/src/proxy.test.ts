@@ -77,6 +77,28 @@ describe('proxy tenant header trust', () => {
     mocks.getToken.mockReset().mockResolvedValue(null);
   });
 
+  it('redirects the bare root to the tenantless platform login', async () => {
+    const response = await proxy(requestFor('/'));
+    expect(response.status).toBe(307);
+    expect(response.headers.get('location')).toBe('https://clinic.test/superadmin');
+    expect(mocks.findUnique).not.toHaveBeenCalled();
+  });
+
+  it.each(['/superadmin', '/superadmin/tenants/finan'])(
+    'bypasses tenant lookup and strips internal headers on %s',
+    async (path) => {
+      const response = await proxy(requestFor(path));
+      expect(response.status).toBe(200);
+      expect(mocks.findUnique).not.toHaveBeenCalled();
+      expect(overrideHeaders(response)).toMatchObject({
+        [TENANT_ID_HEADER]: '',
+        [TENANT_SLUG_HEADER]: '',
+        [TENANT_LOGIN_PATH_HEADER]: '',
+        'x-locale': '',
+      });
+    },
+  );
+
   it('runs on every route family that can touch tenant data', () => {
     expect(config.matcher).toEqual(['/((?!_next).*)']);
     for (const path of ROUTES) {

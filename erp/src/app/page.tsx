@@ -1,8 +1,7 @@
 import { redirect } from 'next/navigation';
-import { env } from '@/env';
-import { tenantPath } from '@/lib/tenant-path';
+import { SUPERADMIN_PATH } from '@/lib/superadmin-constants';
 
-/** Fallback for visitors that bypass the proxy: every clinic lives under its slug. */
+/** Fallback for visitors that bypass the proxy: the root is the platform login. */
 export default function RootPage() {
-  redirect(tenantPath(env.DEFAULT_TENANT_SLUG));
+  redirect(SUPERADMIN_PATH);
 }

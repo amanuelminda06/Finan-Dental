@@ -46,7 +46,7 @@ describe('parseTenantSlug', () => {
   });
 
   it('rejects reserved slugs', () => {
-    for (const slug of ['login', 'api', 'admin', 'dashboard', 'www', 'public']) {
+    for (const slug of ['login', 'api', 'admin', 'superadmin', 'dashboard', 'www', 'public']) {
       expect(RESERVED_SLUGS).toContain(slug);
       expect(parseTenantSlug(slug)).toEqual({ ok: false, error: 'reserved' });
     }

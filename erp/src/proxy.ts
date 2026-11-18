@@ -1,6 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
-import { env } from '@/env';
 import { isLocale, LOCALE_COOKIE } from '@/i18n/config';
 import { basePrisma } from '@/lib/prisma-base';
 import { tenantFromPath, tenantLoginPath, tenantPath } from '@/lib/tenant-path';
@@ -10,6 +9,7 @@ import {
   TENANT_SLUG_HEADER,
 } from '@/lib/tenant-request-headers';
 import { isTenantServing } from '@/lib/tenant-status';
+import { SUPERADMIN_PATH } from '@/lib/superadmin-constants';
 
 /**
  * URL gate (Next 16: middleware was renamed proxy).
@@ -55,11 +55,24 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const lang = request.nextUrl.searchParams.get('lang');
 
-  // The bare root is the only tenantless entry point: it sends visitors to the
-  // configured default clinic, which then owns all subsequent URLs.
+  // The platform area is tenantless. Bypass tenant lookup/session binding and
+  // blank any client-supplied internal tenant headers before the app sees them.
+  const isSuperadmin =
+    pathname === SUPERADMIN_PATH || pathname.startsWith(`${SUPERADMIN_PATH}/`);
+  if (isSuperadmin) {
+    const headers = new Headers(request.headers);
+    headers.set(TENANT_ID_HEADER, '');
+    headers.set(TENANT_SLUG_HEADER, '');
+    headers.set(TENANT_LOGIN_PATH_HEADER, '');
+    headers.set('x-locale', '');
+    return NextResponse.next({ request: { headers } });
+  }
+
+  // The bare root is the platform login (which also hosts the superadmin
+  // dashboard); clinics are always reached through their own URL tree.
   if (pathname === '/' || pathname === '') {
     const url = request.nextUrl.clone();
-    url.pathname = tenantPath(env.DEFAULT_TENANT_SLUG);
+    url.pathname = SUPERADMIN_PATH;
     url.search = '';
     return NextResponse.redirect(url);
   }
