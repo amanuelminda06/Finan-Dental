@@ -13,17 +13,17 @@ Login is an open page at `/<tenant>/erp/login`; tenant isolation comes from the 
 Every clinic owns a URL prefix. The bare root has no tenant and redirects to the
 tenant-independent platform login; everything else is resolved from the first path segment.
 
-| Area | URL | Notes |
-| --- | --- | --- |
-| Platform login | `/` → `/superadmin` | 307 redirect; fixed credentials `Aman` / `2906` |
-| Platform management | `/superadmin` | login when signed out, tenant dashboard when signed in |
-| Tenant editor | `/superadmin/tenants/<slug>` | identity, branding, website content and ERP settings |
-| Public site | `/<tenant>/...` | marketing, booking, `sitemap.xml`, `robots.txt` |
-| ERP | `/<tenant>/erp/...` | dashboard, patients, sales, settings, … |
-| APIs | `/<tenant>/api/...` | auth, exports, uploads, public feeds, cron |
-| Login | `/<tenant>/erp/login` | open page, bound to the tenant in the URL |
-| Seed-default assets | `/<tenant>/static/...` | rewritten to root `public/` seed files only |
-| Tenant-owned images | `/<tenant>/api/public/assets/<tenantId>/<file>` | key prefix + current `TenantBrand` reference checked |
+| Area                | URL                                             | Notes                                                  |
+| ------------------- | ----------------------------------------------- | ------------------------------------------------------ |
+| Platform login      | `/` → `/superadmin`                             | 307 redirect; fixed credentials `Aman` / `2906`        |
+| Platform management | `/superadmin`                                   | login when signed out, tenant dashboard when signed in |
+| Tenant editor       | `/superadmin/tenants/<slug>`                    | identity, branding, website content and ERP settings   |
+| Public site         | `/<tenant>/...`                                 | marketing, booking, `sitemap.xml`, `robots.txt`        |
+| ERP                 | `/<tenant>/erp/...`                             | dashboard, patients, sales, settings, …                |
+| APIs                | `/<tenant>/api/...`                             | auth, exports, uploads, public feeds, cron             |
+| Login               | `/<tenant>/erp/login`                           | open page, bound to the tenant in the URL              |
+| Seed-default assets | `/<tenant>/static/...`                          | rewritten to root `public/` seed files only            |
+| Tenant-owned images | `/<tenant>/api/public/assets/<tenantId>/<file>` | key prefix + current `TenantBrand` reference checked   |
 
 An unknown, suspended or expired tenant returns a real 404 for every area. A
 session (and its rate-limit budget and locale cookie) is bound
@@ -57,8 +57,10 @@ branding, logo, hero, contact details, colors, bilingual website content and ERP
 settings. The platform session is a separate cookie from tenant Auth.js sessions
 and carries no tenant id.
 
-Clinic login URL: `http://localhost:3000/<tenant>/erp/login`. A session issued by
-another clinic gets a real 404 at this URL; lockout and rate limiting still apply.
+Clinic login URL: `http://localhost:3000/<tenant>/erp/login`. The login page
+opens even if the browser has a session for another clinic (signing in here
+switches the active clinic); lockout and rate limiting still apply. Public
+clinic sites can be viewed side by side in the same browser.
 
 `npm run db:seed` is for legacy local seeding only: it refuses to overwrite the
 protected platform tenant. Use `npm run tenant:create` for new trial clinics;
@@ -66,11 +68,11 @@ every tenant gets the fixed trial logins `owner`/`owner123`, `reception`/`recept
 
 Fixed trial logins (every tenant, short names accepted in the login field):
 
-| Role      | Login                   | First login                     |
-| --------- | ----------------------- | ------------------------------- |
-| OWNER     | `owner` / `owner123`      | no forced change during trial   |
+| Role      | Login                        | First login                   |
+| --------- | ---------------------------- | ----------------------------- |
+| OWNER     | `owner` / `owner123`         | no forced change during trial |
 | RECEPTION | `reception` / `reception123` | no forced change during trial |
-| STAFF     | `doctor` / `doctor123`    | no forced change during trial   |
+| STAFF     | `doctor` / `doctor123`       | no forced change during trial |
 
 `npm run tenant:activate -- <slug>` clears the trial and forces a strong-password
 change for all three accounts before real use.
@@ -291,10 +293,11 @@ erp/
   unknown/suspended/expired tenants. There is no default-tenant fallback in a
   request — only scripts and tests may use `DEFAULT_TENANT_SLUG`.
 - **Login**: `proxy.ts` serves `/<tenant>/erp/login` for the tenant in the URL;
-  any suffix or a foreign session returns a real 404.
+  any suffix returns a real 404. A foreign session can open the login form.
 - **Session**: JWT, httpOnly + sameSite=lax + secure(prod), 12h expiry. The JWT
-  carries `tenantId`; a session presented at another tenant's URL is 404ed by
-  the proxy, layouts, `requireRole`, APIs and uploads alike.
+  carries `tenantId`; a session presented at another tenant's public URL is
+  allowed, but the protected layout, `requireRole`, APIs and uploads 404 it via
+  `assertSessionTenant()`.
 - **Password**: argon2id, min 10 chars, common/personal-password rejection,
   15-min lockout after 5 failed attempts, rate limit (30/5 min) keyed by tenant
   **and** IP, every attempt audited (`LOGIN_FAILED`/`LOGIN_SUCCESS`).
@@ -380,10 +383,12 @@ browser-level items below still need a human. The Playwright specs under `e2e/`
 (`npm run test:e2e`) automate the authentication, role-access, patient→sale,
 request→appointment, leave and messages flows against a seeded database; the
 group-chat batch flow runs on the `mobile` project (`e2e/group-batch.spec.ts`).
-`e2e/tenant-url-isolation.spec.ts` walks every tenant-B page/API/SEO route with
-a tenant-A session (expecting 404) and checks per-tenant public data and SEO.
+`e2e/tenant-url-isolation.spec.ts` checks that a tenant-A session can browse
+tenant-B public pages/SEO/login (200) but gets 404 on B's ERP and APIs, and
+verifies per-tenant public data and SEO.
 
-1. `/<tenant>/erp/login/wrong` → 404; `/<tenant>/erp/login` → login page; a foreign session → 404.
+1. `/<tenant>/erp/login/wrong` → 404; `/<tenant>/erp/login` → login page (also
+   with another clinic's session); B's public site opens with A's session.
 2. Wrong password ×5 → account locked (15 min), `LOGIN_FAILED` rows with IP.
 3. Rate limit: >30 attempts / 5 min from one IP → rejected.
 4. Login as RECEPTION → forced to `/<tenant>/erp/change-password`; other pages bounce back

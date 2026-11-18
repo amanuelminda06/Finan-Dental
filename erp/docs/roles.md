@@ -58,7 +58,7 @@ Front-office operations; **no revenue, no admin**.
 
 Minimal footprint.
 
-- **Dashboard** — *my* appointments today, *my* shifts this week, leave balance.
+- **Dashboard** — _my_ appointments today, _my_ shifts this week, leave balance.
 - **Schedule** — own week only.
 - **Leave** — request/cancel own leave; see balance.
 - No access to patients, sales, revenue, appointments admin, requests,
@@ -66,11 +66,11 @@ Minimal footprint.
 
 ## Common to all
 
-- Sign in at `/<your-clinic>/erp/login`. A session from another clinic does not
-  work at your URL.
+- Sign in at `/<your-clinic>/erp/login`. If you are already signed in elsewhere,
+  this login page still opens; signing in here switches the active clinic.
 - Switch EN/AM from the header (remembered per clinic).
 - Change your own password from the user menu; sign out there too.
 - If you reach a page you may not use, you get the friendly
   `/<your-clinic>/erp/403` page — tell the owner if you think your role is wrong.
-- Opening another clinic's URL with your session shows a plain 404 (not data or
-  a redirect).
+- You can browse another clinic's public website in the same browser. Its ERP
+  and APIs show a plain 404 for your session (not data or a redirect).

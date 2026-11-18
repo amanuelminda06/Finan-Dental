@@ -11,27 +11,27 @@ supplying a foreign id in a form, a nested write, a transaction, or a raw SQL
 call. Isolation is enforced in the data layer, not by separate schemas or
 connections.
 
-With tenancy in the URL there is a second boundary: a request that *claims* to
-be for clinic B (by URL) but carries a session or cookie belonging to
-clinic A must get a plain **404 everywhere** — pages, APIs, uploads, SEO files
-and the login endpoint. It must never get a redirect, a 403 or a response that
-reveals B exists. Unknown, suspended and expired- trial tenants are treated the
-same way.
+With tenancy in the URL there is a second boundary: a session issued by clinic
+A must never read or write clinic B's data. It is allowed to browse B's public
+site in the same browser (a normal visit, not a data leak), but B's ERP pages,
+server actions and authenticated APIs must answer a plain **404** — never a 403,
+a redirect or a data response. Unknown, suspended and expired trial tenants are
+404 everywhere.
 
 ## URL layout and request identity
 
 Every clinic owns a URL prefix. The bare root and `/superadmin` are the only
 tenantless routes.
 
-| Area | URL | Notes |
-| --- | --- | --- |
-| Platform entry | `/` → `/superadmin` | 307 redirect to the tenant-independent platform login |
-| Platform management | `/superadmin`, `/superadmin/tenants/<slug>` | fixed `Aman` / `2906` login; tenant CRUD and editors |
-| Public site | `/<tenant>/...` | marketing, booking, `sitemap.xml`, `robots.txt` |
-| ERP | `/<tenant>/erp/...` | dashboard, patients, sales, settings, … |
-| APIs | `/<tenant>/api/...` | auth, exports, uploads, public feeds, cron |
-| Login | `/<tenant>/erp/login` | open page; a foreign session is a 404 |
-| Seed-default assets | `/<tenant>/static/...` | rewritten to root `public/` seed files only |
+| Area                | URL                                             | Notes                                                           |
+| ------------------- | ----------------------------------------------- | --------------------------------------------------------------- |
+| Platform entry      | `/` → `/superadmin`                             | 307 redirect to the tenant-independent platform login           |
+| Platform management | `/superadmin`, `/superadmin/tenants/<slug>`     | fixed `Aman` / `2906` login; tenant CRUD and editors            |
+| Public site         | `/<tenant>/...`                                 | marketing, booking, `sitemap.xml`, `robots.txt`                 |
+| ERP                 | `/<tenant>/erp/...`                             | dashboard, patients, sales, settings, …                         |
+| APIs                | `/<tenant>/api/...`                             | auth, exports, uploads, public feeds, cron                      |
+| Login               | `/<tenant>/erp/login`                           | open page; reachable even with another clinic's session         |
+| Seed-default assets | `/<tenant>/static/...`                          | rewritten to root `public/` seed files only                     |
 | Tenant-owned images | `/<tenant>/api/public/assets/<tenantId>/<file>` | key prefix and current `TenantBrand` reference are both checked |
 
 `src/proxy.ts` runs on every route except `_next` (matcher `/((?!_next).*)`):
@@ -47,9 +47,11 @@ tenantless routes.
    with `isTenantServing()` (status `TRIAL`/`ACTIVE`, unexpired trial). Missing
    or not-serving → 404.
 5. The NextAuth JWT is decoded with `next-auth/jwt` using the tenant-specific
-   cookie name/secret on **every** tenant request, including the login endpoint:
-   a session whose `tenantId` differs from the URL tenant → 404. APIs and public
-   pages are not otherwise gated here; their own handlers enforce roles.
+   cookie name/secret to decide whether _any_ session exists (the optimistic ERP
+   redirect). The proxy deliberately does **not** compare its `tenantId` with
+   the URL: a foreign session can view this clinic's public pages, assets, SEO
+   files and login form. Authenticated handlers enforce the tenant binding with
+   `assertSessionTenant()` instead.
 6. The proxy overwrites (never trusts incoming) three internal headers:
    `x-finan-tenant-id`, `x-finan-tenant-slug`, `x-finan-login-path`. Browser-
    supplied values are discarded. Every tenant request gets the login-path
@@ -65,9 +67,10 @@ uploads, public image URLs, robots and sitemap with forged `x-finan-*` and
 `x-locale` headers. It asserts the response's request-header overrides contain
 only the values derived from the URL (and an empty locale when no `?lang=` is
 present). The test also pins the matcher to `/((?!_next).*)` and verifies that a
-foreign session or a non-serving tenant gets a 404 with no tenant overrides.
-Matching is deliberately broad: APIs, uploads, public images, robots and sitemap
-all pass through the same URL gate as pages.
+non-serving tenant gets a 404 with no tenant overrides, that a foreign session
+can open public pages/assets/login, and that anonymous ERP requests still
+redirect to this clinic's login. Matching is deliberately broad: APIs, uploads,
+public images, robots and sitemap all pass through the same URL gate as pages.
 
 `src/lib/tenant-path.ts` is the single place that builds tenant URLs
 (`tenantPath`, `tenantErpPath`, `tenantApiPath`, `tenantAssetPath`,
@@ -200,9 +203,11 @@ request handlers therefore rely on the proxy headers and use
 - `verifyCredentials()` looks the user up by **URL tenant** (the login page
   passes the `tenant` route param) and returns a JWT carrying `tenantId` and
   `tenantSlug`. Credentials from A cannot sign in at B.
-- Login is open at `/<tenant>/erp/login`. The proxy injects that path as a
-  header; `getLoginPath()` fails closed (404) inside a request rather than
-  substituting the default tenant. A session from B at A's URL 404s.
+- Login is open at `/<tenant>/erp/login` even when the browser has a session
+  for another clinic; signing in replaces the shared Auth.js cookie. The proxy
+  injects that path as a header; `getLoginPath()` fails closed (404) inside a
+  request rather than substituting the default tenant. A session from B at A's
+  ERP or authenticated API 404s via `assertSessionTenant()`.
 - Auth.js defaults to the root `/api/auth` on **both** sides. `TenantAuthProvider`
   in the tenant layout sets `SessionProvider`'s client `basePath` to
   `/<tenant>/api/auth`, so `signIn`, `getSession` and `signOut` from the login,
@@ -246,18 +251,18 @@ no job row is ever attributed to a default/session tenant.
 Every raw statement in the repository is listed here. `pg` is the non-Prisma
 Postgres driver used by infrastructure/QA scripts.
 
-| # | File:line | API | Statement / purpose | Tenant filter |
-|---|-----------|-----|---------------------|---------------|
-| 1 | `src/modules/sales/receipt.ts:53` | `$queryRaw` | `SELECT MAX(...receiptNumber...) FROM "Sale" WHERE receiptNumber LIKE year AND "tenantId" = $tenantId` | **Yes** — explicit `"tenantId" = ${tenantId}` |
-| 2 | `src/modules/sales/receipt.ts:67` | `$queryRaw` | `INSERT INTO "ReceiptCounter" ... ON CONFLICT ("tenantId","year") DO UPDATE ... RETURNING "lastNumber"` | **Yes** — keyed by tenant; conflict target `("tenantId","year")` |
-| 3 | `src/modules/sales/receipt.ts:80` | `$executeRaw` | `UPDATE "ReceiptCounter" SET "lastNumber" = $next WHERE "year" = $year AND "tenantId" = $tenantId` | **Yes** — explicit `"tenantId" = ${tenantId}` |
-| 4 | `src/app/[tenant]/erp/patients/[id]/page.tsx:53` | `$executeRaw` | `SELECT pg_advisory_xact_lock(hashtext('view:<tenantId>:<patientId>:<userId>'))` | **Yes** — lock key namespaced by tenant |
-| 5 | `prisma/seed.ts:199` | `$executeRawUnsafe` | `CREATE INDEX IF NOT EXISTS "Patient_tenantId_birthday_md_idx" ... ("tenantId", EXTRACT(...birthDate...))` | **Yes** — index leads with `tenantId`; DDL, no row data |
-| 6 | `src/lib/tenant-uniqueness.test.ts:274` | `$queryRaw` | `SELECT indexdef FROM pg_indexes WHERE schemaname='public' AND tablename='Patient' AND indexname=...` | **N/A** — metadata read asserting the index definition starts with `"tenantId"`; no business rows |
-| 7 | `scripts/tmp-null-check.mts:6` | `$queryRawUnsafe` | `SELECT count(*) FROM "<t>" WHERE "tenantId" IS NULL` over all 29 tenant-owned tables | **Intentional global audit** — one-time migration check that no rows have a NULL tenant; no cross-tenant data returned, only per-table counts |
-| 8 | `scripts/tmp-backfill.mts:7` | `$executeRawUnsafe` | `UPDATE "<t>" SET "tenantId" = $tenantId WHERE "tenantId" IS NULL` over all 29 tables | **Intentional global repair** — one-time backfill that assigns leftover NULL rows to a single known tenant; only touches rows with no tenant at all |
-| 9 | `scripts/db.mjs:92,99` | `pg client.query` | `SELECT 1 FROM pg_database WHERE datname=$1`; `CREATE DATABASE "<name>"` | **N/A** — embedded-Postgres instance bootstrap; operates above the tenant level |
-| 10 | `scripts/qa/phase1-test.mjs:46,50,122,134,163,188` | `pg client.query` | Login-lockout / audit QA assertions by email and entity id against a dedicated `vision_erp_test` database | **N/A in production** — QA-only test harness; not application code and not deployed |
+| #   | File:line                                          | API                 | Statement / purpose                                                                                        | Tenant filter                                                                                                                                       |
+| --- | -------------------------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | `src/modules/sales/receipt.ts:53`                  | `$queryRaw`         | `SELECT MAX(...receiptNumber...) FROM "Sale" WHERE receiptNumber LIKE year AND "tenantId" = $tenantId`     | **Yes** — explicit `"tenantId" = ${tenantId}`                                                                                                       |
+| 2   | `src/modules/sales/receipt.ts:67`                  | `$queryRaw`         | `INSERT INTO "ReceiptCounter" ... ON CONFLICT ("tenantId","year") DO UPDATE ... RETURNING "lastNumber"`    | **Yes** — keyed by tenant; conflict target `("tenantId","year")`                                                                                    |
+| 3   | `src/modules/sales/receipt.ts:80`                  | `$executeRaw`       | `UPDATE "ReceiptCounter" SET "lastNumber" = $next WHERE "year" = $year AND "tenantId" = $tenantId`         | **Yes** — explicit `"tenantId" = ${tenantId}`                                                                                                       |
+| 4   | `src/app/[tenant]/erp/patients/[id]/page.tsx:53`   | `$executeRaw`       | `SELECT pg_advisory_xact_lock(hashtext('view:<tenantId>:<patientId>:<userId>'))`                           | **Yes** — lock key namespaced by tenant                                                                                                             |
+| 5   | `prisma/seed.ts:199`                               | `$executeRawUnsafe` | `CREATE INDEX IF NOT EXISTS "Patient_tenantId_birthday_md_idx" ... ("tenantId", EXTRACT(...birthDate...))` | **Yes** — index leads with `tenantId`; DDL, no row data                                                                                             |
+| 6   | `src/lib/tenant-uniqueness.test.ts:274`            | `$queryRaw`         | `SELECT indexdef FROM pg_indexes WHERE schemaname='public' AND tablename='Patient' AND indexname=...`      | **N/A** — metadata read asserting the index definition starts with `"tenantId"`; no business rows                                                   |
+| 7   | `scripts/tmp-null-check.mts:6`                     | `$queryRawUnsafe`   | `SELECT count(*) FROM "<t>" WHERE "tenantId" IS NULL` over all 29 tenant-owned tables                      | **Intentional global audit** — one-time migration check that no rows have a NULL tenant; no cross-tenant data returned, only per-table counts       |
+| 8   | `scripts/tmp-backfill.mts:7`                       | `$executeRawUnsafe` | `UPDATE "<t>" SET "tenantId" = $tenantId WHERE "tenantId" IS NULL` over all 29 tables                      | **Intentional global repair** — one-time backfill that assigns leftover NULL rows to a single known tenant; only touches rows with no tenant at all |
+| 9   | `scripts/db.mjs:92,99`                             | `pg client.query`   | `SELECT 1 FROM pg_database WHERE datname=$1`; `CREATE DATABASE "<name>"`                                   | **N/A** — embedded-Postgres instance bootstrap; operates above the tenant level                                                                     |
+| 10  | `scripts/qa/phase1-test.mjs:46,50,122,134,163,188` | `pg client.query`   | Login-lockout / audit QA assertions by email and entity id against a dedicated `vision_erp_test` database  | **N/A in production** — QA-only test harness; not application code and not deployed                                                                 |
 
 Statements 1–5 are tenant-safe by construction. Statement 6 is a test-only
 metadata assertion. Statements 7–10 are intentional global/migration/infra
@@ -316,12 +321,13 @@ a rationale here. Application features must use the scoped `@/lib/prisma`.
   and service edits. It writes a private local snapshot used by the checks; it
   never logs a password.
 - `npx playwright test` — `e2e/tenant-url-isolation.spec.ts` logs in as tenant A
-  and walks every tenant-B page/API/SEO route expecting 404, checks A's session
-  at B (404), and asserts per-tenant clinic names, metadata, CSS colors, image
-  keys, service names, rendered reminder text and OWNER branding pages.
-- `bash scripts/smoke.sh` — tenant-prefixed URLs plus cross-tenant session,
-  session, upload, branding, image, SMS and SEO checks; refuses non-local
-  database hosts.
+  and checks that B's public pages, SEO files, login and assets open in the same
+  browser while B's ERP and APIs 404; it also asserts per-tenant clinic names,
+  metadata, CSS colors, image keys, service names, rendered reminder text and
+  OWNER branding pages.
+- `bash scripts/smoke.sh` — tenant-prefixed URLs plus cross-tenant public
+  browsing/data blocking, session, upload, branding, image, SMS and SEO checks;
+  refuses non-local database hosts.
 
 ## Known limitations
 

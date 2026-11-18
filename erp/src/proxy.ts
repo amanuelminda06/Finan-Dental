@@ -18,7 +18,13 @@ import { SUPERADMIN_PATH } from '@/lib/superadmin-constants';
  * resolves to a clinic gets that tenant's id/slug injected as *request* headers
  * so the scoped Prisma client, layouts, server actions and route handlers all
  * agree on the tenant. Unknown, suspended or expired tenants return a real
- * 404, as does a signed-in session that belongs to a different tenant.
+ * 404.
+ *
+ * A session belonging to another clinic does NOT hide this clinic: public
+ * pages, assets and the open login page work in a browser signed in elsewhere.
+ * The ERP tree and authenticated APIs still verify the session's tenant in
+ * assertSessionTenant() (called by requireRole, layouts, uploads and the badge
+ * poll), which returns 404 for a foreign session.
  *
  * Public pages and APIs are open; the ERP tree `/[tenant]/erp/...` needs a
  * session (optimistic sniff here, signature-verified in layouts/requireRole).
@@ -33,9 +39,15 @@ function sessionCookieName(request: NextRequest): string {
     : 'authjs.session-token';
 }
 
-async function sessionTenantId(request: NextRequest): Promise<string | null> {
+/**
+ * Only answers "is there a signed-in session?" for the optimistic ERP gate.
+ * Its tenant is deliberately not compared with the URL here: doing so would
+ * 404 another clinic's public site in a browser signed in to this one. The
+ * tenant binding is verified by assertSessionTenant() deeper in the request.
+ */
+async function hasSession(request: NextRequest): Promise<boolean> {
   const secret = process.env.AUTH_SECRET;
-  if (!secret) return null;
+  if (!secret) return false;
   const cookieName = sessionCookieName(request);
   try {
     const token = await getToken({
@@ -45,9 +57,9 @@ async function sessionTenantId(request: NextRequest): Promise<string | null> {
       cookieName,
       secureCookie: request.nextUrl.protocol === 'https:',
     });
-    return typeof token?.tenantId === 'string' ? token.tenantId : null;
+    return Boolean(token);
   } catch {
-    return null;
+    return false;
   }
 }
 
@@ -57,8 +69,7 @@ export async function proxy(request: NextRequest) {
 
   // The platform area is tenantless. Bypass tenant lookup/session binding and
   // blank any client-supplied internal tenant headers before the app sees them.
-  const isSuperadmin =
-    pathname === SUPERADMIN_PATH || pathname.startsWith(`${SUPERADMIN_PATH}/`);
+  const isSuperadmin = pathname === SUPERADMIN_PATH || pathname.startsWith(`${SUPERADMIN_PATH}/`);
   if (isSuperadmin) {
     const headers = new Headers(request.headers);
     headers.set(TENANT_ID_HEADER, '');
@@ -90,11 +101,10 @@ export async function proxy(request: NextRequest) {
   });
   if (!tenant || !isTenantServing(tenant)) return notFound();
 
-  // A session belongs to the clinic that issued it. Check this before the
-  // login branch too: a user signed in to A gets a plain 404 at B's login
-  // endpoint, never B's form (and never a redirect that reveals B).
-  const sessionTenant = await sessionTenantId(request);
-  if (sessionTenant && sessionTenant !== tenant.id) return notFound();
+  // A session from another clinic must not hide this one. The ERP gate below
+  // only needs to know whether *any* signed-in session exists; data access is
+  // bound to the URL tenant by assertSessionTenant() in layouts/actions/APIs.
+  const signedIn = await hasSession(request);
 
   // Open login at /<tenant>/erp/login; any secret-style suffix is not a route.
   const loginPath = tenantLoginPath(slug);
@@ -129,7 +139,7 @@ export async function proxy(request: NextRequest) {
   // stay reachable.
   const erpPrefix = `${tenantPath(slug)}/erp`;
   const inErp = pathname === erpPrefix || pathname.startsWith(`${erpPrefix}/`);
-  if (inErp && pathname !== loginPath && !sessionTenant) {
+  if (inErp && pathname !== loginPath && !signedIn) {
     const url = request.nextUrl.clone();
     url.pathname = loginPath;
     url.search = '';

@@ -22,9 +22,10 @@ lists each bad/missing key. Fix `.env` and restart. Common causes:
 
 ## "This page does not exist" on login
 
-`/<tenant>/erp/login` is the login page. Any suffix returns a real 404, and a
-session issued by another tenant also gets a 404 there. The bare `/` redirects
-to the tenant-independent platform login at `/superadmin`.
+`/<tenant>/erp/login` is the login page. Any suffix returns a real 404; the page
+itself opens even when the browser has a session for another tenant (signing in
+switches the active clinic). The bare `/` redirects to the tenant-independent
+platform login at `/superadmin`.
 
 ## Locked out / too many attempts
 
@@ -58,7 +59,8 @@ mode: nothing is sent automatically — the receptionist sends from the phone.
 
 Test on real devices: Android uses `sms:+251…?body=…`, iOS uses
 `sms:+251…&body=…`. If the body is missing, update the OS/app. "Copy message"
-+ "Copy number" are the fallback.
+
+- "Copy number" are the fallback.
 
 ## Excel/CSV export is empty or refuses
 

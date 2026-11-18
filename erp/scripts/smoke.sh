@@ -463,16 +463,25 @@ code=$(curl -s -b "$JAR5" -o /tmp/opencode/staff-messages.html -w '%{http_code}'
 check "staff /messages → 200 (flight redirect)" 200 "$code"
 contains "staff /messages forbidden" "NEXT_REDIRECT;replace;$APP_PATH/403" /tmp/opencode/staff-messages.html
 
-# 11e. Cross-tenant isolation: the session belongs to the URL tenant
-# Owner jar is bound to tenant A; nothing under tenant B may answer with data.
+# 11e. Cross-tenant sessions: B's public site is viewable, B's data is not.
+# Owner jar is bound to tenant A; B's public pages/assets must render B while
+# its ERP, APIs and uploads reject A's session with 404.
+code=$(curl -s -b "$JAR" -o /tmp/opencode/tenant-b-foreign-home.html -w '%{http_code}' "$SECOND_PUB")
+check "tenant-A session on B public home → 200" 200 "$code"
+contains "B home renders B with A's session" "$(snap "$SECOND_TENANT" clinicName)" /tmp/opencode/tenant-b-foreign-home.html
+code=$(curl -s -b "$JAR" -o /dev/null -w '%{http_code}' "$SECOND_PUB/about")
+check "tenant-A session on B public page → 200" 200 "$code"
+B_FOREIGN_HERO=$(snap "$SECOND_TENANT" heroUrl)
+code=$(curl -s -b "$JAR" -o /dev/null -w '%{http_code}' "$SECOND_PUB$B_FOREIGN_HERO")
+check "tenant-A session on B public asset → 200" 200 "$code"
+code=$(curl -s -b "$JAR" -o /dev/null -w '%{http_code}' "$SECOND_APP/login")
+check "tenant-A session on B login → 200" 200 "$code"
 code=$(curl -s -b "$JAR" -o /dev/null -w '%{http_code}' "$SECOND_APP/patients")
 check "tenant-A session on B /erp/patients → 404" 404 "$code"
 code=$(curl -s -b "$JAR" -o /dev/null -w '%{http_code}' "$SECOND_API/patients/export")
 check "tenant-A session on B API → 404" 404 "$code"
 code=$(curl -s -b "$JAR" -o /dev/null -w '%{http_code}' "$SECOND_API/uploads/staff-nope.png")
 check "tenant-A session on B upload → 404" 404 "$code"
-code=$(curl -s -b "$JAR" -o /dev/null -w '%{http_code}' "$SECOND_APP/login")
-check "tenant-A session on B login → 404" 404 "$code"
 code=$(curl -s -o /dev/null -w '%{http_code}' "$SECOND_PUB/about")
 check "anonymous B public page → 200" 200 "$code"
 

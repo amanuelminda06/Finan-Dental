@@ -11,7 +11,16 @@ import {
   tenantUrl,
 } from './helpers';
 
-const PUBLIC_PATHS = ['/', '/about', '/services', '/doctors', '/book', '/contact', '/faq', '/privacy'];
+const PUBLIC_PATHS = [
+  '/',
+  '/about',
+  '/services',
+  '/doctors',
+  '/book',
+  '/contact',
+  '/faq',
+  '/privacy',
+];
 const APP_PATHS = [
   '/dashboard',
   '/patients',
@@ -25,9 +34,10 @@ const APP_PATHS = [
 const API_PATHS = ['/api/search?q=test', '/api/patients/export', '/api/messages/count'];
 
 /**
- * Every clinic is a URL tree. A session issued for tenant A must never be able
- * to reach tenant B — pages, APIs, SEO files or the login endpoint all have to
- * answer 404 (never a 403, redirect or data response that would reveal B).
+ * Every clinic is a URL tree. A session issued for tenant A can still browse
+ * tenant B's public site in the same browser, but it must never reach B's ERP
+ * or authenticated APIs: those answer 404 (never a 403, redirect or data
+ * response) through assertSessionTenant() in the app layer.
  */
 test.describe('URL tenant isolation', () => {
   test.beforeAll(() => {
@@ -40,25 +50,37 @@ test.describe('URL tenant isolation', () => {
     });
   });
 
-  test('a tenant-A session gets 404 on every tenant-B route', async ({ page }) => {
+  test('a tenant-A session can browse tenant-B public pages but not its ERP', async ({ page }) => {
     // Sanity: the session works on its own clinic.
     await login(page, 'OWNER');
     const own = await page.goto(appUrl('/dashboard'));
     expect(own?.status()).toBe(200);
 
-    const walk = async (path: string) => {
-      const response = await page.goto(path);
-      expect(response?.status(), `expected 404 for ${path}`).toBe(404);
-    };
+    // Public site, SEO files and the open login stay reachable in one browser.
+    for (const path of PUBLIC_PATHS) {
+      expect((await page.goto(`/${SECOND_TENANT}${path}`))?.status(), `public ${path}`).toBe(200);
+    }
+    for (const path of ['/sitemap.xml', '/robots.txt']) {
+      expect((await page.goto(`/${SECOND_TENANT}${path}`))?.status(), path).toBe(200);
+    }
+    expect((await page.goto(`/${SECOND_TENANT}/erp/login`))?.status()).toBe(200);
 
-    for (const path of PUBLIC_PATHS) await walk(`/${SECOND_TENANT}${path}`);
-    for (const path of APP_PATHS) await walk(`/${SECOND_TENANT}/erp${path}`);
-    for (const path of API_PATHS) await walk(`/${SECOND_TENANT}${path}`);
-    await walk(`/${SECOND_TENANT}/sitemap.xml`);
-    await walk(`/${SECOND_TENANT}/robots.txt`);
+    // The page must render B's clinic, not A's, while A's session is present.
+    const snapshot = tenantSnapshot();
+    const bName = snapshot.tenants[SECOND_TENANT]?.clinicName;
+    const aName = snapshot.tenants[TENANT]?.clinicName;
+    await page.goto(`/${SECOND_TENANT}`);
+    if (bName) expect(await page.content()).toContain(bName);
+    if (aName && aName !== bName) expect(await page.content()).not.toContain(aName);
 
-    // The open login page is inside the ERP tree too: a session issued by A
-    // must not be able to see B's login form.
+    // Tenant data is still closed: the protected layout, actions and API
+    // handlers call assertSessionTenant() and 404 a foreign session.
+    for (const path of APP_PATHS.filter((path) => path !== '/login')) {
+      expect((await page.goto(`/${SECOND_TENANT}/erp${path}`))?.status(), `erp ${path}`).toBe(404);
+    }
+    for (const path of API_PATHS) {
+      expect((await page.goto(`/${SECOND_TENANT}${path}`))?.status(), `api ${path}`).toBe(404);
+    }
   });
 
   test('anonymous visitors see per-tenant public data and SEO', async ({ request }) => {
@@ -92,7 +114,10 @@ test.describe('URL tenant isolation', () => {
     expect(robotsB).not.toContain(`/${TENANT}/`);
   });
 
-  test('branding, images and message previews stay with their tenant', async ({ page, browser }) => {
+  test('branding, images and message previews stay with their tenant', async ({
+    page,
+    browser,
+  }) => {
     const snapshot = tenantSnapshot();
     const a = snapshot.tenants[TENANT];
     const b = snapshot.tenants[SECOND_TENANT];

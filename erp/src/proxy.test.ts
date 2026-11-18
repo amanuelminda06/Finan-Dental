@@ -64,10 +64,7 @@ function requestFor(path: string, extra: OverrideHeaders = {}): NextRequest {
 function overrideHeaders(response: NextResponse): OverrideHeaders {
   const list = response.headers.get('x-middleware-override-headers')?.split(',') ?? [];
   return Object.fromEntries(
-    list.map((name) => [
-      name,
-      response.headers.get(`x-middleware-request-${name}`) ?? '',
-    ]),
+    list.map((name) => [name, response.headers.get(`x-middleware-request-${name}`) ?? '']),
   );
 }
 
@@ -143,9 +140,38 @@ describe('proxy tenant header trust', () => {
     expect(response.headers.get('x-middleware-override-headers')).toBeNull();
   });
 
-  it('ignores a forged session tenant claim from a client', async () => {
+  it("lets a foreign session open this clinic's public site, assets and login", async () => {
     mocks.getToken.mockResolvedValue({ tenantId: 'tenant_b' });
-    const response = await proxy(requestFor('/finan/api/search'));
-    expect(response.status).toBe(404);
+    for (const path of [
+      '/finan',
+      '/finan/about',
+      '/finan/api/public/assets/tenant_a/brand-logo.png',
+      '/finan/erp/login',
+      '/finan/sitemap.xml',
+    ]) {
+      const response = await proxy(requestFor(path));
+      expect(response.status, path).toBe(200);
+      expect(overrideHeaders(response)).toMatchObject({
+        [TENANT_ID_HEADER]: TENANT.id,
+        [TENANT_SLUG_HEADER]: TENANT.slug,
+        [TENANT_LOGIN_PATH_HEADER]: '/finan/erp/login',
+      });
+    }
+  });
+
+  it("still redirects an anonymous ERP request to this clinic's login", async () => {
+    mocks.getToken.mockResolvedValue(null);
+    const response = await proxy(requestFor('/finan/erp/dashboard'));
+    expect(response.status).toBe(307);
+    expect(response.headers.get('location')).toBe('https://clinic.test/finan/erp/login');
+  });
+
+  it('lets the app layer reject a foreign session inside the ERP tree', async () => {
+    // The optimistic gate only checks presence; assertSessionTenant() in the
+    // protected layout/requireRole is what returns 404 for tenant_b here.
+    mocks.getToken.mockResolvedValue({ tenantId: 'tenant_b' });
+    const response = await proxy(requestFor('/finan/erp/dashboard'));
+    expect(response.status).toBe(200);
+    expect(overrideHeaders(response)[TENANT_ID_HEADER]).toBe(TENANT.id);
   });
 });
