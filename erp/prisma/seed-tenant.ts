@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { PrismaClient } from '@prisma/client';
-import { assertTenantNotProtected } from '../src/lib/tenant-protection';
+import { assertTenantNotProtected, PLATFORM_TENANT_SLUG } from '../src/lib/tenant-protection';
 
 let cachedTenantId: string | null = null;
 
@@ -22,6 +22,17 @@ function seedTenantSlug(): string {
 export async function ensureSeedTenant(prisma: PrismaClient): Promise<string> {
   if (cachedTenantId) return cachedTenantId;
   const slug = seedTenantSlug();
+  if (slug === PLATFORM_TENANT_SLUG) {
+    const exists = await prisma.tenant.findUnique({
+      where: { slug },
+      select: { id: true },
+    });
+    if (!exists) {
+      throw new Error(
+        `Protected tenant "${slug}" is missing. Run \`npm run seed:platform\` first.`,
+      );
+    }
+  }
   await assertTenantNotProtected(prisma, slug);
   const existing = await prisma.tenant.findUnique({
     where: { slug },
@@ -34,7 +45,7 @@ export async function ensureSeedTenant(prisma: PrismaClient): Promise<string> {
   const tenant = await prisma.tenant.create({
     data: {
       slug,
-      name: slug === 'finan' ? 'Finan Speciality Dental Clinic' : slug,
+      name: slug === PLATFORM_TENANT_SLUG ? 'Finan Speciality Dental Clinic' : slug,
       loginSecret: `${slug}-${randomUUID()}`,
     },
     select: { id: true },

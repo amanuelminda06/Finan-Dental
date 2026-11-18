@@ -32,8 +32,8 @@ function latestWeekday(dateKey: string): string {
   return dateKey;
 }
 
-export async function seedAppointments(prisma: PrismaClient): Promise<void> {
-  const tenantId = await ensureSeedTenant(prisma);
+export async function seedAppointments(prisma: PrismaClient, tenantIdOverride?: string): Promise<void> {
+  const tenantId = tenantIdOverride ?? (await ensureSeedTenant(prisma));
   const setting = await prisma.setting.findUnique({
     where: { tenantId_key: { tenantId, key: 'timezone' } },
   });

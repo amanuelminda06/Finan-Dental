@@ -119,13 +119,18 @@ npm run tenant:delete -- <slug> [--force]
 
 `tenant:create` validates the slug and reserved names, applies the shared dental
 starter template (`prisma/tenant-template.ts`, also used by `db:seed`), creates a
-a random legacy `loginSecret` placeholder, sets a 30-day trial, and creates OWNER,
+random legacy `loginSecret` placeholder, sets a 30-day trial, and creates OWNER,
 RECEPTION and DOCTOR accounts with `mustChangePassword=false` and validator-compliant
 demo passwords written to a mode-600 file outside the repo. `--demo-data`
 adds invented patients. `tenant:delete` refuses an `ACTIVE` tenant without
 `--force`; suspended and expired tenants answer 404 everywhere.
-`tenant:reset-demo` preserves identity and OWNER-edited branding. See
-`docs/deploy-vercel-neon.md` for hosted Neon usage and secret rotation.
+`tenant:reset-demo` preserves identity and OWNER-edited branding.
+
+`finandentalclinic` is protected: `tenant:delete`, `tenant:reset-demo` and every
+seed refuse to delete or overwrite it, and its `trialEndsAt` is always `null`.
+After migrate deploy, run `npm run seed:platform` (add `--allow-hosted` for Neon)
+to create it only when missing; an existing tenant is left completely unchanged.
+See `docs/deploy-vercel-neon.md` for hosted Neon usage and secret rotation.
 
 ## How scoping works (data layer)
 

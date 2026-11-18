@@ -107,8 +107,8 @@ const STAFF_SHIFTS: ShiftPattern[] = [
   { staffId: 'staff-tech-1', start: '09:00', end: '17:00' },
 ];
 
-export async function seedHr(prisma: PrismaClient): Promise<void> {
-  const tenantId = await ensureSeedTenant(prisma);
+export async function seedHr(prisma: PrismaClient, tenantIdOverride?: string): Promise<void> {
+  const tenantId = tenantIdOverride ?? (await ensureSeedTenant(prisma));
   const setting = await prisma.setting.findUnique({
     where: { tenantId_key: { tenantId, key: 'timezone' } },
   });

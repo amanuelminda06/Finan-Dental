@@ -77,22 +77,23 @@ the pooled value):
 # From a trusted machine/CI job with the production values exported:
 export DIRECT_URL='postgresql://...@ep-...neon.tech/neondb?sslmode=require'
 DATABASE_URL="$DIRECT_URL" npm run db:deploy   # prisma migrate deploy
+DATABASE_URL="$DIRECT_URL" npm run seed:platform -- --allow-hosted
 npm run tenancy:check                          # base-client allowlist guard
 ```
 
-Do not run `npm run db:seed` on a production database unless you deliberately
-want its demo patients, sales and staff. `tenant:create` below provisions a
-clean clinic with the same dental starter template but **no invented patients**
-unless `--demo-data` is passed.
+`seed:platform` only creates `finandentalclinic` when it is absent; if the tenant
+already exists it changes nothing. `npm run db:seed` refuses to overwrite the
+protected tenant. `tenant:create` below provisions additional clinics with the
+same starter template but **no invented patients** unless `--demo-data` is passed.
 
-## 4. Create the first tenant
+## 4. Add another tenant
 
 From a trusted machine, with the same full env as the app and `DATABASE_URL`
 temporarily set to the direct connection:
 
 ```bash
 DATABASE_URL="$DIRECT_URL" npm run tenant:create -- \
-  finan "Finan Speciality Dental Clinic" owner@example.com --allow-hosted
+  bright-dental "Bright Dental" owner@example.com --allow-hosted
 ```
 
 For another clinic:

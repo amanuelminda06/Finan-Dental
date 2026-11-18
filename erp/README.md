@@ -45,12 +45,16 @@ npm install
 npm run db:up          # embedded local Postgres on :5433 (or point DATABASE_URL elsewhere)
 cp .env.example .env   # then fill AUTH_SECRET and seed passwords
 npm run db:migrate     # apply prisma/migrations
-npm run db:seed        # settings + staff + users + tags + patients + services + sales + HR shifts/leave + appointments/requests/follow-ups (idempotent)
+npm run seed:platform  # creates protected finandentalclinic only if missing (idempotent)
 npm run dev            # http://localhost:3000 → redirects to the default tenant
 ```
 
 Login URL: `http://localhost:3000/<tenant>/erp/login`. A session issued by another
 clinic gets a real 404 at this URL; lockout and rate limiting still apply.
+
+`npm run db:seed` is for legacy local seeding only: it refuses to overwrite the
+protected platform tenant. Use `npm run tenant:create` for new trial clinics;
+it writes OWNER/RECEPTION/DOCTOR credentials to a mode-600 file outside the repo.
 
 Seeded accounts (passwords come from `.env`):
 

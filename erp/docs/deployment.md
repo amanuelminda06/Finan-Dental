@@ -58,25 +58,26 @@ bad/missing value and never logs the values.
 npm ci
 npx prisma generate
 DATABASE_URL="$DIRECT_URL" npm run db:deploy  # Prisma 6: migrations need the direct URL
+DATABASE_URL="$DIRECT_URL" npm run seed:platform -- --allow-hosted
 npm run tenancy:check                        # base-client allowlist guard
 npm run build
 npm start              # or a process manager (systemd/pm2) on :3000
 ```
 
-> `npm run db:seed` inserts demo patients/sales/HR/appointments. Prefer
-> `npm run tenant:create` on a clean production database: it applies the same
-> dental starter template with no invented patients and creates the first OWNER
-> with demo passwords in a mode-600 credentials file. See `docs/deploy-vercel-neon.md`.
+> `npm run seed:platform` creates the protected `finandentalclinic` tenant only
+> when it is missing, with Finan branding and demo data; an existing tenant is
+> never changed. `npm run db:seed` refuses to overwrite it. Use
+> `npm run tenant:create` for additional clinics.
 
-### First tenant
+### Additional tenants
 
 ```bash
 DATABASE_URL="$DIRECT_URL" npm run tenant:create -- \
   <slug> "<clinic name>" <owner email> --allow-hosted
 ```
 
-The CLI prints the target host/database and the credentials file path, then creates
-and login path once. The OWNER edits branding at `/<tenant>/erp/branding`;
+The CLI prints the target host/database and the credentials file path. The OWNER
+edits branding at `/<tenant>/erp/branding`;
 `public/` images are only seed defaults copied into the tenant's own storage.
 
 ## 3. Reverse proxy

@@ -16,6 +16,8 @@ prisma/seed-group-e2e.ts
 scripts/client-data-export.ts
 # Tenant provisioning CLI creates its own unscoped client for CREATE/DELETE tenant work.
 scripts/tenant-cli.ts
+# Platform seed creates/reads only the protected tenant row with an unscoped client.
+scripts/seed-platform.ts
 # Seeds the two local-only URL-tenancy e2e tenants (guarded to 127.0.0.1:5433).
 scripts/seed-e2e-tenants.ts
 scripts/qa/phase1-change.mts

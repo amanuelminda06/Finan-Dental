@@ -127,8 +127,8 @@ export const LIBRARY_PAIRS: {
     },
   ];
 
-export async function seedMessageLibrary(prisma: PrismaClient, createdBy: string): Promise<number> {
-  const tenantId = await ensureSeedTenant(prisma);
+export async function seedMessageLibrary(prisma: PrismaClient, createdBy: string, tenantIdOverride?: string): Promise<number> {
+  const tenantId = tenantIdOverride ?? (await ensureSeedTenant(prisma));
   for (const item of LIBRARY_PAIRS) {
     await prisma.messageLibraryItem.upsert({
       where: { id: item.id },
@@ -178,8 +178,8 @@ const AUDIENCES: { id: string; name: string; filter: Record<string, unknown> }[]
   },
 ];
 
-export async function seedAudiences(prisma: PrismaClient, createdBy: string): Promise<number> {
-  const tenantId = await ensureSeedTenant(prisma);
+export async function seedAudiences(prisma: PrismaClient, createdBy: string, tenantIdOverride?: string): Promise<number> {
+  const tenantId = tenantIdOverride ?? (await ensureSeedTenant(prisma));
   for (const audience of AUDIENCES) {
     await prisma.audience.upsert({
       where: { id: audience.id },
