@@ -111,10 +111,12 @@ export async function proxy(request: NextRequest) {
     });
   }
 
-  // Only the ERP tree is gated optimistically; public pages and tenant APIs
-  // (including unauthenticated booking/feedback) stay reachable.
+  // Only the ERP tree is gated optimistically, except its open login page.
+  // Public pages and tenant APIs (including unauthenticated booking/feedback)
+  // stay reachable.
   const erpPrefix = `${tenantPath(slug)}/erp`;
-  if ((pathname === erpPrefix || pathname.startsWith(`${erpPrefix}/`)) && !sessionTenant) {
+  const inErp = pathname === erpPrefix || pathname.startsWith(`${erpPrefix}/`);
+  if (inErp && pathname !== loginPath && !sessionTenant) {
     const url = request.nextUrl.clone();
     url.pathname = loginPath;
     url.search = '';

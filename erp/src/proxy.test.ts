@@ -100,6 +100,15 @@ describe('proxy tenant header trust', () => {
     });
   });
 
+  it('lets anonymous visitors reach the open ERP login without a redirect loop', async () => {
+    const response = await proxy(requestFor('/finan/erp/login'));
+    expect(response.status).toBe(200);
+    expect(overrideHeaders(response)).toMatchObject({
+      [TENANT_ID_HEADER]: TENANT.id,
+      [TENANT_LOGIN_PATH_HEADER]: '/finan/erp/login',
+    });
+  });
+
   it('overwrites an injected locale with the validated ?lang value', async () => {
     const response = await proxy(requestFor('/finan/about?lang=en'));
     expect(overrideHeaders(response)['x-locale']).toBe('en');
