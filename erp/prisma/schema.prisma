@@ -396,11 +396,11 @@ model Patient {
   tenantId     String
   tenant       Tenant?            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
+  @@unique([tenantId, phoneE164])
   @@index([fullName])
   @@index([birthDate])
   @@index([active])
   @@index([createdAt])
-  @@unique([tenantId, phoneE164])
   @@index([tenantId, idNo])
   @@index([tenantId])
 }
@@ -567,11 +567,11 @@ model Sale {
   tenantId String
   tenant   Tenant?    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
+  @@unique([tenantId, receiptNumber])
   @@index([saleDate])
   @@index([status, saleDate])
   @@index([patientId])
   @@index([doctorId])
-  @@unique([tenantId, receiptNumber])
   @@index([createdBy, saleDate])
   @@index([paymentMethod])
   @@index([status, voidRequestedBy])
@@ -891,4 +891,43 @@ model Tenant {
   messageLibraryItems MessageLibraryItem[]
   audiences           Audience[]
   feedbacks           Feedback[]
+  brand               TenantBrand?
+}
+
+/// Per-clinic identity and public-site presentation. Every value is editable by
+/// that clinic's OWNER in the ERP; JSON fields are validated in
+/// `src/modules/tenant-brand/schemas.ts` before they reach the database.
+model TenantBrand {
+  id               String   @id @default(cuid())
+  tenantId         String   @unique
+  tenant           Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  clinicName       String
+  shortName        String
+  tagline          String   @default("")
+  address          String   @default("")
+  /// JSON array of strings.
+  phones           Json     @default("[]")
+  email            String   @default("")
+  /// JSON object with instagram/telegram/tiktok/website string values.
+  socials          Json     @default("{}")
+  smsSenderName    String   @default("Clinic")
+  currency         String   @default("ETB")
+  timezone         String   @default("Africa/Addis_Ababa")
+  /// JSON array of supported locale codes (`en`, `am`).
+  locales          Json     @default("[\"en\",\"am\"]")
+  /// JSON object with primary/secondary/accent hex colours.
+  colors           Json     @default("{\"primary\":\"#0F766E\",\"secondary\":\"#0EA5E9\",\"accent\":\"#FFFFFF\"}")
+  /// Storage keys (`<tenantId>/<file>`) of images in tenant-owned storage.
+  logoKey          String?
+  logoDarkKey      String?
+  heroKey          String?
+  heroSecondaryKey String?
+  doctorName       String   @default("")
+  doctorTitle      String   @default("")
+  doctorBio        String   @default("")
+  doctorPhotoKey   String?
+  trialBanner      Boolean  @default(false)
+  trialBannerText  String   @default("Trial / Demo data")
+  createdAt        DateTime @default(now()) @db.Timestamptz
+  updatedAt        DateTime @updatedAt @db.Timestamptz
 }
