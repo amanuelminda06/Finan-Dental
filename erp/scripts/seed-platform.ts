@@ -13,6 +13,7 @@ import { randomBytes } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { hash } from '@node-rs/argon2';
 import { PrismaClient } from '@prisma/client';
+import { TRIAL_LOGINS, trialEmail } from '../src/lib/trial-credentials';
 import { PLATFORM_TENANT_SLUG } from '../src/lib/tenant-protection';
 
 /** tsx does not load .env automatically — minimal loader for script runs. */
@@ -57,8 +58,6 @@ async function main(): Promise<void> {
   const allowHosted = process.argv.includes('--allow-hosted');
   databaseTarget(allowHosted);
 
-  // Imported after loadEnv() so env validation sees the same variables as the app.
-  const { env } = await import('../src/env');
   const { applyDentalTemplate } = await import('../prisma/tenant-template');
   const { seedHr } = await import('../prisma/seed-hr');
   const { seedAppointments } = await import('../prisma/seed-appointments');
@@ -100,38 +99,16 @@ async function main(): Promise<void> {
       select: { id: true, fullName: true },
     });
 
-    const users = [
-      {
-        email: env.OWNER_EMAIL.toLowerCase(),
-        name: 'Clinic Owner',
-        role: 'OWNER' as const,
-        password: env.OWNER_PASSWORD,
-        staffId: null,
-      },
-      {
-        email: env.RECEPTION_EMAIL.toLowerCase(),
-        name: 'Reception Desk',
-        role: 'RECEPTION' as const,
-        password: env.RECEPTION_PASSWORD,
-        staffId: null,
-      },
-      {
-        email: env.STAFF_EMAIL.toLowerCase(),
-        name: doctor?.fullName ?? 'Clinic Dentist',
-        role: 'STAFF' as const,
-        password: env.STAFF_PASSWORD,
-        staffId: doctor?.id ?? null,
-      },
-    ];
-    for (const user of users) {
+    for (const login of TRIAL_LOGINS) {
+      const isStaff = login.role === 'STAFF';
       await prisma.user.create({
         data: {
           tenantId: tenant.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
-          staffId: user.staffId,
-          passwordHash: await hash(user.password),
+          email: trialEmail(PLATFORM_TENANT_SLUG, login.role),
+          name: isStaff ? (doctor?.fullName ?? login.name) : login.name,
+          role: login.role,
+          staffId: isStaff ? (doctor?.id ?? null) : null,
+          passwordHash: await hash(login.password),
           active: true,
           mustChangePassword: false,
         },

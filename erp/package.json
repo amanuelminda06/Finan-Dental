@@ -21,6 +21,7 @@
     "db:reset": "prisma migrate reset --force",
     "db:studio": "prisma studio",
     "tenant:create": "tsx scripts/tenant-cli.ts tenant:create",
+    "tenant:activate": "tsx scripts/tenant-cli.ts tenant:activate",
     "tenant:extend": "tsx scripts/tenant-cli.ts tenant:extend",
     "tenant:suspend": "tsx scripts/tenant-cli.ts tenant:suspend",
     "tenant:reset-demo": "tsx scripts/tenant-cli.ts tenant:reset-demo",

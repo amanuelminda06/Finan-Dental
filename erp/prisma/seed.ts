@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { hash } from '@node-rs/argon2';
+import { TRIAL_LOGINS, trialEmail } from '../src/lib/trial-credentials';
 import { ensureSeedTenant } from './seed-tenant';
 
 /** tsx does not load .env automatically — minimal loader for seed runs. */
@@ -51,48 +52,33 @@ async function main(): Promise<void> {
       select: { id: true, fullName: true },
     });
 
-    const users = [
-      {
-        email: env.OWNER_EMAIL.toLowerCase(),
-        name: 'Clinic Owner',
-        role: 'OWNER' as const,
-        password: env.OWNER_PASSWORD,
-        staffId: null,
-      },
-      {
-        email: env.RECEPTION_EMAIL.toLowerCase(),
-        name: 'Reception Desk',
-        role: 'RECEPTION' as const,
-        password: env.RECEPTION_PASSWORD,
-        staffId: null,
-      },
-      {
-        email: env.STAFF_EMAIL.toLowerCase(),
-        name: doctor?.fullName ?? 'Clinic Dentist',
-        role: 'STAFF' as const,
-        password: env.STAFF_PASSWORD,
-        staffId: doctor?.id ?? null,
-      },
-    ];
-
-    for (const user of users) {
-      const passwordHash = await hash(user.password);
+    // Fixed trial logins are role-based. Reset the existing account for each
+    // role so re-seeding never leaves duplicate owners/staff behind.
+    for (const login of TRIAL_LOGINS) {
+      const isStaff = login.role === 'STAFF';
       const data = {
-        name: user.name,
-        passwordHash,
-        role: user.role,
-        staffId: user.staffId,
+        name: isStaff ? (doctor?.fullName ?? login.name) : login.name,
+        passwordHash: await hash(login.password),
+        role: login.role,
+        staffId: isStaff ? (doctor?.id ?? null) : null,
         active: true,
         mustChangePassword: false,
         failedLoginCount: 0,
         lockedUntil: null,
       };
-      await prisma.user.upsert({
-        where: { tenantId_email: { tenantId, email: user.email } },
-        update: data,
-        create: { tenantId, email: user.email, ...data },
+      const existing = await prisma.user.findFirst({
+        where: { tenantId, role: login.role },
+        orderBy: { createdAt: 'asc' },
+        select: { id: true },
       });
-      console.log(`✓ user ${user.email} (${user.role})`);
+      if (existing) {
+        await prisma.user.update({ where: { id: existing.id }, data });
+      } else {
+        await prisma.user.create({
+          data: { tenantId, email: trialEmail(env.DEFAULT_TENANT_SLUG, login.role), ...data },
+        });
+      }
+      console.log(`✓ login ${login.shortName} (${login.role})`);
     }
 
     // --- HR: staff, shifts, templates, leave (idempotent) ---

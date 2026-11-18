@@ -1,24 +1,26 @@
 /**
  * Local-first tenant provisioning CLI.
  *
- *   npm run tenant:create -- <slug> "Clinic Name" owner@example.com [--demo-data]
+ *   npm run tenant:create -- <slug> "Clinic Name" <owner email> [--demo-data]
+ *   npm run tenant:activate -- <slug>
  *   npm run tenant:extend -- <slug> [--days 30]
  *   npm run tenant:suspend -- <slug>
  *   npm run tenant:reset-demo -- <slug>
  *   npm run tenant:delete -- <slug> [--force]
  *
  * Hosted Neon is refused unless `--allow-hosted` is passed explicitly; the
- * target host/database is always printed. Trial credentials are written to a
- * mode-600 file outside the repo; only that path is printed.
+ * target host/database is always printed. Every trial tenant gets the same
+ * three fixed logins (owner/owner123, reception/reception123,
+ * doctor/doctor123) — no env vars and no credentials file. `tenant:activate`
+ * takes a clinic live by forcing a strong-password change for all its users.
  */
 import { randomBytes } from 'node:crypto';
-import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, readFileSync } from 'node:fs';
 import { hash } from '@node-rs/argon2';
 import { PrismaClient, type Role, type TenantStatus } from '@prisma/client';
 import { parseTenantSlug } from '../src/lib/tenant-slug';
+import { TRIAL_LOGINS, trialEmail } from '../src/lib/trial-credentials';
 import { assertTenantNotProtected } from '../src/lib/tenant-protection';
-import { passwordError } from '../src/lib/passwords';
 
 function loadEnv(): void {
   const url = new URL('../.env', import.meta.url);
@@ -41,34 +43,15 @@ loadEnv();
 
 const USAGE = `Usage:
   tenant:create <slug> "<clinic name>" <owner email> [--demo-data]
+  tenant:activate <slug>
   tenant:extend <slug> [--days 30]
   tenant:suspend <slug>
   tenant:reset-demo <slug>
   tenant:delete <slug> [--force]
 Add --allow-hosted to operate on a hosted Neon database.`;
 
-/** Simple demo passwords; the first candidate that passes the validator is used. */
-const TRIAL_PASSWORD_CANDIDATES = {
-  owner: ['Gate#9xQ!2026', 'Clinic#Gate2026!', 'Owner#7pT!2026'],
-  reception: ['Desk#7mR!2026', 'Front#Desk2026!', 'Reception#4nK!2026'],
-  doctor: ['Care#4tK!2026', 'Smile#Care2026!', 'Dentist#6vP!2026'],
-} as const;
-
-type TrialAccountLabel = keyof typeof TRIAL_PASSWORD_CANDIDATES;
-
 function fail(message: string): never {
   throw new Error(message);
-}
-
-function credentialsPath(slug: string): string {
-  return join('/tmp/opencode/erp-tenant-credentials', `${slug}.txt`);
-}
-
-function chooseTrialPassword(label: TrialAccountLabel, email: string, name: string): string {
-  for (const candidate of TRIAL_PASSWORD_CANDIDATES[label]) {
-    if (!passwordError(candidate, { email, name })) return candidate;
-  }
-  fail(`No trial password passed validation for ${email}`);
 }
 
 function slugArg(value: string | undefined): string {
@@ -95,7 +78,7 @@ function emailArg(value: string | undefined): string {
   return value.toLowerCase();
 }
 
-function databaseTarget(allowHosted: boolean): { target: string; url: URL } {
+function databaseTarget(allowHosted: boolean): URL {
   const raw = process.env.DATABASE_URL;
   if (!raw) fail('DATABASE_URL is not set');
   const url = new URL(raw);
@@ -111,7 +94,7 @@ function databaseTarget(allowHosted: boolean): { target: string; url: URL } {
         'Pass --allow-hosted deliberately to provision a hosted Neon database.',
     );
   }
-  return { target, url };
+  return url;
 }
 
 async function clearDemoData(prisma: PrismaClient, tenantId: string): Promise<void> {
@@ -143,7 +126,7 @@ async function main(): Promise<void> {
     return;
   }
   const allowHosted = args.includes('--allow-hosted');
-  const { target, url } = databaseTarget(allowHosted);
+  const url = databaseTarget(allowHosted);
   const prisma = new PrismaClient();
 
   try {
@@ -199,43 +182,22 @@ async function main(): Promise<void> {
 
         const accounts: Array<{
           role: Role;
-          label: TrialAccountLabel;
-          labelText: string;
           email: string;
           name: string;
           staffId: string | null;
           password: string;
-        }> = [
-          {
-            role: 'OWNER',
-            label: 'owner',
-            labelText: 'OWNER',
-            email,
-            name: 'Clinic Owner',
-            staffId: null,
-            password: '',
-          },
-          {
-            role: 'RECEPTION',
-            label: 'reception',
-            labelText: 'RECEPTION',
-            email: `reception@${slug}.test`,
-            name: 'Reception',
-            staffId: null,
-            password: '',
-          },
-          {
-            role: 'STAFF',
-            label: 'doctor',
-            labelText: `DOCTOR (${doctorProfile.fullName})`,
-            email: `doctor@${slug}.test`,
-            name: doctorProfile.fullName,
-            staffId: doctorProfile.id,
-            password: '',
-          },
-        ];
+        }> = TRIAL_LOGINS.map((login) => {
+          const isStaff = login.role === 'STAFF';
+          return {
+            role: login.role,
+            email:
+              login.role === 'OWNER' ? email : trialEmail(slug, isStaff ? 'STAFF' : 'RECEPTION'),
+            name: isStaff ? doctorProfile.fullName : login.name,
+            staffId: isStaff ? doctorProfile.id : null,
+            password: login.password,
+          };
+        });
         for (const account of accounts) {
-          account.password = chooseTrialPassword(account.label, account.email, account.name);
           await prisma.user.create({
             data: {
               tenantId: tenant.id,
@@ -250,33 +212,32 @@ async function main(): Promise<void> {
           });
         }
 
-        const file = credentialsPath(slug);
-        mkdirSync(join(file, '..'), { recursive: true, mode: 0o700 });
-        writeFileSync(
-          file,
-          [
-            `Trial tenant: ${slug}`,
-            `Database: ${target}`,
-            `Login: /${slug}/erp/login`,
-            '',
-            'ACCOUNT                              EMAIL                                  PASSWORD',
-            ...accounts.map(
-              (account) =>
-                `${account.labelText.padEnd(35)} ${account.email.padEnd(38)} ${account.password}`,
-            ),
-            '',
-            'mustChangePassword=false. Replace these demo passwords before real use.',
-            '',
-          ].join('\n'),
-          { mode: 0o600 },
-        );
-        chmodSync(file, 0o600);
-
         console.log(`✓ created tenant ${slug} (${url.host}/${url.pathname.replace(/^\//, '')})`);
         console.log(`✓ dental template: ${template.services} services, ${template.templates} templates`);
-        console.log('✓ trial accounts: OWNER, RECEPTION and DOCTOR (STAFF role, mustChangePassword=false)');
-        console.log(`✓ credentials file (mode 600): ${file}`);
-        console.log(`✓ open login: /${slug}/erp/login`);
+        console.log(
+          '✓ trial logins: owner/owner123, reception/reception123, doctor/doctor123 (mustChangePassword=false)',
+        );
+        console.log(`✓ open login: /${slug}/erp/login — run tenant:activate before real use`);
+        break;
+      }
+
+      case 'tenant:activate': {
+        const slug = slugArg(args[0]);
+        const tenant = await requireTenant(prisma, slug);
+        await assertTenantNotProtected(prisma, slug);
+        const [, users] = await prisma.$transaction([
+          prisma.tenant.update({
+            where: { id: tenant.id },
+            data: { status: 'ACTIVE' as TenantStatus, trialEndsAt: null },
+          }),
+          prisma.user.updateMany({
+            where: { tenantId: tenant.id },
+            data: { mustChangePassword: true, failedLoginCount: 0, lockedUntil: null },
+          }),
+        ]);
+        console.log(
+          `✓ ${slug} is ACTIVE; ${users.count} user(s) must set a strong password at next login`,
+        );
         break;
       }
 
