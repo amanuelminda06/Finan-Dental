@@ -7,6 +7,8 @@ src/lib/tenant-prisma.ts
 src/proxy.ts
 # Cron fans out over every serving tenant with the unscoped client.
 src/app/[tenant]/api/jobs/messages/route.ts
+# Superadmin manages tenant rows/platform UI with explicit tenant ids.
+src/modules/superadmin/service.ts
 src/lib/tenant-prisma.test.ts
 src/lib/tenant-isolation.test.ts
 src/lib/tenant-uniqueness.test.ts
