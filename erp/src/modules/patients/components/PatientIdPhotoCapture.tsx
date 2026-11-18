@@ -1,5 +1,6 @@
 'use client';
 
+import TenantImg from '@/components/TenantImg';
 import { useState } from 'react';
 import { useActionState } from 'react';
 import { useTenantRouter as useRouter } from '@/components/tenant-navigation';
@@ -60,8 +61,7 @@ export default function PatientIdPhotoCapture({ patientId, existingUrl }: Props)
         <input type="hidden" name="patientId" value={patientId} />
         <div className="flex items-center gap-3">
           {preview ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <TenantImg
               src={preview}
               alt=""
               className="h-16 w-16 rounded-lg border border-slate-200 object-cover"
@@ -149,8 +149,7 @@ export default function PatientIdPhotoCapture({ patientId, existingUrl }: Props)
             aria-label={t('idPhotoView')}
             className="relative z-10 max-h-[90vh] max-w-5xl overflow-auto rounded-xl border border-slate-200 bg-white p-3 shadow-xl"
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={preview} alt="" className="h-auto w-full max-w-full object-contain" />
+            <TenantImg src={preview} alt="" className="h-auto w-full max-w-full object-contain" />
           </div>
         </div>
       ) : null}

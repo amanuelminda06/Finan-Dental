@@ -18,8 +18,8 @@ import { verifyTurnstile } from '@/modules/public-site/turnstile';
  * section after the OWNER ticks "show on website" in the CMS. Defences mirror
  * the booking endpoint — honeypot, per-IP rate limit, optional Cloudflare
  * Turnstile (off by default), strict zod validation, and only the sha-256 IP
- * hash is kept — never the raw IP. Excluded from the session gate by
- * `src/proxy.ts` (its matcher skips `/api`).
+ * hash is kept — never the raw IP. Not session-gated by `src/proxy.ts`, but the
+ * tenant is resolved from the URL and rate-limit keys are tenant-prefixed.
  */
 export async function POST(request: Request) {
   await connection();

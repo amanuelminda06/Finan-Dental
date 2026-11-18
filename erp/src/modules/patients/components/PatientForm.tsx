@@ -1,5 +1,6 @@
 'use client';
 
+import TenantImg from '@/components/TenantImg';
 import { TenantLink as Link } from '@/components/tenant-navigation';
 import { useActionState, useEffect, useState } from 'react';
 import { useTenantRouter as useRouter } from '@/components/tenant-navigation';
@@ -226,8 +227,7 @@ export default function PatientForm({ mode, patient, route }: Props) {
           </label>
           <div className="flex flex-wrap items-center gap-3">
             {patient?.idPhotoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
+              <TenantImg
                 src={patient.idPhotoUrl}
                 alt=""
                 className="h-16 w-16 rounded-lg border border-slate-200 object-cover"
@@ -362,8 +362,7 @@ export default function PatientForm({ mode, patient, route }: Props) {
             aria-label={t('idPhotoView')}
             className="relative z-10 max-h-[90vh] max-w-5xl overflow-auto rounded-xl border border-slate-200 bg-white p-3 shadow-xl"
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <TenantImg
               src={patient.idPhotoUrl}
               alt=""
               className="h-auto w-full max-w-full object-contain"

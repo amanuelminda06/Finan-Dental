@@ -1,4 +1,4 @@
-import Image from 'next/image';
+import TenantImage from '@/components/TenantImage';
 import { TenantLink as Link } from '@/components/tenant-navigation';
 import { getTranslations } from 'next-intl/server';
 import { requirePageRole } from '@/lib/require-role';
@@ -120,7 +120,7 @@ export default async function ServicesPage({ searchParams }: { searchParams: Sea
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       {row.imageUrl ? (
-                        <Image
+                        <TenantImage
                           src={row.imageUrl}
                           alt=""
                           width={44}

@@ -1,5 +1,6 @@
 'use client';
 
+import TenantImg from '@/components/TenantImg';
 import { TenantLink as Link } from '@/components/tenant-navigation';
 import { useActionState, useEffect, useState } from 'react';
 import { useTenantRouter as useRouter } from '@/components/tenant-navigation';
@@ -166,8 +167,7 @@ export default function StaffForm({ mode, staff }: Props) {
         </label>
         <div className="flex items-center gap-3">
           {photoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <TenantImg
               src={photoUrl}
               alt=""
               className="h-14 w-14 rounded-full border border-slate-200 object-cover"

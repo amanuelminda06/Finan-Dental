@@ -15,6 +15,7 @@ vi.mock('next/headers', () => ({
 
 import sitemap from '@/app/[tenant]/sitemap';
 import robots from '@/app/[tenant]/robots';
+import { GET as robotsTxt } from '@/app/[tenant]/robots.txt/route';
 
 const original = process.env.PUBLIC_BASE_URL;
 beforeAll(() => {
@@ -58,5 +59,21 @@ describe('per-tenant robots', () => {
     expect(rule?.allow).toBe('/bright-dental');
     expect(rule?.disallow).toContain('/bright-dental/api');
     expect(rule?.disallow).toContain('/bright-dental/login');
+  });
+
+  it('serves the same config as a per-tenant robots.txt route', async () => {
+    // Next only emits nested metadata files from the app root, so the route
+    // handler is what actually answers /<tenant>/robots.txt.
+    state.slug = 'bright-dental';
+    const response = await robotsTxt();
+    const body = await response.text();
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toContain('text/plain');
+    expect(body).toContain('User-agent: *');
+    expect(body).toContain('Allow: /bright-dental');
+    expect(body).toContain('Disallow: /bright-dental/api');
+    expect(body).toContain('Sitemap: https://clinics.example.com/bright-dental/sitemap.xml');
+    expect(body).toContain('Host: https://clinics.example.com/bright-dental');
+    expect(body).not.toContain('/finan/');
   });
 });

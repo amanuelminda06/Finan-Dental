@@ -1,3 +1,4 @@
+import TenantImg from '@/components/TenantImg';
 import { TenantLink as Link } from '@/components/tenant-navigation';
 import { getTranslations } from 'next-intl/server';
 import { requirePageRole } from '@/lib/require-role';
@@ -101,8 +102,7 @@ export default async function StaffPage({ searchParams }: { searchParams: Search
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       {row.photoUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
+                        <TenantImg
                           src={row.photoUrl}
                           alt=""
                           className="h-9 w-9 rounded-full border border-slate-200 object-cover"

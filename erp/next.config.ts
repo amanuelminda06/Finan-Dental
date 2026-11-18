@@ -53,8 +53,10 @@ const nextConfig: NextConfig = {
     return [
       { source: '/:tenant/static/:path*', destination: '/:path*' },
       // Legacy site-relative asset folders stored in service/doctor rows.
-      { source: '/:tenant/services/:path*', destination: '/services/:path*' },
-      { source: '/:tenant/doctors/:path*', destination: '/doctors/:path*' },
+      // `:path+` matters: `:path*` also matches a bare `/<tenant>/services`,
+      // which would rewrite the real public page to the removed root route.
+      { source: '/:tenant/services/:path+', destination: '/services/:path*' },
+      { source: '/:tenant/doctors/:path+', destination: '/doctors/:path*' },
     ];
   },
   async headers() {

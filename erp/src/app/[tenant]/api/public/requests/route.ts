@@ -19,8 +19,8 @@ export const PUBLIC_BOOKING_RATE_WINDOW_MS = 60 * 60_000;
  * appointment (doctor assigned server-side) instead of a request to review.
  * Defences: honeypot field, per-IP rate limit, optional Cloudflare Turnstile
  * (off by default), strict zod validation, and only the sha-256 IP hash is
- * kept — never the raw IP. Excluded from the session gate by `src/proxy.ts`
- * (its matcher skips `/api`).
+ * kept — never the raw IP. Not session-gated by `src/proxy.ts`, but the tenant
+ * is resolved from the URL and rate-limit keys are tenant-prefixed.
  */
 export async function POST(request: Request) {
   await connection();

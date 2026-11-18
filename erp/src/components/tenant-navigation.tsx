@@ -61,6 +61,16 @@ export function useTenantHref(): (href: string) => string {
   return useMemo(() => (href: string) => tenantHref(href, slug, area), [slug, area]);
 }
 
+/**
+ * Resolve against an explicit area. Stored image paths (`/services/x.png`) are
+ * public assets even when rendered from an ERP page, so they must not inherit
+ * the caller's `app` area.
+ */
+export function useTenantHrefIn(area: TenantArea): (href: string) => string {
+  const { slug } = useTenantNav();
+  return useMemo(() => (href: string) => tenantHref(href, slug, area), [slug, area]);
+}
+
 type TenantLinkProps = Omit<ComponentProps<typeof Link>, 'href'> & { href: string };
 
 /** Drop-in replacement for `next/link` that tenant-prefixes its href. */

@@ -53,6 +53,17 @@ describe('tenantHref', () => {
     expect(tenantHref('/about', 'finan', 'public')).toBe('/finan/about');
   });
 
+  it('resolves stored image paths to the public tree from an ERP page', () => {
+    // Uploads and site-relative paths are public assets even when rendered by
+    // an ERP component, which is why TenantImg passes area: 'public'.
+    expect(tenantHref('/services/teeth-cleaning.jpg', 'finan', 'public')).toBe(
+      '/finan/services/teeth-cleaning.jpg',
+    );
+    expect(tenantHref('/api/uploads/staff/photo.jpg', 'finan', 'public')).toBe(
+      '/finan/api/uploads/staff/photo.jpg',
+    );
+  });
+
   it('routes API, asset and home paths from either area', () => {
     expect(tenantHref('/api/patients/export', 'finan', 'app')).toBe(
       '/finan/api/patients/export',

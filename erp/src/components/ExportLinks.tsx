@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { useTenantHref } from '@/components/tenant-navigation';
 
 type Props = {
   /** Route base, e.g. `/api/patients/export`. */
@@ -15,6 +16,7 @@ type Props = {
  */
 export default function ExportLinks({ base, query = '' }: Props) {
   const t = useTranslations('export');
+  const resolve = useTenantHref();
   const separator = query ? '&' : '?';
 
   return (
@@ -22,7 +24,7 @@ export default function ExportLinks({ base, query = '' }: Props) {
       {(['csv', 'xlsx'] as const).map((format) => (
         <a
           key={format}
-          href={`${base}${query}${separator}format=${format}`}
+          href={`${resolve(base)}${query}${separator}format=${format}`}
           className="rounded-md border border-slate-200 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900"
           download
         >
