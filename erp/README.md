@@ -17,7 +17,7 @@ to the default clinic; everything else is resolved from the first path segment.
 | --- | --- | --- |
 | Default entry | `/` → `/<tenant>` | 307 redirect; the redirect target is `DEFAULT_TENANT_SLUG` |
 | Public site | `/<tenant>/...` | marketing, booking, `sitemap.xml`, `robots.txt` |
-| ERP | `/<tenant>/app/...` | dashboard, patients, sales, settings, … |
+| ERP | `/<tenant>/erp/...` | dashboard, patients, sales, settings, … |
 | APIs | `/<tenant>/api/...` | auth, exports, uploads, public feeds, cron |
 | Secret login | `/<tenant>/login/<secret>` | `secret` comes from that tenant's `loginSecret` |
 | Seed-default assets | `/<tenant>/static/...` | rewritten to root `public/` seed files only |
@@ -28,7 +28,7 @@ session (and its rate-limit budget, locale cookie and secret login URL) is bound
 to one tenant: presenting tenant A's session or secret at tenant B's URL gets a
 404, never data, a 403 or a redirect. Each clinic's name, colors, logo, hero,
 doctor info, SMS sender, languages and public service text are tenant-owned and
-edited by that clinic's OWNER at `/<tenant>/app/branding`. See `docs/tenancy.md`.
+edited by that clinic's OWNER at `/<tenant>/erp/branding`. See `docs/tenancy.md`.
 
 ## Stack
 
@@ -249,7 +249,7 @@ erp/
             │                  # contact faq privacy (+ not-found, opengraph-image)
             ├── sitemap.ts, robots.ts
             ├── login/[secret]/ # the only entry point (secret is per tenant)
-            ├── app/           # /app 403 change-password users staff settings branding audit
+            ├── erp/           # /erp 403 change-password users staff settings branding audit
             │   ├── patients/  # list, new, [id] (+ tabs), [id]/edit, import
             │   ├── dashboard/ # home, services (list/new/[id]/edit, OWNER), content (CMS)
             │   ├── sales/     # list, new, [id] (receipt + void actions), voids
@@ -284,10 +284,10 @@ erp/
   15-min lockout after 5 failed attempts, rate limit (30/5 min) keyed by tenant
   **and** IP, every attempt audited (`LOGIN_FAILED`/`LOGIN_SUCCESS`).
 - **Forced first login**: `mustChangePassword` — pages redirect to
-  `/<tenant>/app/change-password`, server actions refuse with `passwordChangeRequired`
+  `/<tenant>/erp/change-password`, server actions refuse with `passwordChangeRequired`
   until the password changes (JWT claim refreshed by auto re-login).
 - **Authorization**: `requireRole()` for actions, `requirePageRole()` for pages
-  (wrong role → `/<tenant>/app/403`), `<RoleGate>` for UI-only hiding. OWNER-only menus.
+  (wrong role → `/<tenant>/erp/403`), `<RoleGate>` for UI-only hiding. OWNER-only menus.
 - **HR**: OWNER manages shifts/templates and decides leave; RECEPTION sees the
   team schedule + team leave calendar but has no edit controls; STAFF sees only
   their own schedule and requests their own leave. Nobody can approve/reject
@@ -371,7 +371,7 @@ a tenant-A session (expecting 404) and checks per-tenant public data and SEO.
 1. `/<tenant>/login/wrong` → 404; `/<tenant>/login` → 404; correct secret → login page.
 2. Wrong password ×5 → account locked (15 min), `LOGIN_FAILED` rows with IP.
 3. Rate limit: >30 attempts / 5 min from one IP → rejected.
-4. Login as RECEPTION → forced to `/<tenant>/app/change-password`; other pages bounce back
+4. Login as RECEPTION → forced to `/<tenant>/erp/change-password`; other pages bounce back
    until the password changes; new password must pass strength rules.
 5. After change: lands on dashboard, session still valid, `PASSWORD_CHANGED` audited.
 6. OWNER: create a user (weak password rejected, duplicate email rejected),
@@ -380,7 +380,7 @@ a tenant-A session (expecting 404) and checks per-tenant public data and SEO.
 8. OWNER: settings — bad time (`25:00`), bad timezone, close ≤ open all rejected;
    valid save audits `SETTING_UPDATED` with changed fields only.
 9. OWNER: audit viewer — filter by user/entity/action/date, expand JSON, CSV export.
-10. RECEPTION hitting `/<tenant>/app/users` directly → `/<tenant>/app/403`; menu hides OWNER-only items.
+10. RECEPTION hitting `/<tenant>/erp/users` directly → `/<tenant>/erp/403`; menu hides OWNER-only items.
 11. Locale switch EN ↔ AM (cookie) — all screens translate, including errors.
 12. Mobile 360px: drawer nav, tables scroll horizontally, forms usable.
 13. Headers present (`curl -I`): CSP, X-Frame-Options: DENY, nosniff.
@@ -404,7 +404,7 @@ a tenant-A session (expecting 404) and checks per-tenant public data and SEO.
     with consent **false** unless the file explicitly says `yes`; duplicates
     inside the file or already in the DB are reported, never silently
     overwritten.
-19. STAFF (`doctor@finandental.com`): `/<tenant>/app/patients` → `/<tenant>/app/403`, direct
+19. STAFF (`doctor@finandental.com`): `/<tenant>/erp/patients` → `/<tenant>/erp/403`, direct
     `/<tenant>/api/patients/export` → 403.
 20. Services (OWNER): create/edit with bad category or non-numeric price
     rejected; changing a price writes a price-history row and leaves existing
@@ -459,7 +459,7 @@ nextShiftStartsAt` + `generatedAt`, has `Cache-Control: public, max-age=60`,
     patient is created, and the request becomes CONVERTED.
 33. Follow-ups (OWNER/RECEPTION): tabs for open/overdue/done/cancelled with a
     patient filter; overdue rows highlighted; mark-done and cancel are audited.
-    STAFF is denied all three pages (`/<tenant>/app/403`).
+    STAFF is denied all three pages (`/<tenant>/erp/403`).
 34. Public intake: `curl -X POST /<tenant>/api/public/requests` with no session — invalid
     JSON → 400, bad fields/phone → 422 with field errors, a valid payload → 200
     `{ok:true,id}` and stores only `ipHash`; repeating fast hits the per-IP
@@ -522,7 +522,7 @@ nextShiftStartsAt` + `generatedAt`, has `Cache-Control: public, max-age=60`,
     image renders; JSON-LD `MedicalClinic` is in the HTML; skip-link works; the
     page is usable by keyboard and Lighthouse (mobile) is ≥ 90 for
     performance/accessibility/SEO/best-practices.
-49. CMS-lite (OWNER): `/<tenant>/app/dashboard/content` edits every text field (hero, about,
+49. CMS-lite (OWNER): `/<tenant>/erp/dashboard/content` edits every text field (hero, about,
     hours, contact, announcement, FAQ, testimonials, privacy, footer); saving
     audits `SITE_CONTENT_UPDATED`; the announcement shows on the public site only
     while active and inside its date window.
@@ -535,12 +535,12 @@ nextShiftStartsAt` + `generatedAt`, has `Cache-Control: public, max-age=60`,
 
 The site ships with clearly-marked **placeholder** copy (see `DEFAULT_CONTENT` in
 `src/modules/public-site/content.ts`) and neutral brand defaults. Before launch,
-the OWNER must fill `/<tenant>/app/branding` and the clinic must supply:
+the OWNER must fill `/<tenant>/erp/branding` and the clinic must supply:
 
 - Final wording for hero, home intro, about story, opening hours, footer note and
   the **privacy policy** (the current text is an explicit placeholder and must be
   reviewed — it is not legal advice).
-- Branding (`/<tenant>/app/branding`): clinic name, short name, tagline, colors,
+- Branding (`/<tenant>/erp/branding`): clinic name, short name, tagline, colors,
   logo, hero, doctor photo/bio, SMS sender, enabled languages, address, phone,
   WhatsApp number, Telegram handle and website URL.
 - Reviewed Amharic translations for every field (the seeded Amharic is a draft).

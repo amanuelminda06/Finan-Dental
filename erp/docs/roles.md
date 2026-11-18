@@ -7,7 +7,7 @@ Three roles exist. Authorization is enforced server-side
 
 Sees everything. Day to day:
 
-- **Dashboard** — role overview + **Daily summary** (`/<tenant>/app/dashboard/daily`) with
+- **Dashboard** — role overview + **Daily summary** (`/<tenant>/erp/dashboard/daily`) with
   today's revenue, average sale, voided total, receipt range and breakdowns by
   payment/doctor/service; print it or email it.
 - **Patients, Sales, Appointments, Requests, Follow-ups, Messages** — full access.
@@ -25,11 +25,11 @@ Sees everything. Day to day:
 - **Settings** — clinic name, timezone, currency, hours, contacts, campaign cap,
   and the group-SMS controls (`group_sms_allow_for_filtered`,
   `group_sms_max_recipients`).
-- **Clinic branding** (`/<tenant>/app/branding`) — OWNER-only: clinic name, short
+- **Clinic branding** (`/<tenant>/erp/branding`) — OWNER-only: clinic name, short
   name, tagline, address, phones, email, socials, colors, logo, hero, doctor
   information, SMS sender and languages. This is the source of truth for public
   metadata, images, CSS colors and message previews in this clinic only.
-- **Website content** (`/<tenant>/app/dashboard/content`) — CMS-lite text for the public site.
+- **Website content** (`/<tenant>/erp/dashboard/content`) — CMS-lite text for the public site.
 - **Audit log** — filter and export (CSV/Excel) every recorded change.
 - **Exports & search** — CSV/Excel on Patients, Sales, Audit, Appointments,
   Messages and Leave; header search for patients/sales/appointments.
@@ -72,6 +72,6 @@ Minimal footprint.
 - Switch EN/AM from the header (remembered per clinic).
 - Change your own password from the user menu; sign out there too.
 - If you reach a page you may not use, you get the friendly
-  `/<your-clinic>/app/403` page — tell the owner if you think your role is wrong.
+  `/<your-clinic>/erp/403` page — tell the owner if you think your role is wrong.
 - Opening another clinic's URL with your session shows a plain 404 (not data or
   a redirect).

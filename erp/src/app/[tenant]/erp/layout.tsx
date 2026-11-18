@@ -27,7 +27,7 @@ export default async function ProtectedLayout({ children }: { children: React.Re
   const messageCount = canSeeMessages ? await countDueTasks().catch(() => 0) : 0;
 
   return (
-    <TenantAreaProvider area="app">
+    <TenantAreaProvider area="erp">
       <AppShell
         user={{
           name: user.name ?? user.email ?? '',

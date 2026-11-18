@@ -1,5 +1,5 @@
 import { tenantServerUrl } from '@/lib/tenant-server-path';
-import { tenantAppPath } from '@/lib/tenant-path';
+import { tenantErpPath } from '@/lib/tenant-path';
 import { getRequestTenant } from '@/lib/tenant-request';
 import type { NextRequest } from 'next/server';
 import { AuthorizationError, requireRole } from '@/lib/require-role';
@@ -111,7 +111,7 @@ export async function GET(request: NextRequest) {
 
   void actor;
   const { slug } = await getRequestTenant();
-  const appHref = (path: string) => tenantAppPath(slug, path);
+  const appHref = (path: string) => tenantErpPath(slug, path);
 
   const response: SearchResponse = {
     patients: patients.map((patient) => ({

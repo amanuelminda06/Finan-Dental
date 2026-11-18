@@ -26,7 +26,7 @@ Every clinic owns a URL prefix. The bare root is the only tenantless route.
 | --- | --- | --- |
 | Default entry | `/` → `/<tenant>` | 307 redirect to `DEFAULT_TENANT_SLUG` |
 | Public site | `/<tenant>/...` | marketing, booking, `sitemap.xml`, `robots.txt` |
-| ERP | `/<tenant>/app/...` | dashboard, patients, sales, settings, … |
+| ERP | `/<tenant>/erp/...` | dashboard, patients, sales, settings, … |
 | APIs | `/<tenant>/api/...` | auth, exports, uploads, public feeds, cron |
 | Secret login | `/<tenant>/login/<secret>` | `secret` is that tenant's `Tenant.loginSecret` |
 | Seed-default assets | `/<tenant>/static/...` | rewritten to root `public/` seed files only |
@@ -64,7 +64,7 @@ Matching is deliberately broad: APIs, uploads, public images, robots and sitemap
 all pass through the same URL gate as pages.
 
 `src/lib/tenant-path.ts` is the single place that builds tenant URLs
-(`tenantPath`, `tenantAppPath`, `tenantApiPath`, `tenantAssetPath`,
+(`tenantPath`, `tenantErpPath`, `tenantApiPath`, `tenantAssetPath`,
 `tenantLoginPath`, `tenantHref`). Client components keep root-relative literals
 and go through `TenantLink` / `useTenantRouter` / `useTenantHref` /
 `useTenantHrefIn` (`src/components/tenant-navigation.tsx`) and the image wrappers
@@ -82,7 +82,7 @@ and the route handler are covered by unit and e2e tests.
 
 There is no global clinic config at runtime. `TenantBrand` is a tenant-owned row
 (JSON fields for phones, socials, locales and colors) edited only by that
-tenant's OWNER at `/<tenant>/app/branding` (`saveTenantBrandAction`). It holds
+tenant's OWNER at `/<tenant>/erp/branding` (`saveTenantBrandAction`). It holds
 the clinic name, short name, tagline, address, phones, email, socials, colors,
 logo, hero, doctor information, SMS sender and enabled languages. Neutral
 defaults are defined in `src/modules/tenant-brand/defaults.ts`; `public/` images
@@ -100,7 +100,7 @@ referenced by that tenant's `TenantBrand`.
 
 Service rows, site-content rows, message templates and uploaded images are also
 tenant-owned. The OWNER edits public service text in the services admin and CMS
-copy in `/<tenant>/app/dashboard/content`; SMS bodies still use `{clinic}` and
+copy in `/<tenant>/erp/dashboard/content`; SMS bodies still use `{clinic}` and
 are rendered with the current tenant's clinic name.
 
 ## Provisioning
@@ -227,7 +227,7 @@ Postgres driver used by infrastructure/QA scripts.
 | 1 | `src/modules/sales/receipt.ts:53` | `$queryRaw` | `SELECT MAX(...receiptNumber...) FROM "Sale" WHERE receiptNumber LIKE year AND "tenantId" = $tenantId` | **Yes** — explicit `"tenantId" = ${tenantId}` |
 | 2 | `src/modules/sales/receipt.ts:67` | `$queryRaw` | `INSERT INTO "ReceiptCounter" ... ON CONFLICT ("tenantId","year") DO UPDATE ... RETURNING "lastNumber"` | **Yes** — keyed by tenant; conflict target `("tenantId","year")` |
 | 3 | `src/modules/sales/receipt.ts:80` | `$executeRaw` | `UPDATE "ReceiptCounter" SET "lastNumber" = $next WHERE "year" = $year AND "tenantId" = $tenantId` | **Yes** — explicit `"tenantId" = ${tenantId}` |
-| 4 | `src/app/[tenant]/app/patients/[id]/page.tsx:53` | `$executeRaw` | `SELECT pg_advisory_xact_lock(hashtext('view:<tenantId>:<patientId>:<userId>'))` | **Yes** — lock key namespaced by tenant |
+| 4 | `src/app/[tenant]/erp/patients/[id]/page.tsx:53` | `$executeRaw` | `SELECT pg_advisory_xact_lock(hashtext('view:<tenantId>:<patientId>:<userId>'))` | **Yes** — lock key namespaced by tenant |
 | 5 | `prisma/seed.ts:199` | `$executeRawUnsafe` | `CREATE INDEX IF NOT EXISTS "Patient_tenantId_birthday_md_idx" ... ("tenantId", EXTRACT(...birthDate...))` | **Yes** — index leads with `tenantId`; DDL, no row data |
 | 6 | `src/lib/tenant-uniqueness.test.ts:274` | `$queryRaw` | `SELECT indexdef FROM pg_indexes WHERE schemaname='public' AND tablename='Patient' AND indexname=...` | **N/A** — metadata read asserting the index definition starts with `"tenantId"`; no business rows |
 | 7 | `scripts/tmp-null-check.mts:6` | `$queryRawUnsafe` | `SELECT count(*) FROM "<t>" WHERE "tenantId" IS NULL` over all 29 tenant-owned tables | **Intentional global audit** — one-time migration check that no rows have a NULL tenant; no cross-tenant data returned, only per-table counts |

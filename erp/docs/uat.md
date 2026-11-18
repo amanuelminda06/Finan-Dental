@@ -41,7 +41,7 @@ non-technical user should observe. Sign off at the bottom.
 ## C. Staff (doctor)
 
 1. Dashboard shows *my* appointments, *my* shifts and my leave balance only.
-2. `/<tenant>/app/patients`, `/sales`, `/revenue`, `/users`, `/staff`, `/settings` all bounce
+2. `/<tenant>/erp/patients`, `/sales`, `/revenue`, `/users`, `/staff`, `/settings` all bounce
    to the "no permission" page.
 3. Schedule shows only your own week.
 4. Leave: request annual leave (whole and half day); an overlapping request is
@@ -65,7 +65,7 @@ non-technical user should observe. Sign off at the bottom.
 8. **Messages**: edit a template (live preview, character count, safety note);
    build a campaign and check matched vs excluded counts; run "message jobs now"
    twice (idempotent).
-9. **Daily summary**: open `/<tenant>/app/dashboard/daily`, print it, and (if email is
+9. **Daily summary**: open `/<tenant>/erp/dashboard/daily`, print it, and (if email is
    configured) send it to yourself.
 10. **Audit log**: filter by user/entity/action/date; export CSV and Excel.
 11. **Exports**: on Patients, Sales, Audit, Appointments, Messages and Leave,

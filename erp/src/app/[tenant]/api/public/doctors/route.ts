@@ -7,7 +7,7 @@ import { getPublicDoctorStatus } from '@/modules/hr';
  * The projection is an allow-list (see `buildPublicDoctorStatus`): no phone,
  * email, leave reasons or any internal identifiers ever leave the clinic. The
  * route is not session-gated by `src/proxy.ts` (the proxy only requires a
- * session under `/app`), but the tenant is still resolved from the URL, and
+ * session under `/erp`), but the tenant is still resolved from the URL, and
  * the response is cached for 60 seconds at the HTTP layer.
  */
 export async function GET() {

@@ -143,7 +143,7 @@ curl -fsS https://erp.example.com/<slug>/login/<secret> >/dev/null  # secret lin
 ```
 
 Sign in as the owner, change the password, then open
-`/<tenant>/app/branding`. That form is the source of truth for clinic name,
+`/<tenant>/erp/branding`. That form is the source of truth for clinic name,
 tagline, address, phones, email, socials, colors, logo, hero, doctor information,
 SMS sender and languages. All metadata, JSON-LD, OpenGraph, CSS variables, public
 images and rendered message previews follow those tenant-owned values. Static
@@ -172,7 +172,7 @@ limit, split the fan-out or move it to a long-running worker.
 | `AUTH_SECRET`      | Generate a new value, set it in Vercel, redeploy. All existing JWT sessions are invalidated, so users sign in again.                                                                                                                             |
 | Tenant login URL   | Update the row with a one-off direct connection, e.g. `psql "$DIRECT_URL" -c "UPDATE \"Tenant\" SET \"loginSecret\" = 'new-random-value' WHERE slug = 'finan';"`. The old URL 404s immediately. Also update `LOGIN_SECRET_PATH` for seed parity. |
 | `CRON_SECRET`      | Set the new value in Vercel and in the scheduler together. Expect at most one failed run during the cutover.                                                                                                                                     |
-| Owner password     | OWNER resets it from `/<tenant>/app/users`; the CLI's one-time password cannot be recovered.                                                                                                                                                     |
+| Owner password     | OWNER resets it from `/<tenant>/erp/users`; the CLI's one-time password cannot be recovered.                                                                                                                                                     |
 | Neon role password | Rotate in Neon, update `DATABASE_URL` and `DIRECT_URL` in Vercel, redeploy, and rerun the migration command with the new direct URL.                                                                                                             |
 
 Never rotate a tenant's secret by editing only `.env` or `LOGIN_SECRET_PATH`;

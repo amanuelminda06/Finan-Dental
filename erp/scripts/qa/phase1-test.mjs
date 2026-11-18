@@ -10,7 +10,7 @@ const val = (k) => {
 const ORIGIN = 'http://127.0.0.1:3101';
 const TENANT = val('DEFAULT_TENANT_SLUG') || 'finan';
 const BASE = `${ORIGIN}/${TENANT}`;
-const APP_PATH = `/${TENANT}/app`;
+const APP_PATH = `/${TENANT}/erp`;
 const SECRET = val('LOGIN_SECRET_PATH');
 const LOGIN = `/${TENANT}/login/${SECRET}`;
 const DB = 'postgresql://postgres:postgres@127.0.0.1:5433/vision_erp_test';

@@ -20,7 +20,7 @@ import { isTenantServing } from '@/lib/tenant-status';
  * agree on the tenant. Unknown, suspended or expired tenants return a real
  * 404, as does a signed-in session that belongs to a different tenant.
  *
- * Public pages and APIs are open; the ERP tree `/[tenant]/app/...` needs a
+ * Public pages and APIs are open; the ERP tree `/[tenant]/erp/...` needs a
  * session (optimistic sniff here, signature-verified in layouts/requireRole).
  */
 function notFound(): NextResponse {
@@ -120,8 +120,8 @@ export async function proxy(request: NextRequest) {
 
   // Only the ERP tree is gated optimistically; public pages and tenant APIs
   // (including unauthenticated booking/feedback) stay reachable.
-  const appPrefix = `${tenantPath(slug)}/app`;
-  if ((pathname === appPrefix || pathname.startsWith(`${appPrefix}/`)) && !sessionTenant) {
+  const erpPrefix = `${tenantPath(slug)}/erp`;
+  if ((pathname === erpPrefix || pathname.startsWith(`${erpPrefix}/`)) && !sessionTenant) {
     const url = request.nextUrl.clone();
     url.pathname = loginPath;
     url.search = '';

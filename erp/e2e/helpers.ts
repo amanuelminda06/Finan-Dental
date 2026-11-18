@@ -15,7 +15,7 @@ export type RoleKey = 'OWNER' | 'RECEPTION' | 'STAFF';
 const LOGIN_PATH = process.env.LOGIN_SECRET_PATH ?? '';
 
 /** Default clinic whose URL tree the e2e suite logs into. */
-export const TENANT = process.env.DEFAULT_TENANT_SLUG || 'finan';
+export const TENANT = process.env.DEFAULT_TENANT_SLUG || 'finandentalclinic';
 export const SECOND_TENANT = process.env.E2E_SECOND_TENANT || 'bright-dental';
 
 /** `/[tenant]/...` for API, login and public-site paths. */
@@ -23,9 +23,9 @@ export function tenantUrl(path: string): string {
   return `/${TENANT}${path.startsWith('/') ? path : `/${path}`}`;
 }
 
-/** `/[tenant]/app/...` for ERP pages. */
+/** `/[tenant]/erp/...` for ERP pages. */
 export function appUrl(path: string): string {
-  return `/${TENANT}/app${path.startsWith('/') ? path : `/${path}`}`;
+  return `/${TENANT}/erp${path.startsWith('/') ? path : `/${path}`}`;
 }
 
 /** This clinic's secret login URL. */

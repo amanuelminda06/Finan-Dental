@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { siteBaseUrl } from '@/modules/public-site/seo';
-import { tenantAppPath, tenantPath } from '@/lib/tenant-path';
+import { tenantErpPath, tenantPath } from '@/lib/tenant-path';
 import { getRequestTenant } from '@/lib/tenant-request';
 
 /** Robots rules and sitemap reference scoped to this clinic's URL tree. */
@@ -15,7 +15,7 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
         disallow: [
           `${tenantPath(slug)}/login`,
           tenantPath(slug, '/api'),
-          tenantAppPath(slug, '/settings'),
+          tenantErpPath(slug, '/settings'),
         ],
       },
     ],

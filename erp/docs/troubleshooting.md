@@ -33,8 +33,8 @@ update them.
 
 Five failed logins lock the account for 15 minutes; > 30 attempts / 5 min per
 tenant **and** IP is rate-limited (one tenant's attempts do not block another).
-An OWNER can reset the user's password from `/<tenant>/app/users` (sends a
-one-time temp password). Check `/<tenant>/app/audit` for `LOGIN_FAILED`.
+An OWNER can reset the user's password from `/<tenant>/erp/users` (sends a
+one-time temp password). Check `/<tenant>/erp/audit` for `LOGIN_FAILED`.
 
 ## Forced back to "Change password"
 
@@ -47,7 +47,7 @@ resetting the password.
 
 Roles decide access: OWNER (everything), RECEPTION (front desk + patients,
 sales, appointments, requests, messages, team schedule view), STAFF (own
-schedule + leave only). Reassign the role in `/<tenant>/app/users`. The same
+schedule + leave only). Reassign the role in `/<tenant>/erp/users`. The same
 rules apply to the export/API endpoints.
 
 ## Messages look wrong or empty

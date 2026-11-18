@@ -38,7 +38,7 @@ const TENANT = {
 const ROUTES = [
   '/finan',
   '/finan/about',
-  '/finan/app/dashboard',
+  '/finan/erp/dashboard',
   '/finan/api/search?q=test',
   '/finan/api/uploads/photo',
   '/finan/api/public/assets/tenant_a/brand-logo.png',
@@ -88,7 +88,7 @@ describe('proxy tenant header trust', () => {
   it.each(ROUTES)('overwrites forged tenant headers on %s', async (path) => {
     // The ERP tree is the one family with a session gate; give it a valid one so
     // the response is the header-injected `next()` rather than a login redirect.
-    const signedIn = path.startsWith('/finan/app/');
+    const signedIn = path.startsWith('/finan/erp/');
     mocks.getToken.mockResolvedValue(signedIn ? { tenantId: TENANT.id } : null);
 
     const response = await proxy(requestFor(path));

@@ -18,7 +18,7 @@ Version 1.0 | November 2026
 
 ## 1. Introduction
 
-The Clinic Management System (CMS) handles service catalog management, pricing, and clinic configuration settings for the current tenant clinic. Branding and public images are edited by the OWNER at `/<tenant>/app/branding`.
+The Clinic Management System (CMS) handles service catalog management, pricing, and clinic configuration settings for the current tenant clinic. Branding and public images are edited by the OWNER at `/<tenant>/erp/branding`.
 
 ---
 

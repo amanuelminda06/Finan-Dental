@@ -7,7 +7,7 @@ prefixed with the tenant slug:
 1. **Public website** — `/<tenant>/`, `/<tenant>/about`, `/<tenant>/services`,
    `/<tenant>/doctors`, `/<tenant>/book`, `/<tenant>/contact`, `/<tenant>/faq`,
    `/<tenant>/privacy`, plus `/<tenant>/sitemap.xml` and `/<tenant>/robots.txt`.
-2. **ERP** — `/<tenant>/app/...`, secret-link login at
+2. **ERP** — `/<tenant>/erp/...`, secret-link login at
    `/<tenant>/login/<that tenant's LOGIN_SECRET_PATH>`.
 3. **APIs** — `/<tenant>/api/...` (auth, exports, uploads, public feeds, cron).
 
@@ -78,7 +78,7 @@ DATABASE_URL="$DIRECT_URL" npm run tenant:create -- \
 ```
 
 The CLI prints the target host/database, then the owner email, one-time password
-and login path once. The OWNER edits branding at `/<tenant>/app/branding`;
+and login path once. The OWNER edits branding at `/<tenant>/erp/branding`;
 `public/` images are only seed defaults copied into the tenant's own storage.
 
 ## 3. Reverse proxy

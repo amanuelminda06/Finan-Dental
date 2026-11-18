@@ -25,7 +25,7 @@ Work top to bottom. Do not launch with unchecked items in **Critical**.
 
 ## Content & clinic readiness
 
-- [ ] OWNER completed `/<tenant>/app/branding`: clinic name, short name,
+- [ ] OWNER completed `/<tenant>/erp/branding`: clinic name, short name,
       tagline, address, phones, email, socials, colors, logo, hero, doctor info,
       SMS sender and languages. No Finan-specific value remains in another
       clinic's URL tree.
@@ -54,7 +54,7 @@ Work top to bottom. Do not launch with unchecked items in **Critical**.
 ## Day-1
 
 - [ ] Take a fresh backup immediately after go-live.
-- [ ] Watch the audit log (`/<tenant>/app/audit`) for unexpected `LOGIN_FAILED` bursts.
+- [ ] Watch the audit log (`/<tenant>/erp/audit`) for unexpected `LOGIN_FAILED` bursts.
 - [ ] Confirm `/<tenant>/api/public/doctors` loads on the live site with correct statuses.
 - [ ] Confirm `/` redirects to the default tenant and each tenant's
       `sitemap.xml`/`robots.txt` lists only its own URLs.

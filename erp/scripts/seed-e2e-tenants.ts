@@ -138,7 +138,7 @@ async function main(): Promise<void> {
   const secret = process.env.LOGIN_SECRET_PATH?.trim();
   if (!secret) throw new Error('LOGIN_SECRET_PATH is not set');
 
-  const primarySlug = slug(process.env.DEFAULT_TENANT_SLUG, 'finan');
+  const primarySlug = slug(process.env.DEFAULT_TENANT_SLUG, 'finandentalclinic');
   const secondSlug = slug(process.env.E2E_SECOND_TENANT, 'bright-dental');
   if (primarySlug === secondSlug) throw new Error('The two e2e tenants must have different slugs');
   const ownerEmail = (process.env.E2E_SECOND_OWNER_EMAIL || `${secondSlug}-owner@example.test`)

@@ -3,7 +3,7 @@ import { parseTenantSlug } from './tenant-slug';
 /**
  * URL helpers for a clinic-as-a-URL deployment.
  *
- * Public pages live at `/[tenant]/...`, the ERP at `/[tenant]/app/...` and APIs
+ * Public pages live at `/[tenant]/...`, the ERP at `/[tenant]/erp/...` and APIs
  * at `/[tenant]/api/...`. Everything that produces a URL goes through here so
  * there is a single place to change the scheme (and so tests can assert it).
  */
@@ -11,7 +11,7 @@ import { parseTenantSlug } from './tenant-slug';
 export type TenantRef = string | { slug: string };
 
 /** Which sibling tree a root-relative app path belongs to. */
-export type TenantArea = 'app' | 'public';
+export type TenantArea = 'erp' | 'public';
 
 function slugOf(tenant: TenantRef): string {
   const slug = typeof tenant === 'string' ? tenant : tenant.slug;
@@ -45,9 +45,9 @@ export function tenantPath(tenant: TenantRef, path = '/'): string {
   return join(tenant, '', path);
 }
 
-/** ERP path: `/finan/app`, `/finan/app/patients`. */
-export function tenantAppPath(tenant: TenantRef, path = '/'): string {
-  return join(tenant, 'app', path);
+/** ERP path: `/finan/erp`, `/finan/erp/patients`. */
+export function tenantErpPath(tenant: TenantRef, path = '/'): string {
+  return join(tenant, 'erp', path);
 }
 
 /** API path: `/finan/api/search`. */
@@ -88,7 +88,7 @@ export function isTenantPath(pathname: string, tenant: TenantRef): boolean {
  *  - `/api/…` is always an API path under the tenant.
  *  - `/static/…` is a shared asset under the tenant.
  *  - `/` is the tenant's public home, from either area.
- *  - Everything else is prefixed with the current area (`app` → `/[tenant]/app`,
+ *  - Everything else is prefixed with the current area (`erp` → `/[tenant]/erp`,
  *    `public` → `/[tenant]`).
  */
 export function tenantHref(
@@ -105,5 +105,5 @@ export function tenantHref(
   }
   if (href.startsWith('/static/')) return tenantAssetPath(slug, href.slice('/static'.length));
   if (href === '/') return tenantPath(slug, '/');
-  return area === 'app' ? tenantAppPath(slug, href) : tenantPath(slug, href);
+  return area === 'erp' ? tenantErpPath(slug, href) : tenantPath(slug, href);
 }

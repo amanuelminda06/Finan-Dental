@@ -16,7 +16,7 @@ const APP_PATHS = [
   '/dashboard',
   '/patients',
   '/sales',
-  '/appointments',
+  '/erpointments',
   '/messages',
   '/settings',
   '/branding',
@@ -51,7 +51,7 @@ test.describe('URL tenant isolation', () => {
     };
 
     for (const path of PUBLIC_PATHS) await walk(`/${SECOND_TENANT}${path}`);
-    for (const path of APP_PATHS) await walk(`/${SECOND_TENANT}/app${path}`);
+    for (const path of APP_PATHS) await walk(`/${SECOND_TENANT}/erp${path}`);
     for (const path of API_PATHS) await walk(`/${SECOND_TENANT}${path}`);
     await walk(`/${SECOND_TENANT}/sitemap.xml`);
     await walk(`/${SECOND_TENANT}/robots.txt`);
@@ -170,7 +170,7 @@ test.describe('URL tenant isolation', () => {
     try {
       const secondPage = await context.newPage();
       await loginSecondTenant(secondPage);
-      const brandingB = await secondPage.goto(`/${SECOND_TENANT}/app/branding`);
+      const brandingB = await secondPage.goto(`/${SECOND_TENANT}/erp/branding`);
       expect(brandingB?.status()).toBe(200);
       expect(await secondPage.content()).toContain(b.clinicName);
       expect(await secondPage.content()).not.toContain(a.clinicName);
