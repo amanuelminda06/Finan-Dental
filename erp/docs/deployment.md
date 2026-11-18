@@ -7,17 +7,16 @@ prefixed with the tenant slug:
 1. **Public website** — `/<tenant>/`, `/<tenant>/about`, `/<tenant>/services`,
    `/<tenant>/doctors`, `/<tenant>/book`, `/<tenant>/contact`, `/<tenant>/faq`,
    `/<tenant>/privacy`, plus `/<tenant>/sitemap.xml` and `/<tenant>/robots.txt`.
-2. **ERP** — `/<tenant>/erp/...`, secret-link login at
-   `/<tenant>/login/<that tenant's LOGIN_SECRET_PATH>`.
+2. **ERP** — `/<tenant>/erp/...`, with open login at `/<tenant>/erp/login`.
 3. **APIs** — `/<tenant>/api/...` (auth, exports, uploads, public feeds, cron).
 
 The tenant is resolved from the first URL segment and checked on every request
-(unknown/suspended/expired tenants 404). Sessions, secrets, rate limits and
+(unknown/suspended/expired tenants 404). Sessions, rate limits and
 locale cookies are bound to one tenant; see `docs/tenancy.md`.
 
 For a fresh hosted install, follow [`docs/deploy-vercel-neon.md`](deploy-vercel-neon.md).
 This page covers the general self-hosted/long-lived-server path; the Neon guide
-adds pooled/direct connection strings, first-tenant provisioning and secret
+adds pooled/direct connection strings, protected-tenant provisioning and
 rotation.
 
 ## Prerequisites
@@ -40,8 +39,7 @@ Fill, at minimum:
 | `DATABASE_URL` | production Postgres; use Neon's **pooled** string for serverless, add `?sslmode=require` when required |
 | `DIRECT_URL` | Neon's **direct** string, for migrations and tenant CLI only; see `docs/deploy-vercel-neon.md` |
 | `AUTH_SECRET` | `openssl rand -base64 32` |
-| `LOGIN_SECRET_PATH` | `openssl rand -hex 12` — seed-time secret for the default tenant's `/<tenant>/login/<secret>`; each `Tenant.loginSecret` is authoritative at runtime |
-| `DEFAULT_TENANT_SLUG` | `finan` — where `/` redirects and which tenant seed/scripts use (never a fallback in request handling) |
+| `DEFAULT_TENANT_SLUG` | `finandentalclinic` — where `/` redirects and which tenant seed/scripts use (never a fallback in request handling) |
 | `E2E_SECOND_TENANT` | `bright-dental` — local isolation-check tenant created by `tenant:create` |
 | `OWNER_EMAIL` / `OWNER_PASSWORD` | first owner account; password ≥ 10 chars |
 | `RECEPTION_EMAIL` / `RECEPTION_PASSWORD` | created with forced password change |
@@ -68,7 +66,7 @@ npm start              # or a process manager (systemd/pm2) on :3000
 > `npm run db:seed` inserts demo patients/sales/HR/appointments. Prefer
 > `npm run tenant:create` on a clean production database: it applies the same
 > dental starter template with no invented patients and creates the first OWNER
-> with a one-time password. See `docs/deploy-vercel-neon.md` for hosted usage.
+> with demo passwords in a mode-600 credentials file. See `docs/deploy-vercel-neon.md`.
 
 ### First tenant
 
@@ -77,7 +75,7 @@ DATABASE_URL="$DIRECT_URL" npm run tenant:create -- \
   <slug> "<clinic name>" <owner email> --allow-hosted
 ```
 
-The CLI prints the target host/database, then the owner email, one-time password
+The CLI prints the target host/database and the credentials file path, then creates
 and login path once. The OWNER edits branding at `/<tenant>/erp/branding`;
 `public/` images are only seed defaults copied into the tenant's own storage.
 
@@ -111,7 +109,7 @@ ACTIVE tenant in its own `runWithTenant()` scope and returns a per-tenant
 ## 5. Health & smoke
 
 ```bash
-curl -fsS http://127.0.0.1:3000/finan/login/<LOGIN_SECRET_PATH> >/dev/null
+curl -fsS http://127.0.0.1:3000/finandentalclinic/erp/login >/dev/null
 npx tsx scripts/seed-e2e-tenants.ts          # local embedded DB only: two isolation tenants
 bash scripts/smoke.sh                       # tenant-aware checks, server on :3100
 npm run security:scan                       # regenerates docs/security-review.md

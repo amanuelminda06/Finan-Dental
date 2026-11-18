@@ -66,8 +66,7 @@ Minimal footprint.
 
 ## Common to all
 
-- Sign in only via `/<your-clinic>/login/<that clinic's LOGIN_SECRET_PATH>`;
-  first login forces a password change. A secret from another clinic does not
+- Sign in at `/<your-clinic>/erp/login`. A session from another clinic does not
   work at your URL.
 - Switch EN/AM from the header (remembered per clinic).
 - Change your own password from the user menu; sign out there too.

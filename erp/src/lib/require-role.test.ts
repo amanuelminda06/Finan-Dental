@@ -10,7 +10,7 @@ vi.mock('next/navigation', () => ({
 
 vi.mock('@/auth', () => ({
   auth: vi.fn(),
-  getLoginPath: vi.fn(async () => '/login/secret-path'),
+  getLoginPath: vi.fn(async () => '/finan/erp/login'),
 }));
 
 // requirePageRole builds tenant-prefixed redirect targets from the request.
@@ -46,9 +46,9 @@ beforeEach(() => {
 });
 
 describe('requireRole', () => {
-  it('redirects anonymous requests to the secret login path', async () => {
+  it('redirects anonymous requests to the open login path', async () => {
     withSession(null);
-    await expect(requireRole(['OWNER'])).rejects.toThrow('REDIRECT:/login/secret-path');
+    await expect(requireRole(['OWNER'])).rejects.toThrow('REDIRECT:/finan/erp/login');
   });
 
   it('allows a matching role', async () => {
@@ -85,7 +85,7 @@ describe('requireAuth', () => {
 
   it('still redirects anonymous requests', async () => {
     withSession(null);
-    await expect(requireAuth()).rejects.toThrow('REDIRECT:/login/secret-path');
+    await expect(requireAuth()).rejects.toThrow('REDIRECT:/finan/erp/login');
   });
 });
 
@@ -108,7 +108,7 @@ describe('requirePageRole', () => {
 
   it('never converts redirect() errors into AuthorizationError', async () => {
     withSession(null);
-    await expect(requirePageRole(['OWNER'])).rejects.toThrow('REDIRECT:/login/secret-path');
+    await expect(requirePageRole(['OWNER'])).rejects.toThrow('REDIRECT:/finan/erp/login');
   });
 });
 

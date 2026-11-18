@@ -23,10 +23,6 @@ const schema = z.object({
     .regex(/^postgres(ql)?:\/\//, 'DATABASE_URL must be a postgresql:// connection string'),
   AUTH_URL: z.string().url().optional(),
   DIRECT_URL: z.string().url().optional(),
-  LOGIN_SECRET_PATH: z
-    .string()
-    .min(8, 'LOGIN_SECRET_PATH must be at least 8 characters')
-    .regex(/^[A-Za-z0-9_-]+$/, 'LOGIN_SECRET_PATH may only contain letters, numbers, - and _'),
   OWNER_EMAIL: requiredEmail('OWNER_EMAIL'),
   OWNER_PASSWORD: requiredSecret('OWNER_PASSWORD', 6),
   RECEPTION_EMAIL: requiredEmail('RECEPTION_EMAIL'),

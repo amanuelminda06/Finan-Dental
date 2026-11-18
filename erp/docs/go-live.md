@@ -10,11 +10,10 @@ Work top to bottom. Do not launch with unchecked items in **Critical**.
 - [ ] `npm run build` succeeds; `bash scripts/smoke.sh` passes with no new failures.
 - [ ] `npm run security:scan` shows **0** "needs manual review" endpoints.
 - [ ] `npm run audit:deps` reports no high/critical advisories.
-- [ ] Production `.env`: real `AUTH_SECRET`, random `LOGIN_SECRET_PATH`, real
-      owner email, strong passwords, `DIRECT_URL` for migrations/CLI; `.env` is
-      **not** in git.
+- [ ] Production `.env`: real `AUTH_SECRET`, real owner email, strong passwords,
+      `DIRECT_URL` for migrations/CLI; `.env` is **not** in git.
 - [ ] First tenant created with `npm run tenant:create` (no demo data); its
-      one-time password and login path stored in the clinic password manager.
+      demo credentials file stored in the clinic password manager.
 - [ ] All seeded demo passwords changed; `mustChangePassword` cleared for the
       real accounts after first login.
 - [ ] Backup job scheduled **and** a restore has been rehearsed into a scratch

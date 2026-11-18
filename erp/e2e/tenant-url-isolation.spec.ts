@@ -16,10 +16,11 @@ const APP_PATHS = [
   '/dashboard',
   '/patients',
   '/sales',
-  '/erpointments',
+  '/appointments',
   '/messages',
   '/settings',
   '/branding',
+  '/login',
 ];
 const API_PATHS = ['/api/search?q=test', '/api/patients/export', '/api/messages/count'];
 
@@ -56,11 +57,8 @@ test.describe('URL tenant isolation', () => {
     await walk(`/${SECOND_TENANT}/sitemap.xml`);
     await walk(`/${SECOND_TENANT}/robots.txt`);
 
-    // No /login/* path at B is valid for a session issued by A — not A's
-    // secret, and not an arbitrary path that might be B's own secret.
-    const secret = loginUrl().split('/').pop();
-    await walk(`/${SECOND_TENANT}/login/${secret}`);
-    await walk(`/${SECOND_TENANT}/login/another-clinic-secret`);
+    // The open login page is inside the ERP tree too: a session issued by A
+    // must not be able to see B's login form.
   });
 
   test('anonymous visitors see per-tenant public data and SEO', async ({ request }) => {
@@ -179,9 +177,8 @@ test.describe('URL tenant isolation', () => {
     }
   });
 
-  test('tenant A’s login secret is rejected at tenant B (no session)', async ({ request }) => {
-    const secret = loginUrl().split('/').pop();
+  test('open ERP login is reachable anonymously in each tenant', async ({ request }) => {
     expect((await request.get(loginUrl())).status()).toBe(200);
-    expect((await request.get(`/${SECOND_TENANT}/login/${secret}`)).status()).toBe(404);
+    expect((await request.get(`/${SECOND_TENANT}/erp/login`)).status()).toBe(200);
   });
 });

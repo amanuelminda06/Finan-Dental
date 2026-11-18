@@ -8,15 +8,17 @@
  *   npm run tenant:delete -- <slug> [--force]
  *
  * Hosted Neon is refused unless `--allow-hosted` is passed explicitly; the
- * target host/database is always printed. Secrets and one-time passwords are
- * printed only by `tenant:create` and never stored anywhere else.
+ * target host/database is always printed. Trial credentials are written to a
+ * mode-600 file outside the repo; only that path is printed.
  */
 import { randomBytes } from 'node:crypto';
-import { existsSync, readFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { hash } from '@node-rs/argon2';
-import { PrismaClient, type TenantStatus } from '@prisma/client';
+import { PrismaClient, type Role, type TenantStatus } from '@prisma/client';
 import { parseTenantSlug } from '../src/lib/tenant-slug';
 import { assertTenantNotProtected } from '../src/lib/tenant-protection';
+import { passwordError } from '../src/lib/passwords';
 
 function loadEnv(): void {
   const url = new URL('../.env', import.meta.url);
@@ -45,8 +47,28 @@ const USAGE = `Usage:
   tenant:delete <slug> [--force]
 Add --allow-hosted to operate on a hosted Neon database.`;
 
+/** Simple demo passwords; the first candidate that passes the validator is used. */
+const TRIAL_PASSWORD_CANDIDATES = {
+  owner: ['Gate#9xQ!2026', 'Clinic#Gate2026!', 'Owner#7pT!2026'],
+  reception: ['Desk#7mR!2026', 'Front#Desk2026!', 'Reception#4nK!2026'],
+  doctor: ['Care#4tK!2026', 'Smile#Care2026!', 'Dentist#6vP!2026'],
+} as const;
+
+type TrialAccountLabel = keyof typeof TRIAL_PASSWORD_CANDIDATES;
+
 function fail(message: string): never {
   throw new Error(message);
+}
+
+function credentialsPath(slug: string): string {
+  return join('/tmp/opencode/erp-tenant-credentials', `${slug}.txt`);
+}
+
+function chooseTrialPassword(label: TrialAccountLabel, email: string, name: string): string {
+  for (const candidate of TRIAL_PASSWORD_CANDIDATES[label]) {
+    if (!passwordError(candidate, { email, name })) return candidate;
+  }
+  fail(`No trial password passed validation for ${email}`);
 }
 
 function slugArg(value: string | undefined): string {
@@ -121,7 +143,7 @@ async function main(): Promise<void> {
     return;
   }
   const allowHosted = args.includes('--allow-hosted');
-  const { url } = databaseTarget(allowHosted);
+  const { target, url } = databaseTarget(allowHosted);
   const prisma = new PrismaClient();
 
   try {
@@ -134,8 +156,9 @@ async function main(): Promise<void> {
         const existing = await prisma.tenant.findUnique({ where: { slug } });
         if (existing) fail(`Tenant "${slug}" already exists`);
 
+        // The column stays unique for legacy compatibility; login no longer
+        // uses it, so the value is random and never shown to anyone.
         const loginSecret = randomBytes(24).toString('base64url');
-        const password = randomBytes(18).toString('base64url');
         const tenant = await prisma.tenant.create({
           data: {
             slug,
@@ -154,25 +177,106 @@ async function main(): Promise<void> {
           demoData: args.includes('--demo-data'),
         });
 
-        await prisma.user.create({
-          data: {
-            tenantId: tenant.id,
+        // A doctor is a STAFF user linked to a doctor profile, so the public
+        // doctors feed and appointment doctor selector work in a trial clinic.
+        let doctorProfile = await prisma.staff.findFirst({
+          where: { tenantId: tenant.id, isDoctor: true },
+          orderBy: { createdAt: 'asc' },
+          select: { id: true, fullName: true },
+        });
+        if (!doctorProfile) {
+          doctorProfile = await prisma.staff.create({
+            data: {
+              tenantId: tenant.id,
+              fullName: 'Dr. Clinic Dentist',
+              jobTitle: 'Dentist',
+              isDoctor: true,
+              showOnWebsite: true,
+            },
+            select: { id: true, fullName: true },
+          });
+        }
+
+        const accounts: Array<{
+          role: Role;
+          label: TrialAccountLabel;
+          labelText: string;
+          email: string;
+          name: string;
+          staffId: string | null;
+          password: string;
+        }> = [
+          {
+            role: 'OWNER',
+            label: 'owner',
+            labelText: 'OWNER',
             email,
             name: 'Clinic Owner',
-            role: 'OWNER',
-            passwordHash: await hash(password),
-            active: true,
-            mustChangePassword: true,
+            staffId: null,
+            password: '',
           },
-        });
+          {
+            role: 'RECEPTION',
+            label: 'reception',
+            labelText: 'RECEPTION',
+            email: `reception@${slug}.test`,
+            name: 'Reception',
+            staffId: null,
+            password: '',
+          },
+          {
+            role: 'STAFF',
+            label: 'doctor',
+            labelText: `DOCTOR (${doctorProfile.fullName})`,
+            email: `doctor@${slug}.test`,
+            name: doctorProfile.fullName,
+            staffId: doctorProfile.id,
+            password: '',
+          },
+        ];
+        for (const account of accounts) {
+          account.password = chooseTrialPassword(account.label, account.email, account.name);
+          await prisma.user.create({
+            data: {
+              tenantId: tenant.id,
+              email: account.email,
+              name: account.name,
+              role: account.role,
+              staffId: account.staffId,
+              passwordHash: await hash(account.password),
+              active: true,
+              mustChangePassword: false,
+            },
+          });
+        }
+
+        const file = credentialsPath(slug);
+        mkdirSync(join(file, '..'), { recursive: true, mode: 0o700 });
+        writeFileSync(
+          file,
+          [
+            `Trial tenant: ${slug}`,
+            `Database: ${target}`,
+            `Login: /${slug}/erp/login`,
+            '',
+            'ACCOUNT                              EMAIL                                  PASSWORD',
+            ...accounts.map(
+              (account) =>
+                `${account.labelText.padEnd(35)} ${account.email.padEnd(38)} ${account.password}`,
+            ),
+            '',
+            'mustChangePassword=false. Replace these demo passwords before real use.',
+            '',
+          ].join('\n'),
+          { mode: 0o600 },
+        );
+        chmodSync(file, 0o600);
 
         console.log(`✓ created tenant ${slug} (${url.host}/${url.pathname.replace(/^\//, '')})`);
         console.log(`✓ dental template: ${template.services} services, ${template.templates} templates`);
-        console.log(`Owner email:       ${email}`);
-        console.log(`One-time password: ${password}`);
-        console.log(`Login path:        /${slug}/login/${loginSecret}`);
-        console.log('mustChangePassword: true — the owner must set a new password at first login.');
-        console.log('Store these values securely now; they are not printed again.');
+        console.log('✓ trial accounts: OWNER, RECEPTION and DOCTOR (STAFF role, mustChangePassword=false)');
+        console.log(`✓ credentials file (mode 600): ${file}`);
+        console.log(`✓ open login: /${slug}/erp/login`);
         break;
       }
 

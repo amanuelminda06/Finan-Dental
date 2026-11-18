@@ -49,8 +49,7 @@ Preview environment, using that branch's pooled/direct URLs):
 | `DIRECT_URL`                            | Neon **direct** connection string                                  |
 | `AUTH_SECRET`                           | `openssl rand -base64 32`                                          |
 | `AUTH_URL`                              | full canonical origin, e.g. `https://erp.example.com`              |
-| `LOGIN_SECRET_PATH`                     | `openssl rand -hex 12`; seed-time value for the default clinic     |
-| `DEFAULT_TENANT_SLUG`                   | slug chosen for `/`'s redirect, e.g. `finan`                       |
+| `DEFAULT_TENANT_SLUG`                   | `finandentalclinic` — `/` redirect target                            |
 | `OWNER_EMAIL`, `OWNER_PASSWORD`         | intended first owner (used by seed scripts)                        |
 | `RECEPTION_EMAIL`, `RECEPTION_PASSWORD` | seed-only values; use strong random strings if not seeding         |
 | `STAFF_EMAIL`, `STAFF_PASSWORD`         | seed-only values; use strong random strings if not seeding         |
@@ -59,7 +58,7 @@ Preview environment, using that branch's pooled/direct URLs):
 | `NEXT_PUBLIC_TRIAL_BANNER`              | `false` once the first clinic is live                              |
 | `SMS_SENDER_NAME`                       | optional per-tenant default; OWNER can override it in branding     |
 | `CRON_SECRET`                           | `openssl rand -hex 24` — enables the bearer-protected job endpoint |
-| `DEFAULT_TENANT_SLUG`                   | must match the first tenant you create                             |
+| `DEFAULT_TENANT_SLUG`                   | `finandentalclinic` — the protected platform tenant                |
 
 `TURNSTILE_SECRET_KEY` / `NEXT_PUBLIC_TURNSTILE_SITE_KEY` are optional. Booking
 is disabled if they are configured incorrectly, so leave them unset until the
@@ -105,16 +104,16 @@ DATABASE_URL="$DIRECT_URL" npm run tenant:create -- \
 
 The CLI checks the slug (3–40 lowercase letters/digits/hyphens, reserved names
 rejected), prints `Database: <host>:<port>/<database>`, seeds the dental
-template into **that tenant only**, and prints exactly once:
+template into **that tenant only**, creates OWNER/RECEPTION/DOCTOR trial accounts
+with `mustChangePassword: false`, and writes their emails and demo passwords to a
+mode-600 file outside the repo:
 
-- owner email
-- one-time password (`mustChangePassword: true`)
-- login path `/<slug>/login/<random-secret>`
+```
+/tmp/opencode/erp-tenant-credentials/<slug>.txt
+```
 
-Store those values in the clinic's password manager. The login URL is the
-tenants' real secret: the runtime value is `Tenant.loginSecret`, not the
-`LOGIN_SECRET_PATH` env var. `LOGIN_SECRET_PATH` only needs to match the default
-tenant for seed/documentation parity.
+Only that path is printed. The login page is open at `/<slug>/erp/login`; tenant
+isolation comes from the URL, not from a secret path.
 
 Other maintenance commands:
 
@@ -135,14 +134,14 @@ OWNER-edited branding while replacing demo data.
 Deploy the Vercel project, then check:
 
 ```bash
-curl -fsS https://erp.example.com/ >/dev/null                       # 307 to /finan
-curl -fsS https://erp.example.com/finan/ >/dev/null                 # public home
-curl -fsS https://erp.example.com/finan/sitemap.xml | head          # only /finan/...
-curl -fsS https://erp.example.com/finan/robots.txt | head           # scoped sitemap
-curl -fsS https://erp.example.com/<slug>/login/<secret> >/dev/null  # secret link
+curl -fsS https://erp.example.com/ >/dev/null                              # 307 to /finandentalclinic
+curl -fsS https://erp.example.com/finandentalclinic/ >/dev/null            # public home
+curl -fsS https://erp.example.com/finandentalclinic/sitemap.xml | head     # scoped sitemap
+curl -fsS https://erp.example.com/finandentalclinic/robots.txt | head      # scoped robots
+curl -fsS https://erp.example.com/<slug>/erp/login >/dev/null              # open login
 ```
 
-Sign in as the owner, change the password, then open
+Sign in with the credentials file, then open
 `/<tenant>/erp/branding`. That form is the source of truth for clinic name,
 tagline, address, phones, email, socials, colors, logo, hero, doctor information,
 SMS sender and languages. All metadata, JSON-LD, OpenGraph, CSS variables, public
@@ -170,13 +169,10 @@ limit, split the fan-out or move it to a long-running worker.
 | Secret             | Rotation                                                                                                                                                                                                                                         |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `AUTH_SECRET`      | Generate a new value, set it in Vercel, redeploy. All existing JWT sessions are invalidated, so users sign in again.                                                                                                                             |
-| Tenant login URL   | Update the row with a one-off direct connection, e.g. `psql "$DIRECT_URL" -c "UPDATE \"Tenant\" SET \"loginSecret\" = 'new-random-value' WHERE slug = 'finan';"`. The old URL 404s immediately. Also update `LOGIN_SECRET_PATH` for seed parity. |
 | `CRON_SECRET`      | Set the new value in Vercel and in the scheduler together. Expect at most one failed run during the cutover.                                                                                                                                     |
-| Owner password     | OWNER resets it from `/<tenant>/erp/users`; the CLI's one-time password cannot be recovered.                                                                                                                                                     |
+| Owner password     | OWNER resets it from `/<tenant>/erp/users`; trial credentials are in the mode-600 file written by `tenant:create`.                                                                                                                            |
 | Neon role password | Rotate in Neon, update `DATABASE_URL` and `DIRECT_URL` in Vercel, redeploy, and rerun the migration command with the new direct URL.                                                                                                             |
 
-Never rotate a tenant's secret by editing only `.env` or `LOGIN_SECRET_PATH`;
-the proxy reads `Tenant.loginSecret` from the database on every request.
 
 ## 8. Custom domain later
 
@@ -185,7 +181,7 @@ domain:
 
 1. Add it in Vercel and point DNS at the deployment.
 2. Set `AUTH_URL` and `PUBLIC_BASE_URL` to that one canonical HTTPS origin.
-3. Re-verify sitemap/robots, OpenGraph URLs and the secret login link.
+3. Re-verify sitemap/robots, OpenGraph URLs and the open login page.
 
 A vanity **hostname per clinic** (for example `clinic.example.com` instead of
 `/clinic`) is a different routing model and is not implemented. Keep one

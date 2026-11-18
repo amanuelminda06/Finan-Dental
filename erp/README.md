@@ -6,7 +6,7 @@ clinic management (users, staff, settings, audit trail, patients, services,
 sales/POS + revenue, HR lite (shifts/schedule, leave approvals, a cached
 public "on-duty now" feed) and appointments (day/week/list views, website
 booking requests → converted appointments, and patient recall follow-ups).
-Reachable **only** via the secret link `/<tenant>/login/<LOGIN_SECRET_PATH>`.
+Login is an open page at `/<tenant>/erp/login`; tenant isolation comes from the URL.
 
 ## URL layout (one clinic = one URL tree)
 
@@ -19,13 +19,13 @@ to the default clinic; everything else is resolved from the first path segment.
 | Public site | `/<tenant>/...` | marketing, booking, `sitemap.xml`, `robots.txt` |
 | ERP | `/<tenant>/erp/...` | dashboard, patients, sales, settings, … |
 | APIs | `/<tenant>/api/...` | auth, exports, uploads, public feeds, cron |
-| Secret login | `/<tenant>/login/<secret>` | `secret` comes from that tenant's `loginSecret` |
+| Login | `/<tenant>/erp/login` | open page, bound to the tenant in the URL |
 | Seed-default assets | `/<tenant>/static/...` | rewritten to root `public/` seed files only |
 | Tenant-owned images | `/<tenant>/api/public/assets/<tenantId>/<file>` | key prefix + current `TenantBrand` reference checked |
 
 An unknown, suspended or expired tenant returns a real 404 for every area. A
-session (and its rate-limit budget, locale cookie and secret login URL) is bound
-to one tenant: presenting tenant A's session or secret at tenant B's URL gets a
+session (and its rate-limit budget and locale cookie) is bound
+to one tenant: presenting tenant A's session at tenant B's URL gets a
 404, never data, a 403 or a redirect. Each clinic's name, colors, logo, hero,
 doctor info, SMS sender, languages and public service text are tenant-owned and
 edited by that clinic's OWNER at `/<tenant>/erp/branding`. See `docs/tenancy.md`.
@@ -43,15 +43,14 @@ edited by that clinic's OWNER at `/<tenant>/erp/branding`. See `docs/tenancy.md`
 ```bash
 npm install
 npm run db:up          # embedded local Postgres on :5433 (or point DATABASE_URL elsewhere)
-cp .env.example .env   # then fill AUTH_SECRET, LOGIN_SECRET_PATH, seed passwords
+cp .env.example .env   # then fill AUTH_SECRET and seed passwords
 npm run db:migrate     # apply prisma/migrations
 npm run db:seed        # settings + staff + users + tags + patients + services + sales + HR shifts/leave + appointments/requests/follow-ups (idempotent)
 npm run dev            # http://localhost:3000 → redirects to the default tenant
 ```
 
-Login URL: `http://localhost:3000/<tenant>/login/<LOGIN_SECRET_PATH>` — any
-other `/<tenant>/login/...` path returns a real 404 (checked in proxy + page).
-`/<second-tenant>/login/<LOGIN_SECRET_PATH>` also 404s: secrets are per tenant.
+Login URL: `http://localhost:3000/<tenant>/erp/login`. A session issued by another
+clinic gets a real 404 at this URL; lockout and rate limiting still apply.
 
 Seeded accounts (passwords come from `.env`):
 
@@ -146,7 +145,7 @@ erp/
 │                              # request→appointment, leave, messages)
 ├── messages/en.json, am.json  # full translations (identical structure)
 └── src/
-    ├── proxy.ts               # secret-link gate + locale cookie (edge)
+    ├── proxy.ts               # tenant URL gate + locale cookie (edge)
     ├── auth.ts                # Auth.js config (credentials, JWT, cookie flags)
     ├── env.ts                 # zod-validated env, fail-fast at startup
     ├── instrumentation.ts     # imports env on server boot
@@ -248,7 +247,7 @@ erp/
             ├── (public)/      # open marketing site: / about services doctors book
             │                  # contact faq privacy (+ not-found, opengraph-image)
             ├── sitemap.ts, robots.ts
-            ├── login/[secret]/ # the only entry point (secret is per tenant)
+            ├── erp/login/      # open login page (tenant from URL)
             ├── erp/           # /erp 403 change-password users staff settings branding audit
             │   ├── patients/  # list, new, [id] (+ tabs), [id]/edit, import
             │   ├── dashboard/ # home, services (list/new/[id]/edit, OWNER), content (CMS)
@@ -275,8 +274,8 @@ erp/
   checks `Tenant.status`/`trialEndsAt`, injects trusted tenant headers, and 404s
   unknown/suspended/expired tenants. There is no default-tenant fallback in a
   request — only scripts and tests may use `DEFAULT_TENANT_SLUG`.
-- **Secret link**: `proxy.ts` 404s `/<tenant>/login/*` unless the path matches
-  **that tenant's** `Tenant.loginSecret`; the page re-checks server-side.
+- **Login**: `proxy.ts` serves `/<tenant>/erp/login` for the tenant in the URL;
+  any suffix or a foreign session returns a real 404.
 - **Session**: JWT, httpOnly + sameSite=lax + secure(prod), 12h expiry. The JWT
   carries `tenantId`; a session presented at another tenant's URL is 404ed by
   the proxy, layouts, `requireRole`, APIs and uploads alike.
@@ -368,14 +367,14 @@ group-chat batch flow runs on the `mobile` project (`e2e/group-batch.spec.ts`).
 `e2e/tenant-url-isolation.spec.ts` walks every tenant-B page/API/SEO route with
 a tenant-A session (expecting 404) and checks per-tenant public data and SEO.
 
-1. `/<tenant>/login/wrong` → 404; `/<tenant>/login` → 404; correct secret → login page.
+1. `/<tenant>/erp/login/wrong` → 404; `/<tenant>/erp/login` → login page; a foreign session → 404.
 2. Wrong password ×5 → account locked (15 min), `LOGIN_FAILED` rows with IP.
 3. Rate limit: >30 attempts / 5 min from one IP → rejected.
 4. Login as RECEPTION → forced to `/<tenant>/erp/change-password`; other pages bounce back
    until the password changes; new password must pass strength rules.
 5. After change: lands on dashboard, session still valid, `PASSWORD_CHANGED` audited.
 6. OWNER: create a user (weak password rejected, duplicate email rejected),
-   edit, deactivate (cannot deactivate yourself), reset → one-time temp password.
+   edit, deactivate (cannot deactivate yourself), reset → temporary password.
 7. OWNER: staff CRUD + photo upload (reject >2 MB / wrong type), deactivate.
 8. OWNER: settings — bad time (`25:00`), bad timezone, close ≤ open all rejected;
    valid save audits `SETTING_UPDATED` with changed fields only.
@@ -498,7 +497,7 @@ nextShiftStartsAt` + `generatedAt`, has `Cache-Control: public, max-age=60`,
 41. Public website opens with no session: `/` redirects to `/<tenant>`, whose
     `/<tenant>/about`, `/<tenant>/services`, `/<tenant>/doctors`,
     `/<tenant>/book`, `/<tenant>/contact`, `/<tenant>/faq`, `/<tenant>/privacy` all render; any other path still
-    bounces to the secret login and `/<tenant>/login/wrong` is a real 404.
+    bounces to `/<tenant>/erp/login`, and a login suffix is a real 404.
 42. Bilingual: switch EN ↔ AM from the header (cookie, no URL prefix) — hero,
     services, doctors, form labels, FAQ, hours and footer all translate; a
     `?lang=am` URL (e.g. from an hreflang tag) also renders Amharic and persists

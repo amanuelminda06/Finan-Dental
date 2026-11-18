@@ -42,7 +42,7 @@ describe('request-context detection', () => {
 
 describe('getRequestLoginPath', () => {
   it('uses the login path injected by the proxy', async () => {
-    state.loginPath = '/bright-dental/login/another-secret';
+    state.loginPath = '/bright-dental/erp/login';
     expect(await getRequestLoginPath()).toBe('/bright-dental/login/another-secret');
     expect(notFound).not.toHaveBeenCalled();
   });

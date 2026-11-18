@@ -48,7 +48,7 @@ export async function requireAuth(): Promise<SessionUser> {
  * THE single authorization helper (rule 2). Every server action and protected
  * page must call this with its allowed roles.
  *
- * - No session               → redirect to this clinic's secret login URL.
+ * - No session               → redirect to this clinic's open login page.
  * - Session from another clinic → 404 (see assertSessionTenant).
  * - mustChangePassword       → throws PASSWORD_CHANGE_REQUIRED.
  * - Wrong role               → throws FORBIDDEN.

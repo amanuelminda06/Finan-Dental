@@ -17,7 +17,7 @@ vi.mock('@/auth', () => ({
       tenantSlug: 'session-tenant',
     },
   })),
-  getLoginPath: vi.fn(async () => '/login/test'),
+  getLoginPath: vi.fn(async () => '/finan/erp/login'),
 }));
 
 // The search route builds tenant-prefixed hrefs from the URL-resolved tenant.

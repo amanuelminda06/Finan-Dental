@@ -42,7 +42,7 @@ export async function hasRequestContext(): Promise<boolean> {
   }
 }
 
-/** This clinic's secret login URL, injected by the proxy from Tenant.loginSecret. */
+/** This clinic's open login URL, injected by the proxy. */
 export async function getRequestLoginPath(): Promise<string> {
   const headerList = await headers();
   const loginPath = headerList.get(TENANT_LOGIN_PATH_HEADER);

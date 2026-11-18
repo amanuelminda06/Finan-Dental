@@ -10,7 +10,6 @@ The process exits with `Invalid environment configuration: …`. `src/env.ts`
 lists each bad/missing key. Fix `.env` and restart. Common causes:
 
 - `AUTH_SECRET` shorter than 32 chars.
-- `LOGIN_SECRET_PATH` missing, < 8 chars, or containing `/`/spaces.
 - Seed passwords shorter than 10 chars.
 
 ## `DATABASE_URL` / connection errors
@@ -23,11 +22,9 @@ lists each bad/missing key. Fix `.env` and restart. Common causes:
 
 ## "This page does not exist" on login
 
-`/<tenant>/login/…` returns a real 404 unless the path is the full secret URL
-`/<tenant>/login/<that tenant's LOGIN_SECRET_PATH>` **for the tenant in the
-URL**. Using tenant A's secret at tenant B's URL is also a 404. The bare `/`
-only redirects to the default tenant. If a secret changed, bookmarks break —
-update them.
+`/<tenant>/erp/login` is the login page. Any suffix returns a real 404, and a
+session issued by another tenant also gets a 404 there. The bare `/` only
+redirects to the default tenant.
 
 ## Locked out / too many attempts
 

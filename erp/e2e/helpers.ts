@@ -12,7 +12,6 @@ import { expect, type Page } from '@playwright/test';
 
 export type RoleKey = 'OWNER' | 'RECEPTION' | 'STAFF';
 
-const LOGIN_PATH = process.env.LOGIN_SECRET_PATH ?? '';
 
 /** Default clinic whose URL tree the e2e suite logs into. */
 export const TENANT = process.env.DEFAULT_TENANT_SLUG || 'finandentalclinic';
@@ -28,9 +27,9 @@ export function appUrl(path: string): string {
   return `/${TENANT}/erp${path.startsWith('/') ? path : `/${path}`}`;
 }
 
-/** This clinic's secret login URL. */
+/** This clinic's open login URL. */
 export function loginUrl(): string {
-  return tenantUrl(`/login/${LOGIN_PATH}`);
+  return appUrl('/login');
 }
 
 const CREDENTIALS: Record<RoleKey, { email: string; password: string }> = {
@@ -63,9 +62,9 @@ function derivedPassword(): string {
 
 function assertConfigured(role: RoleKey) {
   const { email, password } = CREDENTIALS[role];
-  if (!LOGIN_PATH || !email || !password) {
+  if (!email || !password) {
     throw new Error(
-      `E2E not configured: set LOGIN_SECRET_PATH and ${role}_EMAIL/${role}_PASSWORD in .env (or .env.example).`,
+      `E2E not configured: set ${role}_EMAIL/${role}_PASSWORD in .env (or .env.example).`,
     );
   }
 }

@@ -5,16 +5,16 @@
  *   DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5433/vision_erp \
  *     npx tsx scripts/seed-e2e-tenants.ts
  *
- * - default tenant (DEFAULT_TENANT_SLUG, "finan") keeps the secret login path
- *   from LOGIN_SECRET_PATH so the existing flows keep working;
+ * - protected platform tenant (DEFAULT_TENANT_SLUG, "finandentalclinic") is
+ *   read only: this script never creates, overwrites or expires it;
  * - second tenant (E2E_SECOND_TENANT, "bright-dental") is created through
  *   `npm run tenant:create` with its own dental template, then given a distinct
  *   OWNER-editable brand and service name so the isolation checks can prove
  *   that nothing leaks between clinics.
  *
- * Only slugs and the database target are printed. The one-time password from
- * `tenant:create` is consumed here and replaced with a deterministic local-test
- * password; it is never logged or left active. A local snapshot (default
+ * Only slugs and the database target are printed. The trial password written by
+ * `tenant:create` is replaced with a deterministic local-test password; it is
+ * never logged or left active. A local snapshot (default
  * `/tmp/opencode/erp-e2e-tenants.json`) gives the tests the second tenant's
  * login path and rendered messages without exposing them in `.env`.
  */
@@ -74,7 +74,7 @@ type TenantSnapshot = {
 
 async function snapshotTenant(
   prisma: PrismaClient,
-  row: { id: string; slug: string; name: string; loginSecret: string },
+  row: { id: string; slug: string; name: string },
   credentials?: { email: string; password: string },
 ): Promise<TenantSnapshot> {
   const [brand, services, clinicSetting, reminderRow] = await Promise.all([
@@ -115,7 +115,7 @@ async function snapshotTenant(
     id: row.id,
     name: row.name,
     clinicName,
-    loginPath: `/${row.slug}/login/${row.loginSecret}`,
+    loginPath: `/${row.slug}/erp/login`,
     ...(credentials ? { ownerEmail: credentials.email, ownerPassword: credentials.password } : {}),
     colors: brand.colors as { primary: string; secondary: string; accent: string },
     heroUrl: brand.heroKey ? brandAssetUrl(brand.heroKey) : null,
@@ -135,9 +135,6 @@ async function main(): Promise<void> {
       `Refusing to seed e2e tenants against ${url.hostname}:${url.port || '5432'}${url.pathname} — local embedded Postgres only`,
     );
   }
-  const secret = process.env.LOGIN_SECRET_PATH?.trim();
-  if (!secret) throw new Error('LOGIN_SECRET_PATH is not set');
-
   const primarySlug = slug(process.env.DEFAULT_TENANT_SLUG, 'finandentalclinic');
   const secondSlug = slug(process.env.E2E_SECOND_TENANT, 'bright-dental');
   if (primarySlug === secondSlug) throw new Error('The two e2e tenants must have different slugs');
@@ -148,35 +145,28 @@ async function main(): Promise<void> {
   console.log(`Database: ${url.hostname}:${url.port}/vision_erp`);
   const prisma = new PrismaClient();
   try {
-    const primary = await prisma.tenant.upsert({
+    // The protected platform tenant must already exist; e2e seeding never
+    // creates, overwrites or expires it.
+    const primary = await prisma.tenant.findUnique({
       where: { slug: primarySlug },
-      update: { loginSecret: secret },
-      create: {
-        slug: primarySlug,
-        name: 'Finan Speciality Dental Clinic',
-        loginSecret: secret,
-      },
-      select: { id: true, slug: true, name: true, loginSecret: true },
+      select: { id: true, slug: true, name: true },
     });
+    if (!primary) throw new Error(`Protected tenant "${primarySlug}" is missing; run the platform seed first`);
 
     let second = await prisma.tenant.findUnique({
       where: { slug: secondSlug },
-      select: { id: true, slug: true, name: true, loginSecret: true },
+      select: { id: true, slug: true, name: true },
     });
     if (!second) {
       const args = ['run', 'tenant:create', '--', secondSlug, SECOND_CLINIC, ownerEmail, '--demo-data'];
-      let output: string;
       try {
-        output = execFileSync('npm', args, { cwd: process.cwd(), env: process.env, encoding: 'utf8' });
+        execFileSync('npm', args, { cwd: process.cwd(), env: process.env, stdio: 'ignore' });
       } catch (error) {
         throw new Error(`tenant:create failed for ${secondSlug}: ${String(error)}`);
       }
-      if (!/^One-time password:\s+\S+/m.test(output)) {
-        throw new Error(`tenant:create did not print a one-time password for ${secondSlug}`);
-      }
       second = await prisma.tenant.findUnique({
         where: { slug: secondSlug },
-        select: { id: true, slug: true, name: true, loginSecret: true },
+        select: { id: true, slug: true, name: true },
       });
       if (!second) throw new Error(`tenant:create did not create ${secondSlug}`);
     }

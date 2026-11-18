@@ -10,16 +10,14 @@ import { parseTenantSlug } from '@/lib/tenant-slug';
 import { verifyCredentials } from '@/modules/auth';
 
 /**
- * The login URL belongs to the tenant in the request (its own `loginSecret`).
- * The proxy injects it as a request header, so no global secret path is needed.
- * Outside a request (scripts/tests) the seeded default tenant is used.
+ * The login URL belongs to the tenant in the request. The proxy injects it as
+ * a request header; outside a request (scripts/tests) the default tenant is used.
  */
 export async function getLoginPath(): Promise<string> {
   // Inside a request the proxy has already resolved the clinic from the URL:
-  // a missing header fails closed (404) instead of leaking the default tenant's
-  // secret link. The default is only for scripts/tests outside a request.
+  // a missing header fails closed (404). The default is only for scripts/tests.
   if (await hasRequestContext()) return getRequestLoginPath();
-  return tenantLoginPath(env.DEFAULT_TENANT_SLUG, env.LOGIN_SECRET_PATH);
+  return tenantLoginPath(env.DEFAULT_TENANT_SLUG);
 }
 
 /** 12-hour session (spec). */

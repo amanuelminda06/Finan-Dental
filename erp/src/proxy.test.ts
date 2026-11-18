@@ -31,7 +31,6 @@ const TENANT = {
   slug: 'finan',
   status: 'ACTIVE',
   trialEndsAt: null,
-  loginSecret: 'secret-a',
 };
 
 /** Paths a client can reach; the proxy must run for all of them. */
@@ -55,7 +54,7 @@ function requestFor(path: string, extra: OverrideHeaders = {}): NextRequest {
       // Values a malicious client may send. None may survive the proxy.
       [TENANT_ID_HEADER]: 'forged_tenant',
       [TENANT_SLUG_HEADER]: 'forged-clinic',
-      [TENANT_LOGIN_PATH_HEADER]: '/forged-clinic/login/forged-secret',
+      [TENANT_LOGIN_PATH_HEADER]: '/forged-clinic/erp/login',
       'x-locale': 'am',
       ...extra,
     },
@@ -96,7 +95,7 @@ describe('proxy tenant header trust', () => {
     expect(overrideHeaders(response)).toMatchObject({
       [TENANT_ID_HEADER]: TENANT.id,
       [TENANT_SLUG_HEADER]: TENANT.slug,
-      [TENANT_LOGIN_PATH_HEADER]: '/finan/login/secret-a',
+      [TENANT_LOGIN_PATH_HEADER]: '/finan/erp/login',
       'x-locale': '',
     });
   });

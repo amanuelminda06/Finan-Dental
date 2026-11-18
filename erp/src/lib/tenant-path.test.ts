@@ -33,7 +33,7 @@ describe('tenantPath', () => {
     expect(tenantErpPath('finan', '/patients/7')).toBe('/finan/erp/patients/7');
     expect(tenantApiPath('finan', '/search')).toBe('/finan/api/search');
     expect(tenantAssetPath('finan', '/hero.jpg')).toBe('/finan/static/hero.jpg');
-    expect(tenantLoginPath('finan', 's3cret')).toBe('/finan/login/s3cret');
+    expect(tenantLoginPath('finan')).toBe('/finan/erp/login');
   });
 
   it('rejects slugs that would break the path scheme', () => {
@@ -91,7 +91,7 @@ describe('tenantFromPath', () => {
   });
 
   it('returns null for root, reserved and invalid segments', () => {
-    for (const path of ['/', '', '/login/x', '/api/search', '/_next/static/x', '/FINAN']) {
+    for (const path of ['/', '', '/finan/erp/login/x', '/api/search', '/_next/static/x', '/FINAN']) {
       expect(tenantFromPath(path)).toBeNull();
     }
   });

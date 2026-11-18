@@ -2,7 +2,7 @@
 # Smoke test against http://localhost:3100 (local embedded Postgres only).
 # Every clinic owns a URL tree: /[tenant] (public), /[tenant]/erp (ERP),
 # /[tenant]/api (APIs). This script exercises the default tenant and verifies
-# that a session/secrets for it cannot cross into a second seeded tenant.
+# that a session for it cannot cross into a second seeded tenant.
 # Note: with cacheComponents the status line is committed before the page's
 # dynamic pass runs, so post-login redirects arrive as NEXT_REDIRECT digests
 # in the RSC flight payload (client-side), not as HTTP 307s. Unauthenticated
@@ -16,13 +16,12 @@ SECOND_TENANT=$(grep "^E2E_SECOND_TENANT=" .env | cut -d= -f2- | tr -d '\"')
 [ -n "$SECOND_TENANT" ] || SECOND_TENANT=bright-dental
 TENANT_PATH=/$TENANT_SLUG
 APP_PATH=$TENANT_PATH/erp
-PUB=$BASE$TENANT_PATH           # public site + secret login
+PUB=$BASE$TENANT_PATH           # public site
 APP=$BASE$APP_PATH              # ERP pages
 API=$PUB/api                    # tenant APIs
 SECOND_PUB=$BASE/$SECOND_TENANT
 SECOND_APP=$SECOND_PUB/erp
 SECOND_API=$SECOND_PUB/api
-SECRET=$(grep "^LOGIN_SECRET_PATH=" .env | cut -d= -f2- | tr -d "\"")
 
 # Safety: never let the smoke test's Prisma calls reach a hosted database.
 # Node does not load .env on its own, so read the same URL the app uses (an
@@ -88,23 +87,21 @@ TENANT_ID=$(sql "const t = await p.tenant.findUnique({ where: { slug: '$TENANT_S
 
 rm -f /tmp/opencode/erp-smoke*.jar /tmp/opencode/*.html /tmp/opencode/*.headers /tmp/opencode/audit.csv /tmp/opencode/tenant-*.xml /tmp/opencode/tenant-*.txt
 
-# 1. Secret link gate
-code=$(curl -s -o /dev/null -w '%{http_code}' "$PUB/login/totally-wrong")
-check "wrong secret → 404" 404 "$code"
-code=$(curl -s -o /dev/null -w '%{http_code}' "$PUB/login")
-check "/login → 404" 404 "$code"
-code=$(curl -s -o /tmp/opencode/login.html -w '%{http_code}' "$PUB/login/$SECRET")
-check "correct secret → 200" 200 "$code"
+# 1. Open login gate
+code=$(curl -s -o /dev/null -w '%{http_code}' "$APP/login/totally-wrong")
+check "login path suffix → 404" 404 "$code"
+code=$(curl -s -o /tmp/opencode/login.html -w '%{http_code}' "$APP/login")
+check "open ERP login page → 200" 200 "$code"
 contains "login page renders" "password" /tmp/opencode/login.html
 
 # 2. Security headers
-curl -s -D /tmp/opencode/login.headers -o /dev/null "$PUB/login/$SECRET"
+curl -s -D /tmp/opencode/login.headers -o /dev/null "$APP/login"
 contains "CSP header" "content-security-policy" /tmp/opencode/login.headers
 contains "X-Frame-Options DENY" "x-frame-options: DENY" /tmp/opencode/login.headers
 contains "nosniff" "x-content-type-options: nosniff" /tmp/opencode/login.headers
 contains "Referrer-Policy" "referrer-policy" /tmp/opencode/login.headers
 
-# 3. Bare root sends visitors to the default tenant; ERP routes go to secret login
+# 3. Bare root sends visitors to the default tenant; ERP routes go to the open login page
 code=$(curl -s -o /dev/null -w '%{http_code}' "$BASE/")
 check "no session / → 307" 307 "$code"
 loc=$(curl -s -o /dev/null -w '%{redirect_url}' "$BASE/")
@@ -113,7 +110,7 @@ case "$loc" in *"$TENANT_PATH"*) PASS=$((PASS+1)); echo "✓ root redirects to d
 code=$(curl -s -o /dev/null -w '%{http_code}' "$APP/users")
 check "no session /erp/users → 307" 307 "$code"
 loc=$(curl -s -o /dev/null -w '%{redirect_url}' "$APP/users")
-case "$loc" in *"/login/$SECRET"*) PASS=$((PASS+1)); echo "✓ ERP redirect target is secret login";;
+case "$loc" in *"/erp/login"*) PASS=$((PASS+1)); echo "✓ ERP redirect target is open login";;
   *) FAIL=$((FAIL+1)); echo "✗ ERP redirect target: $loc";; esac
 
 # 4. Owner login + pages
@@ -339,14 +336,14 @@ curl -s -D /tmp/opencode/public.headers -o /dev/null "$API/public/doctors"
 contains "public feed cached for 60s" "max-age=60" /tmp/opencode/public.headers
 
 # 11c. Appointments, website bookings, follow-ups + public intake
-code=$(curl -s -b "$JAR" -o /tmp/opencode/erpts.html -w '%{http_code}' "$APP/erpointments")
-check "owner /erpointments → 200" 200 "$code"
+code=$(curl -s -b "$JAR" -o /tmp/opencode/erpts.html -w '%{http_code}' "$APP/appointments")
+check "owner /appointments → 200" 200 "$code"
 contains "appointments title" "Appointments" /tmp/opencode/erpts.html
 contains "appointments list shows patient" "Demo Patient One" /tmp/opencode/erpts.html
 contains "appointments list shows doctor" "Dr. Tigist Alemu" /tmp/opencode/erpts.html
 contains "appointments has new button" "New appointment" /tmp/opencode/erpts.html
-code=$(curl -s -b "$JAR" -o /tmp/opencode/erpts-week.html -w '%{http_code}' "$APP/erpointments?view=week")
-check "owner /erpointments?view=week → 200" 200 "$code"
+code=$(curl -s -b "$JAR" -o /tmp/opencode/erpts-week.html -w '%{http_code}' "$APP/appointments?view=week")
+check "owner /appointments?view=week → 200" 200 "$code"
 contains "week view renders patient" "Demo Patient One" /tmp/opencode/erpts-week.html
 
 code=$(curl -s -b "$JAR" -o /tmp/opencode/fups.html -w '%{http_code}' "$APP/follow-ups")
@@ -387,11 +384,11 @@ sql "const rows = await p.patient.findMany({ where: { tenantId: '$TENANT_ID', ph
 code=$(curl -s -b "$JAR2B" -o /tmp/opencode/rec-fups.html -w '%{http_code}' "$APP/follow-ups")
 check "reception /follow-ups → 200" 200 "$code"
 contains "reception sees follow-ups" "Demo Patient One" /tmp/opencode/rec-fups.html
-code=$(curl -s -b "$JAR2B" -o /tmp/opencode/rec-appts.html -w '%{http_code}' "$APP/erpointments")
-check "reception /erpointments → 200" 200 "$code"
-code=$(curl -s -b "$JAR5" -o /tmp/opencode/staff-appts.html -w '%{http_code}' "$APP/erpointments")
-check "staff /erpointments → 200 (flight redirect)" 200 "$code"
-contains "staff /erpointments forbidden" "NEXT_REDIRECT;replace;$APP_PATH/403" /tmp/opencode/staff-appts.html
+code=$(curl -s -b "$JAR2B" -o /tmp/opencode/rec-appts.html -w '%{http_code}' "$APP/appointments")
+check "reception /appointments → 200" 200 "$code"
+code=$(curl -s -b "$JAR5" -o /tmp/opencode/staff-appts.html -w '%{http_code}' "$APP/appointments")
+check "staff /appointments → 200 (flight redirect)" 200 "$code"
+contains "staff /appointments forbidden" "NEXT_REDIRECT;replace;$APP_PATH/403" /tmp/opencode/staff-appts.html
 code=$(curl -s -b "$JAR" -o /dev/null -w '%{http_code}' "$APP/requests")
 check "removed /requests → 404" 404 "$code"
 
@@ -435,7 +432,7 @@ code=$(curl -s -b "$JAR5" -o /tmp/opencode/staff-messages.html -w '%{http_code}'
 check "staff /messages → 200 (flight redirect)" 200 "$code"
 contains "staff /messages forbidden" "NEXT_REDIRECT;replace;$APP_PATH/403" /tmp/opencode/staff-messages.html
 
-# 11e. Cross-tenant isolation: identity and secrets belong to the URL tenant
+# 11e. Cross-tenant isolation: the session belongs to the URL tenant
 # Owner jar is bound to tenant A; nothing under tenant B may answer with data.
 code=$(curl -s -b "$JAR" -o /dev/null -w '%{http_code}' "$SECOND_APP/patients")
 check "tenant-A session on B /erp/patients → 404" 404 "$code"
@@ -443,8 +440,8 @@ code=$(curl -s -b "$JAR" -o /dev/null -w '%{http_code}' "$SECOND_API/patients/ex
 check "tenant-A session on B API → 404" 404 "$code"
 code=$(curl -s -b "$JAR" -o /dev/null -w '%{http_code}' "$SECOND_API/uploads/staff-nope.png")
 check "tenant-A session on B upload → 404" 404 "$code"
-code=$(curl -s -b "$JAR" -o /dev/null -w '%{http_code}' "$SECOND_PUB/login/$SECRET")
-check "tenant-A secret on B login → 404" 404 "$code"
+code=$(curl -s -b "$JAR" -o /dev/null -w '%{http_code}' "$SECOND_APP/login")
+check "tenant-A session on B login → 404" 404 "$code"
 code=$(curl -s -o /dev/null -w '%{http_code}' "$SECOND_PUB/about")
 check "anonymous B public page → 200" 200 "$code"
 

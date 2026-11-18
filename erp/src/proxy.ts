@@ -73,7 +73,7 @@ export async function proxy(request: NextRequest) {
 
   const tenant = await basePrisma.tenant.findUnique({
     where: { slug },
-    select: { id: true, slug: true, status: true, trialEndsAt: true, loginSecret: true },
+    select: { id: true, slug: true, status: true, trialEndsAt: true },
   });
   if (!tenant || !isTenantServing(tenant)) return notFound();
 
@@ -83,16 +83,9 @@ export async function proxy(request: NextRequest) {
   const sessionTenant = await sessionTenantId(request);
   if (sessionTenant && sessionTenant !== tenant.id) return notFound();
 
-  // Login is reachable only at this clinic's own secret path.
-  const loginPath = tenantLoginPath(slug, tenant.loginSecret);
-  const loginPrefix = `${tenantPath(slug)}/login`;
-  if (
-    pathname.startsWith(loginPrefix) &&
-    pathname !== loginPath &&
-    pathname !== `${loginPath}/`
-  ) {
-    return notFound();
-  }
+  // Open login at /<tenant>/erp/login; any secret-style suffix is not a route.
+  const loginPath = tenantLoginPath(slug);
+  if (pathname.startsWith(`${loginPath}/`)) return notFound();
   if (pathname === `${loginPath}/`) {
     const url = request.nextUrl.clone();
     url.pathname = loginPath;

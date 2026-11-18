@@ -12,7 +12,7 @@ call. Isolation is enforced in the data layer, not by separate schemas or
 connections.
 
 With tenancy in the URL there is a second boundary: a request that *claims* to
-be for clinic B (by URL) but carries a session, secret or cookie belonging to
+be for clinic B (by URL) but carries a session or cookie belonging to
 clinic A must get a plain **404 everywhere** — pages, APIs, uploads, SEO files
 and the login endpoint. It must never get a redirect, a 403 or a response that
 reveals B exists. Unknown, suspended and expired- trial tenants are treated the
@@ -28,7 +28,7 @@ Every clinic owns a URL prefix. The bare root is the only tenantless route.
 | Public site | `/<tenant>/...` | marketing, booking, `sitemap.xml`, `robots.txt` |
 | ERP | `/<tenant>/erp/...` | dashboard, patients, sales, settings, … |
 | APIs | `/<tenant>/api/...` | auth, exports, uploads, public feeds, cron |
-| Secret login | `/<tenant>/login/<secret>` | `secret` is that tenant's `Tenant.loginSecret` |
+| Login | `/<tenant>/erp/login` | open page; a foreign session is a 404 |
 | Seed-default assets | `/<tenant>/static/...` | rewritten to root `public/` seed files only |
 | Tenant-owned images | `/<tenant>/api/public/assets/<tenantId>/<file>` | key prefix and current `TenantBrand` reference are both checked |
 
@@ -49,7 +49,7 @@ Every clinic owns a URL prefix. The bare root is the only tenantless route.
    supplied values are discarded. Every tenant request gets the login-path
    header, not just the login page: `getLoginPath()` is used by redirects from
    pages, actions and APIs, so a missing header must fail closed with 404 rather
-   than substitute the default tenant's secret. `x-locale` is likewise reset to
+   than substitute the default tenant's login path. `x-locale` is likewise reset to
    an empty value first, so a client cannot inject a locale without `?lang=`.
 6. `?lang=en|am` is forwarded as `x-locale` and persisted in a cookie scoped to
    `/<tenant>`, so language preferences do not leak across clinics.
@@ -119,8 +119,9 @@ npm run tenant:delete -- <slug> [--force]
 
 `tenant:create` validates the slug and reserved names, applies the shared dental
 starter template (`prisma/tenant-template.ts`, also used by `db:seed`), creates a
-random login secret and a one-time owner password, sets a 30-day trial and prints
-the password/login path **once** with `mustChangePassword: true`. `--demo-data`
+a random legacy `loginSecret` placeholder, sets a 30-day trial, and creates OWNER,
+RECEPTION and DOCTOR accounts with `mustChangePassword=false` and validator-compliant
+demo passwords written to a mode-600 file outside the repo. `--demo-data`
 adds invented patients. `tenant:delete` refuses an `ACTIVE` tenant without
 `--force`; suspended and expired tenants answer 404 everywhere.
 `tenant:reset-demo` preserves identity and OWNER-edited branding. See
@@ -170,15 +171,14 @@ inside the scope. React child rendering does not reliably inherit the ALS scope;
 request handlers therefore rely on the proxy headers and use
 `withRequestTenant()` where an explicit scope is needed.
 
-### Session, secret and per-tenant state
+### Session and per-tenant state
 
 - `verifyCredentials()` looks the user up by **URL tenant** (the login page
   passes the `tenant` route param) and returns a JWT carrying `tenantId` and
   `tenantSlug`. Credentials from A cannot sign in at B.
-- The secret login URL is read from `Tenant.loginSecret`. The proxy injects it
-  as a header; `getLoginPath()` uses that header and fails closed (404) inside
-  a request rather than substituting the default tenant. A's secret at B's URL
-  404s.
+- Login is open at `/<tenant>/erp/login`. The proxy injects that path as a
+  header; `getLoginPath()` fails closed (404) inside a request rather than
+  substituting the default tenant. A session from B at A's URL 404s.
 - Auth.js defaults to the root `/api/auth` on **both** sides. `TenantAuthProvider`
   in the tenant layout sets `SessionProvider`'s client `basePath` to
   `/<tenant>/api/auth`, so `signIn`, `getSession` and `signOut` from the login,
@@ -257,7 +257,7 @@ tenants (backfill NULLs, bootstrap the instance, run QA).
   serving tenants).
 - **Seeds** — `prisma/seed*.ts`, which create tenants and need the unscoped
   client to bootstrap data across tenants.
-- **Maintenance/QA scripts** — client export, login-secret setter, the
+- **Maintenance/QA scripts** — client export, tenant CLI, the
   local-only two-tenant e2e seeder, provisioning CLI (`scripts/tenant-cli.ts`,
   which creates/deletes the tenant row itself and runs tenant-scoped raw deletes
   for `tenant:reset-demo`), QA reset/change scripts, and the two global
@@ -284,17 +284,17 @@ a rationale here. Application features must use the scoped `@/lib/prisma`.
   sitemap, robots config and the `robots.txt` route handler).
   DB-backed tests self-guard to `127.0.0.1:5433/vision_erp` and refuse any
   other database.
-- `npx tsx scripts/seed-e2e-tenants.ts` — local-only; ensures `finan` (with the
-  `LOGIN_SECRET_PATH` secret) and `bright-dental` exist. The second tenant is
+- `npx tsx scripts/seed-e2e-tenants.ts` — local-only; reads the protected
+  `finandentalclinic` tenant and ensures `bright-dental` exists. The second tenant is
   created through `npm run tenant:create`, then given distinct OWNER-style brand
   and service edits. It writes a private local snapshot used by the checks; it
-  never logs a secret or password.
+  never logs a password.
 - `npx playwright test` — `e2e/tenant-url-isolation.spec.ts` logs in as tenant A
-  and walks every tenant-B page/API/SEO route expecting 404, checks A's secret
+  and walks every tenant-B page/API/SEO route expecting 404, checks A's session
   at B (404), and asserts per-tenant clinic names, metadata, CSS colors, image
   keys, service names, rendered reminder text and OWNER branding pages.
 - `bash scripts/smoke.sh` — tenant-prefixed URLs plus cross-tenant session,
-  secret, upload, branding, image, SMS and SEO checks; refuses non-local
+  session, upload, branding, image, SMS and SEO checks; refuses non-local
   database hosts.
 
 ## Known limitations

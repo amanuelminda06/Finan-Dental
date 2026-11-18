@@ -6,7 +6,7 @@ non-technical user should observe. Sign off at the bottom.
 
 ## A. Everyone — sign in & language
 
-1. Open `/<your-clinic>/login/<secret>` (the bare site root sends you to the
+1. Open `/<your-clinic>/erp/login` (the bare site root sends you to the
    default clinic); a wrong password shows a clear error (no stack trace).
 2. Sign in → land on the dashboard; the sidebar shows only pages your role may use.
 3. Switch language EN ↔ AM from the header; page text, buttons and errors change.

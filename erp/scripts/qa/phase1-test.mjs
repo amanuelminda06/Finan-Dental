@@ -9,10 +9,9 @@ const val = (k) => {
 
 const ORIGIN = 'http://127.0.0.1:3101';
 const TENANT = val('DEFAULT_TENANT_SLUG') || 'finan';
-const BASE = `${ORIGIN}/${TENANT}`;
+const BASE = ORIGIN;
 const APP_PATH = `/${TENANT}/erp`;
-const SECRET = val('LOGIN_SECRET_PATH');
-const LOGIN = `/${TENANT}/login/${SECRET}`;
+const LOGIN = `/${TENANT}/erp/login`;
 const DB = 'postgresql://postgres:postgres@127.0.0.1:5433/vision_erp_test';
 
 const jar = new Map();
@@ -60,20 +59,20 @@ const check = (label, ok, extra = '') => {
   console.log(`${ok ? 'PASS' : 'FAIL'}  ${label}${extra ? `  (${extra})` : ''}`);
 };
 
-// ---- A: secret login URL is the only entry point ----
+// ---- A: open ERP login is the only entry point ----
 let r = await req(LOGIN);
-check('A1 login page (secret URL) returns 200', r.status === 200, `status=${r.status}`);
+check('A1 open ERP login page returns 200', r.status === 200, `status=${r.status}`);
 
 r = await req('/login');
 check('A2 /login returns real 404 (scanner defense)', r.status === 404, `status=${r.status}`);
 
-r = await req('/login/guessme');
-check('A3 /login/anything returns 404', r.status === 404, `status=${r.status}`);
+r = await req(`${LOGIN}/guessme`);
+check('A3 /erp/login/anything returns 404', r.status === 404, `status=${r.status}`);
 
-// ---- B: unauthenticated access redirects to the secret URL ----
+// ---- B: unauthenticated access redirects to the open login URL ----
 r = await req(`${APP_PATH}/dashboard`);
 const loc = r.headers.get('location') || '';
-check('B1 /dashboard without session redirects to secret login', [302, 307].includes(r.status) && loc === LOGIN, `status=${r.status} loc=${loc}`);
+check('B1 /dashboard without session redirects to open login', [302, 307].includes(r.status) && loc === `${ORIGIN}${LOGIN}`, `status=${r.status} loc=${loc}`);
 
 // ---- C: login as OWNER ----
 const csrf = await (await req('/api/auth/csrf')).json();
@@ -203,7 +202,7 @@ rc = await req('/api/auth/signout', {
 });
 check('H1 sign-out clears the session cookie', !jar.has('authjs.session-token'), '');
 r = await req(`${APP_PATH}/dashboard`);
-check('H2 /dashboard protected again after logout', [302, 307].includes(r.status) && (r.headers.get('location') || '') === LOGIN, `status=${r.status}`);
+check('H2 /dashboard protected again after logout', [302, 307].includes(r.status) && (r.headers.get('location') || '') === `${ORIGIN}${LOGIN}`, `status=${r.status}`);
 
 await db.end();
 console.log(`\nPHASE 1 HTTP AUTH: ${pass} passed, ${fail} failed`);

@@ -60,9 +60,9 @@ export function tenantAssetPath(tenant: TenantRef, asset: string): string {
   return join(tenant, 'static', asset);
 }
 
-/** Login path: `/finan/login/<secret>`. */
-export function tenantLoginPath(tenant: TenantRef, secret: string): string {
-  return tenantPath(tenant, `/login/${encodeURIComponent(secret)}`);
+/** Open login path: `/finan/erp/login`. */
+export function tenantLoginPath(tenant: TenantRef): string {
+  return tenantErpPath(tenant, '/login');
 }
 
 /** Slug from the first path segment, or null for root/reserved/static paths. */
