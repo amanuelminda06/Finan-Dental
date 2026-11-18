@@ -48,9 +48,19 @@ Every clinic owns a URL prefix. The bare root is the only tenantless route.
    supplied values are discarded. Every tenant request gets the login-path
    header, not just the login page: `getLoginPath()` is used by redirects from
    pages, actions and APIs, so a missing header must fail closed with 404 rather
-   than substitute the default tenant's secret.
+   than substitute the default tenant's secret. `x-locale` is likewise reset to
+   an empty value first, so a client cannot inject a locale without `?lang=`.
 6. `?lang=en|am` is forwarded as `x-locale` and persisted in a cookie scoped to
    `/<tenant>`, so language preferences do not leak across clinics.
+
+`src/proxy.test.ts` calls the real proxy for public pages, the ERP, APIs,
+uploads, public image URLs, robots and sitemap with forged `x-finan-*` and
+`x-locale` headers. It asserts the response's request-header overrides contain
+only the values derived from the URL (and an empty locale when no `?lang=` is
+present). The test also pins the matcher to `/((?!_next).*)` and verifies that a
+foreign session or a non-serving tenant gets a 404 with no tenant overrides.
+Matching is deliberately broad: APIs, uploads, public images, robots and sitemap
+all pass through the same URL gate as pages.
 
 `src/lib/tenant-path.ts` is the single place that builds tenant URLs
 (`tenantPath`, `tenantAppPath`, `tenantApiPath`, `tenantAssetPath`,
@@ -209,7 +219,9 @@ a rationale here. Application features must use the scoped `@/lib/prisma`.
 
 - `npm run tenancy:check` — allowlist guard (also in CI).
 - `npm run typecheck` — no type errors.
-- `npm test` — includes `src/lib/tenant-prisma.test.ts` (schema-derived model
+- `npm test` — includes `src/proxy.test.ts` (forged tenant/session/locale headers
+  are overwritten or rejected on pages, APIs, uploads, public images, robots and
+  sitemap), `src/lib/tenant-prisma.test.ts` (schema-derived model
   list, nested writes, transactions, mismatches),
   `src/lib/tenant-isolation.test.ts` (two temporary tenants across lists,
   detail-by-id, updates/deletes, export, search, uploads, public feeds, cron),

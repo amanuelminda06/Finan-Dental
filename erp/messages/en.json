@@ -431,7 +431,9 @@
   "statusCancelled": "Cancelled"
  },
  "notFound": {
-  "message": "Page not found."
+  "message": "Page not found.",
+  "detail": "This clinic page is unavailable, or the link is incorrect. If you are a patient, please contact the clinic directly.",
+  "home": "Go to the main clinic site"
  },
  "patients": {
   "title": "Patients",

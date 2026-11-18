@@ -105,7 +105,10 @@ export async function proxy(request: NextRequest) {
   // Every request needs this: getLoginPath() is used by redirects from pages,
   // actions and APIs, and must never fall back to another tenant's secret.
   headers.set(TENANT_LOGIN_PATH_HEADER, loginPath);
-  if (isLocale(lang ?? undefined)) headers.set('x-locale', lang as string);
+  // Client-supplied internal headers are never trusted. `x-locale` is derived
+  // from the validated query parameter (or the tenant-scoped cookie), not from
+  // an arbitrary browser header.
+  headers.set('x-locale', isLocale(lang ?? undefined) ? (lang as string) : '');
   const response = NextResponse.next({ request: { headers } });
   if (isLocale(lang ?? undefined)) {
     response.cookies.set(LOCALE_COOKIE, lang as string, {
