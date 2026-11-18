@@ -1,5 +1,5 @@
 # Clinic Management System (CMS) Manual
-**Finan Speciality Dental Clinic - ERP**
+**Clinic ERP — CMS manual**
 
 Version 1.0 | November 2026
 
@@ -18,7 +18,7 @@ Version 1.0 | November 2026
 
 ## 1. Introduction
 
-The Clinic Management System (CMS) handles service catalog management, pricing, and clinic configuration settings for Finan Speciality Dental Clinic.
+The Clinic Management System (CMS) handles service catalog management, pricing, and clinic configuration settings for the current tenant clinic. Branding and public images are edited by the OWNER at `/<tenant>/app/branding`.
 
 ---
 

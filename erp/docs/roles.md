@@ -25,6 +25,10 @@ Sees everything. Day to day:
 - **Settings** — clinic name, timezone, currency, hours, contacts, campaign cap,
   and the group-SMS controls (`group_sms_allow_for_filtered`,
   `group_sms_max_recipients`).
+- **Clinic branding** (`/<tenant>/app/branding`) — OWNER-only: clinic name, short
+  name, tagline, address, phones, email, socials, colors, logo, hero, doctor
+  information, SMS sender and languages. This is the source of truth for public
+  metadata, images, CSS colors and message previews in this clinic only.
 - **Website content** (`/<tenant>/app/dashboard/content`) — CMS-lite text for the public site.
 - **Audit log** — filter and export (CSV/Excel) every recorded change.
 - **Exports & search** — CSV/Excel on Patients, Sales, Audit, Appointments,

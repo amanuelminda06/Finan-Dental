@@ -1,6 +1,6 @@
 # Finan-Dental
 
-Single-tenant clinic ERP for Finan Speciality Dental Clinic: a bilingual public website
+Multi-tenant clinic ERP: a bilingual public website
 (marketing pages, booking, live "on duty" doctors, CMS-lite, SEO) plus lite
 clinic management (users, staff, settings, audit trail, patients, services,
 sales/POS + revenue, HR lite (shifts/schedule, leave approvals, a cached
@@ -20,12 +20,15 @@ to the default clinic; everything else is resolved from the first path segment.
 | ERP | `/<tenant>/app/...` | dashboard, patients, sales, settings, … |
 | APIs | `/<tenant>/api/...` | auth, exports, uploads, public feeds, cron |
 | Secret login | `/<tenant>/login/<secret>` | `secret` comes from that tenant's `loginSecret` |
-| Shared assets | `/<tenant>/static/...` | rewritten to the root `public/` files |
+| Seed-default assets | `/<tenant>/static/...` | rewritten to root `public/` seed files only |
+| Tenant-owned images | `/<tenant>/api/public/assets/<tenantId>/<file>` | key prefix + current `TenantBrand` reference checked |
 
 An unknown, suspended or expired tenant returns a real 404 for every area. A
 session (and its rate-limit budget, locale cookie and secret login URL) is bound
 to one tenant: presenting tenant A's session or secret at tenant B's URL gets a
-404, never data, a 403 or a redirect. See `docs/tenancy.md`.
+404, never data, a 403 or a redirect. Each clinic's name, colors, logo, hero,
+doctor info, SMS sender, languages and public service text are tenant-owned and
+edited by that clinic's OWNER at `/<tenant>/app/branding`. See `docs/tenancy.md`.
 
 ## Stack
 
@@ -69,6 +72,11 @@ npm run messages       # en/am catalogs identical + all t() keys resolve
 npm test               # Vitest unit tests
 npm run test:e2e       # Playwright specs (npx playwright install once; seeded DB + server)
 npx tsx scripts/seed-e2e-tenants.ts  # local-only: seed the two URL-tenancy e2e tenants
+npm run tenant:create -- <slug> "<clinic name>" <owner email> [--demo-data]
+npm run tenant:extend -- <slug> [--days 30]
+npm run tenant:suspend -- <slug>
+npm run tenant:reset-demo -- <slug>
+npm run tenant:delete -- <slug> [--force]
 npm run db:migrate     # create/apply migrations (dev)
 npm run db:reset       # drop + migrate + seed
 npm run db:load        # generate a staged load dataset (5k patients, 20k sales)
@@ -80,12 +88,19 @@ npm run audit:deps     # fail on high/critical dependency advisories
 bash scripts/smoke.sh  # tenant-aware smoke test (server on :3100, local DB only)
 ```
 
+The `tenant:*` commands print the target host/database and refuse hosted Neon
+unless `--allow-hosted` is passed. The e2e seeder and smoke test refuse any
+non-local database. For a fresh hosted install see
+`docs/deploy-vercel-neon.md`.
+
 ## Documentation
 
 - `docs/roles.md` — what OWNER, RECEPTION and STAFF can do.
 - `docs/messaging-6b-manual.md` — richer filters, drafts, Message Library and
   the One-group-chat delivery flow.
+- `docs/tenancy.md` — URL isolation, data-layer scoping, branding and provisioning.
 - `docs/deployment.md` — production install, proxy, jobs, upgrades.
+- `docs/deploy-vercel-neon.md` — fresh Neon + Vercel install, first tenant, cron and secret rotation.
 - `docs/go-live.md` — pre-launch checklist (critical / content / people).
 - `docs/uat.md` — user acceptance test script + sign-off table.
 - `docs/troubleshooting.md` — common problems and fixes.
@@ -103,7 +118,8 @@ erp/
 │   │                          # Service, ServicePriceHistory, Sale, SaleLine, ReceiptCounter,
 │   │                          # ShiftTemplate, Shift, LeaveRequest (+ LeaveType/LeaveStatus/ShiftSource),
 │   │                          # Appointment, AppointmentRequest, FollowUp (+ status/source enums),
-│   │                          # MessageTemplate, MessageTask, Campaign (+ status/source enums)
+│   │                          # MessageTemplate, MessageTask, Campaign (+ status/source enums),
+│   │                          # TenantBrand (tenant-owned branding JSON + image keys)
 │   ├── migrations/            # init + timestamptz + patients + services_sales + hr_lite + appointments + messaging
 │   ├── seed.ts                # settings, staff, users, tags, patients, services, sales, HR + appointments + messages seed
 │   ├── seed-patients.ts       # 20 Ethiopian patients, mixed phone formats (idempotent)
@@ -113,6 +129,8 @@ erp/
 │   ├── seed-messages.ts       # 13 template keys × en/am (26 rows, idempotent upsert)
 │   ├── seed-library.ts        # 10 library messages × en/am + 2 saved audiences
 │   ├── seed-group-e2e.ts      # deterministic 40-patient fixture for the group E2E
+│   ├── seed-assets.ts         # copies seed images into one tenant's storage
+│   └── tenant-template.ts     # shared dental starter template for seed + CLI
 ├── scripts/
 │   ├── db.mjs                 # embedded Postgres lifecycle
 │   ├── messages-check.mjs     # i18n completeness gate
@@ -121,6 +139,8 @@ erp/
 │   ├── client-data-export.ts  # CSV copy of patients + sales
 │   ├── security-scan.mjs      # → docs/security-review.md
 │   ├── audit-deps.sh          # npm audit (high+)
+│   ├── tenant-cli.ts          # local-first create/extend/suspend/reset/delete tenant
+│   ├── seed-e2e-tenants.ts    # local-only two-tenant isolation fixture
 │   └── smoke.sh               # tenant-aware smoke test (2 seeded tenants)
 ├── e2e/                       # Playwright specs (smoke, roles, patient→sale,
 │                              # request→appointment, leave, messages)
@@ -214,6 +234,8 @@ erp/
     │       └── components/    # OutboxBoard, PatientMessagesList, TemplateEditor,
     │                          # MessageWizard (replaces CampaignBuilder), CampaignQueue,
     │                          # LibraryBoard, DraftsBoard, RunJobsButton, MessagesTicker
+    │   ├── tenant-brand/      # per-tenant branding: defaults, scoped queries,
+    │   │                      # zod schemas, OWNER action, BrandingForm
     │   └── public-site/       # public website: content (CMS-lite keys/defaults),
     │       │                  # queries (cached, whitelisted), projection (allow-list
     │       │                  # + leak scanner, tested), schemas (booking), actions
@@ -227,7 +249,7 @@ erp/
             │                  # contact faq privacy (+ not-found, opengraph-image)
             ├── sitemap.ts, robots.ts
             ├── login/[secret]/ # the only entry point (secret is per tenant)
-            ├── app/           # /app 403 change-password users staff settings audit
+            ├── app/           # /app 403 change-password users staff settings branding audit
             │   ├── patients/  # list, new, [id] (+ tabs), [id]/edit, import
             │   ├── dashboard/ # home, services (list/new/[id]/edit, OWNER), content (CMS)
             │   ├── sales/     # list, new, [id] (receipt + void actions), voids
@@ -242,7 +264,8 @@ erp/
                                 # patients export + CSV template, sales export,
                                 # appointments/messages/leave export, global search,
                                 # public doctors, public appointment requests (POST,
-                                # rate-limited, ipHash only), messages/count (badge poll),
+                                # rate-limited, ipHash only), public/assets (tenant-scoped
+                                # brand images), messages/count (badge poll),
                                 # jobs/messages (cron, bearer secret)
 ```
 
@@ -511,12 +534,15 @@ nextShiftStartsAt` + `generatedAt`, has `Cache-Control: public, max-age=60`,
 ## Public website — clinic-provided content
 
 The site ships with clearly-marked **placeholder** copy (see `DEFAULT_CONTENT` in
-`src/modules/public-site/content.ts`). Before launch, the clinic must supply:
+`src/modules/public-site/content.ts`) and neutral brand defaults. Before launch,
+the OWNER must fill `/<tenant>/app/branding` and the clinic must supply:
 
 - Final wording for hero, home intro, about story, opening hours, footer note and
   the **privacy policy** (the current text is an explicit placeholder and must be
   reviewed — it is not legal advice).
-- Real contact details: address, phone, WhatsApp number, Telegram handle, map URL.
+- Branding (`/<tenant>/app/branding`): clinic name, short name, tagline, colors,
+  logo, hero, doctor photo/bio, SMS sender, enabled languages, address, phone,
+  WhatsApp number, Telegram handle and website URL.
 - Reviewed Amharic translations for every field (the seeded Amharic is a draft).
 - Consent-approved patient testimonials (or leave the section empty).
 - Doctor profiles: which staff are doctors, `showOnWebsite`, specialty and a

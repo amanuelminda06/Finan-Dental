@@ -1,5 +1,5 @@
 # Message Management System (MMS) Manual
-**Finan Speciality Dental Clinic - ERP**
+**Clinic ERP — MMS manual**
 
 Version 1.0 | November 2026
 
@@ -20,7 +20,7 @@ Version 1.0 | November 2026
 
 ## 1. Introduction
 
-The Message Management System (MMS) handles all SMS and messaging communications at Finan Speciality Dental Clinic, including appointment reminders, campaigns, and patient notifications.
+The Message Management System (MMS) handles all SMS and messaging communications for the current tenant clinic, including appointment reminders, campaigns, and patient notifications. The clinic name and SMS sender come from that tenant's branding row.
 
 ---
 

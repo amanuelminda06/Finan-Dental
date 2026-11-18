@@ -29,7 +29,8 @@ Every clinic owns a URL prefix. The bare root is the only tenantless route.
 | ERP | `/<tenant>/app/...` | dashboard, patients, sales, settings, … |
 | APIs | `/<tenant>/api/...` | auth, exports, uploads, public feeds, cron |
 | Secret login | `/<tenant>/login/<secret>` | `secret` is that tenant's `Tenant.loginSecret` |
-| Shared assets | `/<tenant>/static/...` | rewritten to root `public/` files |
+| Seed-default assets | `/<tenant>/static/...` | rewritten to root `public/` seed files only |
+| Tenant-owned images | `/<tenant>/api/public/assets/<tenantId>/<file>` | key prefix and current `TenantBrand` reference are both checked |
 
 `src/proxy.ts` runs on every route except `_next` (matcher `/((?!_next).*)`):
 
@@ -76,6 +77,54 @@ Next 16 only emits `robots.ts` metadata from the root of `app`, so the nested
 `app/[tenant]/robots.ts` is shared config rather than a route. It is serialized
 by `app/[tenant]/robots.txt/route.ts` at `/<tenant>/robots.txt`; both the config
 and the route handler are covered by unit and e2e tests.
+
+## Per-tenant branding and content
+
+There is no global clinic config at runtime. `TenantBrand` is a tenant-owned row
+(JSON fields for phones, socials, locales and colors) edited only by that
+tenant's OWNER at `/<tenant>/app/branding` (`saveTenantBrandAction`). It holds
+the clinic name, short name, tagline, address, phones, email, socials, colors,
+logo, hero, doctor information, SMS sender and enabled languages. Neutral
+defaults are defined in `src/modules/tenant-brand/defaults.ts`; `public/` images
+and `src/config/services.ts` are **seed defaults only**, copied into each
+tenant's own storage by `prisma/seed-assets.ts`.
+
+React-cached, scoped `getTenantBrand()` supplies every consumer: public metadata,
+JSON-LD, OpenGraph, the trial banner, the app shell, footer/header, service and
+doctor images, message previews and settings fallbacks. Per-tenant colors are
+emitted as `--finan-brand-primary`, `--finan-brand-secondary` and
+`--finan-brand-accent` on the tenant layout, with neutral values on the tenantless
+root layout. An orphan or foreign image key is not served: the public asset route
+requires the key to start with the request tenant's id **and** to be currently
+referenced by that tenant's `TenantBrand`.
+
+Service rows, site-content rows, message templates and uploaded images are also
+tenant-owned. The OWNER edits public service text in the services admin and CMS
+copy in `/<tenant>/app/dashboard/content`; SMS bodies still use `{clinic}` and
+are rendered with the current tenant's clinic name.
+
+## Provisioning
+
+`scripts/tenant-cli.ts` is local-first: it prints `Database: <host>:<port>/<db>`
+and refuses any host other than `127.0.0.1:5433` unless `--allow-hosted` is
+passed deliberately. Commands:
+
+```bash
+npm run tenant:create -- <slug> "<clinic name>" <owner email> [--demo-data]
+npm run tenant:extend -- <slug> [--days 30]
+npm run tenant:suspend -- <slug>
+npm run tenant:reset-demo -- <slug>
+npm run tenant:delete -- <slug> [--force]
+```
+
+`tenant:create` validates the slug and reserved names, applies the shared dental
+starter template (`prisma/tenant-template.ts`, also used by `db:seed`), creates a
+random login secret and a one-time owner password, sets a 30-day trial and prints
+the password/login path **once** with `mustChangePassword: true`. `--demo-data`
+adds invented patients. `tenant:delete` refuses an `ACTIVE` tenant without
+`--force`; suspended and expired tenants answer 404 everywhere.
+`tenant:reset-demo` preserves identity and OWNER-edited branding. See
+`docs/deploy-vercel-neon.md` for hosted Neon usage and secret rotation.
 
 ## How scoping works (data layer)
 
@@ -235,13 +284,18 @@ a rationale here. Application features must use the scoped `@/lib/prisma`.
   sitemap, robots config and the `robots.txt` route handler).
   DB-backed tests self-guard to `127.0.0.1:5433/vision_erp` and refuse any
   other database.
-- `npx tsx scripts/seed-e2e-tenants.ts` — local-only; creates `finan` (with the
-  `LOGIN_SECRET_PATH` secret) and `bright-dental` (different secret).
+- `npx tsx scripts/seed-e2e-tenants.ts` — local-only; ensures `finan` (with the
+  `LOGIN_SECRET_PATH` secret) and `bright-dental` exist. The second tenant is
+  created through `npm run tenant:create`, then given distinct OWNER-style brand
+  and service edits. It writes a private local snapshot used by the checks; it
+  never logs a secret or password.
 - `npx playwright test` — `e2e/tenant-url-isolation.spec.ts` logs in as tenant A
   and walks every tenant-B page/API/SEO route expecting 404, checks A's secret
-  at B (404), and asserts per-tenant public data and SEO.
+  at B (404), and asserts per-tenant clinic names, metadata, CSS colors, image
+  keys, service names, rendered reminder text and OWNER branding pages.
 - `bash scripts/smoke.sh` — tenant-prefixed URLs plus cross-tenant session,
-  secret, upload and SEO checks; refuses non-local database hosts.
+  secret, upload, branding, image, SMS and SEO checks; refuses non-local
+  database hosts.
 
 ## Known limitations
 

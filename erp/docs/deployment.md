@@ -15,6 +15,11 @@ The tenant is resolved from the first URL segment and checked on every request
 (unknown/suspended/expired tenants 404). Sessions, secrets, rate limits and
 locale cookies are bound to one tenant; see `docs/tenancy.md`.
 
+For a fresh hosted install, follow [`docs/deploy-vercel-neon.md`](deploy-vercel-neon.md).
+This page covers the general self-hosted/long-lived-server path; the Neon guide
+adds pooled/direct connection strings, first-tenant provisioning and secret
+rotation.
+
 ## Prerequisites
 
 - Node.js 20+ and npm.
@@ -32,14 +37,17 @@ Fill, at minimum:
 
 | Key | Notes |
 | --- | --- |
-| `DATABASE_URL` | production Postgres; add `?sslmode=require` when required |
+| `DATABASE_URL` | production Postgres; use Neon's **pooled** string for serverless, add `?sslmode=require` when required |
+| `DIRECT_URL` | Neon's **direct** string, for migrations and tenant CLI only; see `docs/deploy-vercel-neon.md` |
 | `AUTH_SECRET` | `openssl rand -base64 32` |
 | `LOGIN_SECRET_PATH` | `openssl rand -hex 12` — seed-time secret for the default tenant's `/<tenant>/login/<secret>`; each `Tenant.loginSecret` is authoritative at runtime |
 | `DEFAULT_TENANT_SLUG` | `finan` — where `/` redirects and which tenant seed/scripts use (never a fallback in request handling) |
+| `E2E_SECOND_TENANT` | `bright-dental` — local isolation-check tenant created by `tenant:create` |
 | `OWNER_EMAIL` / `OWNER_PASSWORD` | first owner account; password ≥ 10 chars |
 | `RECEPTION_EMAIL` / `RECEPTION_PASSWORD` | created with forced password change |
 | `STAFF_EMAIL` / `STAFF_PASSWORD` | created with forced password change |
-| `UPLOAD_DIR` | persistent volume path (e.g. `/var/lib/vision-erp/uploads`) |
+| `UPLOAD_DIR` | persistent volume path (e.g. `/var/lib/vision-erp/uploads`); ignored when `STORAGE_DRIVER=db` |
+| `STORAGE_DRIVER` | `db` keeps uploads in Postgres — required on ephemeral platforms such as Vercel |
 | `PUBLIC_BASE_URL` | canonical https origin (SEO/hreflang/sitemap) |
 | `CRON_SECRET` | ≥ 16 chars to enable `POST /<tenant>/api/jobs/messages` (runs for all serving tenants) |
 
@@ -51,15 +59,27 @@ bad/missing value and never logs the values.
 ```bash
 npm ci
 npx prisma generate
-npm run db:deploy      # prisma migrate deploy (applies committed migrations)
-npm run db:seed        # idempotent: settings, staff, users, tags, demo data
+DATABASE_URL="$DIRECT_URL" npm run db:deploy  # Prisma 6: migrations need the direct URL
+npm run tenancy:check                        # base-client allowlist guard
 npm run build
 npm start              # or a process manager (systemd/pm2) on :3000
 ```
 
-> `npm run db:seed` also inserts demo patients/sales/HR/appointments. On a
-> clean production database run it once to create the owner + settings; remove
-> or guard the demo sections if you do not want sample data.
+> `npm run db:seed` inserts demo patients/sales/HR/appointments. Prefer
+> `npm run tenant:create` on a clean production database: it applies the same
+> dental starter template with no invented patients and creates the first OWNER
+> with a one-time password. See `docs/deploy-vercel-neon.md` for hosted usage.
+
+### First tenant
+
+```bash
+DATABASE_URL="$DIRECT_URL" npm run tenant:create -- \
+  <slug> "<clinic name>" <owner email> --allow-hosted
+```
+
+The CLI prints the target host/database, then the owner email, one-time password
+and login path once. The OWNER edits branding at `/<tenant>/app/branding`;
+`public/` images are only seed defaults copied into the tenant's own storage.
 
 ## 3. Reverse proxy
 
@@ -92,10 +112,13 @@ ACTIVE tenant in its own `runWithTenant()` scope and returns a per-tenant
 
 ```bash
 curl -fsS http://127.0.0.1:3000/finan/login/<LOGIN_SECRET_PATH> >/dev/null
-npx tsx scripts/seed-e2e-tenants.ts          # local-only: two tenants for isolation checks
+npx tsx scripts/seed-e2e-tenants.ts          # local embedded DB only: two isolation tenants
 bash scripts/smoke.sh                       # tenant-aware checks, server on :3100
 npm run security:scan                       # regenerates docs/security-review.md
 ```
+
+The e2e seeder and smoke script refuse hosted databases. Do not run them against
+the Neon branch; use the live URL checks and `tenant:*` CLI commands there.
 
 ## Upgrades
 
