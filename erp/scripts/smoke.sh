@@ -128,12 +128,15 @@ contains "X-Frame-Options DENY" "x-frame-options: DENY" /tmp/opencode/login.head
 contains "nosniff" "x-content-type-options: nosniff" /tmp/opencode/login.headers
 contains "Referrer-Policy" "referrer-policy" /tmp/opencode/login.headers
 
-# 3. Bare root sends visitors to the default tenant; ERP routes go to the open login page
+# 3. Bare root sends visitors to the tenantless platform login; ERP routes go to the open login page
 code=$(curl -s -o /dev/null -w '%{http_code}' "$BASE/")
 check "no session / → 307" 307 "$code"
 loc=$(curl -s -o /dev/null -w '%{redirect_url}' "$BASE/")
-case "$loc" in *"$TENANT_PATH"*) PASS=$((PASS+1)); echo "✓ root redirects to default tenant";;
+case "$loc" in */superadmin*) PASS=$((PASS+1)); echo "✓ root redirects to platform login";;
   *) FAIL=$((FAIL+1)); echo "✗ root redirect target: $loc";; esac
+code=$(curl -s -o /tmp/opencode/superadmin.html -w '%{http_code}' "$BASE/superadmin")
+check "platform login page → 200" 200 "$code"
+contains "platform login renders" "Superadmin sign in" /tmp/opencode/superadmin.html
 code=$(curl -s -o /dev/null -w '%{http_code}' "$APP/users")
 check "no session /erp/users → 307" 307 "$code"
 loc=$(curl -s -o /dev/null -w '%{redirect_url}' "$APP/users")

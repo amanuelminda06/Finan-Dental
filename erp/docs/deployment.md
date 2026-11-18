@@ -1,9 +1,11 @@
 # Deployment
 
 One Next.js build serves every clinic under one URL tree per tenant. The bare
-`/` redirects to the default tenant (`DEFAULT_TENANT_SLUG`); everything else is
-prefixed with the tenant slug:
+`/` redirects to the tenant-independent platform login at `/superadmin`;
+everything else is prefixed with the tenant slug:
 
+0. **Platform** — `/superadmin` (fixed `Aman` / `2906` login) and
+   `/superadmin/tenants/<slug>` for tenant/branding/content/settings management.
 1. **Public website** — `/<tenant>/`, `/<tenant>/about`, `/<tenant>/services`,
    `/<tenant>/doctors`, `/<tenant>/book`, `/<tenant>/contact`, `/<tenant>/faq`,
    `/<tenant>/privacy`, plus `/<tenant>/sitemap.xml` and `/<tenant>/robots.txt`.
@@ -39,7 +41,7 @@ Fill, at minimum:
 | `DATABASE_URL` | production Postgres; use Neon's **pooled** string for serverless, add `?sslmode=require` when required |
 | `DIRECT_URL` | Neon's **direct** string, for migrations and tenant CLI only; see `docs/deploy-vercel-neon.md` |
 | `AUTH_SECRET` | `openssl rand -base64 32` |
-| `DEFAULT_TENANT_SLUG` | `finandentalclinic` — where `/` redirects and which tenant seed/scripts use (never a fallback in request handling) |
+| `DEFAULT_TENANT_SLUG` | `finandentalclinic` — which tenant seed/scripts use (never a fallback in request handling; `/` now redirects to `/superadmin`) |
 | `E2E_SECOND_TENANT` | `bright-dental` — local isolation-check tenant created by `tenant:create` |
 | Trial logins | fixed for every tenant: `owner`/`owner123`, `reception`/`reception123`, `doctor`/`doctor123`; no env vars, no credentials file |
 | `UPLOAD_DIR` | persistent volume path (e.g. `/var/lib/vision-erp/uploads`); ignored when `STORAGE_DRIVER=db` |

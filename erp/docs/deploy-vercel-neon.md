@@ -55,7 +55,8 @@ Preview environment, using that branch's pooled/direct URLs):
 | `DIRECT_URL`                            | Neon **direct** connection string                                  |
 | `AUTH_SECRET`                           | `openssl rand -base64 32`                                          |
 | `AUTH_URL`                              | full canonical origin, e.g. `https://erp.example.com`              |
-| `DEFAULT_TENANT_SLUG`                   | `finandentalclinic` — `/` redirect target                            |
+| `DEFAULT_TENANT_SLUG`                   | `finandentalclinic` — seed/scripts default; `/` redirects to `/superadmin` |
+| Platform login                          | fixed `Aman` / `2906` at `/superadmin`; no env vars                   |
 | Fixed trial logins                      | `owner`/`owner123`, `reception`/`reception123`, `doctor`/`doctor123`; no env vars |
 | `PUBLIC_BASE_URL`                       | same canonical origin as `AUTH_URL`                                |
 | `STORAGE_DRIVER`                        | `db` — uploads live in Postgres; Vercel has no persistent disk     |
@@ -136,7 +137,8 @@ OWNER-edited branding while replacing demo data.
 Deploy the Vercel project, then check:
 
 ```bash
-curl -fsS https://erp.example.com/ >/dev/null                              # 307 to /finandentalclinic
+curl -fsS https://erp.example.com/ >/dev/null                              # 307 to /superadmin
+curl -fsS https://erp.example.com/superadmin >/dev/null                    # platform login
 curl -fsS https://erp.example.com/finandentalclinic/ >/dev/null            # public home
 curl -fsS https://erp.example.com/finandentalclinic/sitemap.xml | head     # scoped sitemap
 curl -fsS https://erp.example.com/finandentalclinic/robots.txt | head      # scoped robots

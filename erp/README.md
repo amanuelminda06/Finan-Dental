@@ -10,12 +10,14 @@ Login is an open page at `/<tenant>/erp/login`; tenant isolation comes from the 
 
 ## URL layout (one clinic = one URL tree)
 
-Every clinic owns a URL prefix. The bare root has no tenant and only redirects
-to the default clinic; everything else is resolved from the first path segment.
+Every clinic owns a URL prefix. The bare root has no tenant and redirects to the
+tenant-independent platform login; everything else is resolved from the first path segment.
 
 | Area | URL | Notes |
 | --- | --- | --- |
-| Default entry | `/` → `/<tenant>` | 307 redirect; the redirect target is `DEFAULT_TENANT_SLUG` |
+| Platform login | `/` → `/superadmin` | 307 redirect; fixed credentials `Aman` / `2906` |
+| Platform management | `/superadmin` | login when signed out, tenant dashboard when signed in |
+| Tenant editor | `/superadmin/tenants/<slug>` | identity, branding, website content and ERP settings |
 | Public site | `/<tenant>/...` | marketing, booking, `sitemap.xml`, `robots.txt` |
 | ERP | `/<tenant>/erp/...` | dashboard, patients, sales, settings, … |
 | APIs | `/<tenant>/api/...` | auth, exports, uploads, public feeds, cron |
@@ -46,11 +48,17 @@ npm run db:up          # embedded local Postgres on :5433 (or point DATABASE_URL
 cp .env.example .env   # then fill AUTH_SECRET (trial logins need no env vars)
 npm run db:migrate     # apply prisma/migrations
 npm run seed:platform  # creates protected finandentalclinic only if missing (idempotent)
-npm run dev            # http://localhost:3000 → redirects to the default tenant
+npm run dev            # http://localhost:3000 → redirects to /superadmin
 ```
 
-Login URL: `http://localhost:3000/<tenant>/erp/login`. A session issued by another
-clinic gets a real 404 at this URL; lockout and rate limiting still apply.
+Platform URL: `http://localhost:3000/superadmin`. Sign in with the fixed platform
+credentials `Aman` / `2906` to create tenants and edit each tenant's identity,
+branding, logo, hero, contact details, colors, bilingual website content and ERP
+settings. The platform session is a separate cookie from tenant Auth.js sessions
+and carries no tenant id.
+
+Clinic login URL: `http://localhost:3000/<tenant>/erp/login`. A session issued by
+another clinic gets a real 404 at this URL; lockout and rate limiting still apply.
 
 `npm run db:seed` is for legacy local seeding only: it refuses to overwrite the
 protected platform tenant. Use `npm run tenant:create` for new trial clinics;

@@ -78,8 +78,8 @@ and already live.
 - [ ] Take a fresh backup immediately after go-live.
 - [ ] Watch the audit log (`/<tenant>/erp/audit`) for unexpected `LOGIN_FAILED` bursts.
 - [ ] Confirm `/<tenant>/api/public/doctors` loads on the live site with correct statuses.
-- [ ] Confirm `/` redirects to the default tenant and each tenant's
-      `sitemap.xml`/`robots.txt` lists only its own URLs.
+- [ ] Confirm `/` redirects to `/superadmin`, the platform login works, and each
+      tenant's `sitemap.xml`/`robots.txt` lists only its own URLs.
 - [ ] Confirm each tenant's metadata, CSS colors, logo/hero and rendered SMS
       preview show only that clinic's branding.
 - [ ] Confirm the messages badge / outbox matches what reception expects.

@@ -23,8 +23,8 @@ lists each bad/missing key. Fix `.env` and restart. Common causes:
 ## "This page does not exist" on login
 
 `/<tenant>/erp/login` is the login page. Any suffix returns a real 404, and a
-session issued by another tenant also gets a 404 there. The bare `/` only
-redirects to the default tenant.
+session issued by another tenant also gets a 404 there. The bare `/` redirects
+to the tenant-independent platform login at `/superadmin`.
 
 ## Locked out / too many attempts
 

@@ -20,11 +20,13 @@ same way.
 
 ## URL layout and request identity
 
-Every clinic owns a URL prefix. The bare root is the only tenantless route.
+Every clinic owns a URL prefix. The bare root and `/superadmin` are the only
+tenantless routes.
 
 | Area | URL | Notes |
 | --- | --- | --- |
-| Default entry | `/` → `/<tenant>` | 307 redirect to `DEFAULT_TENANT_SLUG` |
+| Platform entry | `/` → `/superadmin` | 307 redirect to the tenant-independent platform login |
+| Platform management | `/superadmin`, `/superadmin/tenants/<slug>` | fixed `Aman` / `2906` login; tenant CRUD and editors |
 | Public site | `/<tenant>/...` | marketing, booking, `sitemap.xml`, `robots.txt` |
 | ERP | `/<tenant>/erp/...` | dashboard, patients, sales, settings, … |
 | APIs | `/<tenant>/api/...` | auth, exports, uploads, public feeds, cron |
@@ -34,24 +36,28 @@ Every clinic owns a URL prefix. The bare root is the only tenantless route.
 
 `src/proxy.ts` runs on every route except `_next` (matcher `/((?!_next).*)`):
 
-1. `/` gets a 307 redirect to the default tenant's public home.
-2. The slug is the first path segment. A missing/invalid slug is allowed only
+1. `/` gets a 307 redirect to `/superadmin`.
+2. `/superadmin` and its children bypass tenant lookup and ERP-session binding.
+   Client-supplied tenant headers are blanked, and the platform cookie
+   (`finan_superadmin`) is independent of Auth.js and contains no tenant id.
+   `superadmin` is a reserved tenant slug.
+3. The slug is the first path segment. A missing/invalid slug is allowed only
    for root-level static files; anything else 404s.
-3. The slug is looked up with the **unscoped** client (`basePrisma`) and checked
+4. The slug is looked up with the **unscoped** client (`basePrisma`) and checked
    with `isTenantServing()` (status `TRIAL`/`ACTIVE`, unexpired trial). Missing
    or not-serving → 404.
-4. The NextAuth JWT is decoded with `next-auth/jwt` using the tenant-specific
+5. The NextAuth JWT is decoded with `next-auth/jwt` using the tenant-specific
    cookie name/secret on **every** tenant request, including the login endpoint:
    a session whose `tenantId` differs from the URL tenant → 404. APIs and public
    pages are not otherwise gated here; their own handlers enforce roles.
-5. The proxy overwrites (never trusts incoming) three internal headers:
+6. The proxy overwrites (never trusts incoming) three internal headers:
    `x-finan-tenant-id`, `x-finan-tenant-slug`, `x-finan-login-path`. Browser-
    supplied values are discarded. Every tenant request gets the login-path
    header, not just the login page: `getLoginPath()` is used by redirects from
    pages, actions and APIs, so a missing header must fail closed with 404 rather
    than substitute the default tenant's login path. `x-locale` is likewise reset to
    an empty value first, so a client cannot inject a locale without `?lang=`.
-6. `?lang=en|am` is forwarded as `x-locale` and persisted in a cookie scoped to
+7. `?lang=en|am` is forwarded as `x-locale` and persisted in a cookie scoped to
    `/<tenant>`, so language preferences do not leak across clinics.
 
 `src/proxy.test.ts` calls the real proxy for public pages, the ERP, APIs,
@@ -135,6 +141,15 @@ seed refuse to delete or overwrite it, and its `trialEndsAt` is always `null`.
 After migrate deploy, run `npm run seed:platform` (add `--allow-hosted` for Neon)
 to create it only when missing; an existing tenant is left completely unchanged.
 See `docs/deploy-vercel-neon.md` for hosted Neon usage and secret rotation.
+
+The platform dashboard at `/superadmin` uses the same unscoped client through
+`src/modules/superadmin/service.ts`, but every write addresses one explicit
+tenant id/slug. It signs in with fixed credentials `Aman` / `2906`, stores a
+signed 12-hour `finan_superadmin` cookie derived from `AUTH_SECRET`, and never
+uses a tenant Auth.js cookie or session claim. Tenant activation, suspension and
+deletion re-check the protected flag; the protected tenant cannot be renamed,
+suspended, expired or deleted through this UI, while its branding, content and
+ERP settings remain editable.
 
 ## How scoping works (data layer)
 
@@ -256,14 +271,16 @@ tenants (backfill NULLs, bootstrap the instance, run QA).
 `.github/workflows/tenancy.yml`) fails CI if any file outside
 `scripts/prisma-base-allowlist.txt` imports `prisma-base`, imports/constructs
 `PrismaClient`, or requires/dynamic-imports `@prisma/client`. The allowlist is
-21 files, grouped as:
+22 files, grouped as:
 
 - **Library/core** — `prisma-base.ts` (the client itself), `tenant-prisma.ts`
   (the extension), and the three tenant test files that deliberately use the
   unscoped client to set up/tear down tenants and assert raw state.
-- **URL gate and cron** — `src/proxy.ts` (resolves the slug before any page or
-  API runs) and `src/app/[tenant]/api/jobs/messages/route.ts` (fans out over all
-  serving tenants).
+- **URL gate, cron and platform** — `src/proxy.ts` (resolves the slug before any
+  page or API runs), `src/app/[tenant]/api/jobs/messages/route.ts` (fans out over
+  all serving tenants), and `src/modules/superadmin/service.ts` (the platform UI
+  lists/creates tenant rows and writes explicit tenant ids, so it cannot use the
+  request-scoped client).
 - **Seeds** — `prisma/seed*.ts`, which create tenants and need the unscoped
   client to bootstrap data across tenants.
 - **Maintenance/QA scripts** — client export, tenant CLI, the
