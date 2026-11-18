@@ -14,6 +14,25 @@ function seedTenantSlug(): string {
 }
 
 /**
+ * Read-only lookup for local e2e fixtures that add rows to an existing tenant.
+ * It never creates, resets or overwrites a tenant, so it is safe to use with
+ * the protected platform tenant.
+ */
+export async function getSeedTenantId(prisma: PrismaClient): Promise<string> {
+  const slug = seedTenantSlug();
+  const existing = await prisma.tenant.findUnique({
+    where: { slug },
+    select: { id: true },
+  });
+  if (!existing) {
+    throw new Error(
+      `Seed tenant "${slug}" does not exist. Run \`npm run seed:platform\` first.`,
+    );
+  }
+  return existing.id;
+}
+
+/**
  * The tenant every seeded row belongs to until host-based routing lands.
  *
  * Upserted by DEFAULT_TENANT_SLUG so a fresh `prisma migrate reset` followed by

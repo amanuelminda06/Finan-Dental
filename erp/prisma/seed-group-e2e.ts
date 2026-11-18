@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs';
-import { ensureSeedTenant } from './seed-tenant';
+import { getSeedTenantId } from './seed-tenant';
 
 /** tsx does not load .env automatically — minimal loader for seed runs. */
 function loadEnv(): void {
@@ -50,7 +50,7 @@ async function main(): Promise<void> {
   const mode = process.argv[2] ?? 'block';
 
   try {
-    const tenantId = await ensureSeedTenant(prisma);
+    const tenantId = await getSeedTenantId(prisma);
     await prisma.setting.upsert({
       where: { tenantId_key: { tenantId, key: 'group_sms_allow_for_filtered' } },
       update: { value: mode === 'allow' },
