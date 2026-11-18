@@ -91,7 +91,7 @@ describe('tenantFromPath', () => {
   });
 
   it('returns null for root, reserved and invalid segments', () => {
-    for (const path of ['/', '', '/finan/erp/login/x', '/api/search', '/_next/static/x', '/FINAN']) {
+    for (const path of ['/', '', '/login/x', '/api/search', '/_next/static/x', '/FINAN']) {
       expect(tenantFromPath(path)).toBeNull();
     }
   });

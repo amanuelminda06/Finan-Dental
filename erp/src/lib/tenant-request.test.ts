@@ -43,13 +43,13 @@ describe('request-context detection', () => {
 describe('getRequestLoginPath', () => {
   it('uses the login path injected by the proxy', async () => {
     state.loginPath = '/bright-dental/erp/login';
-    expect(await getRequestLoginPath()).toBe('/bright-dental/login/another-secret');
+    expect(await getRequestLoginPath()).toBe('/bright-dental/erp/login');
     expect(notFound).not.toHaveBeenCalled();
   });
 
   it('fails closed when a request has no login-path header', async () => {
     // The proxy always injects this header; a missing value means the request
-    // bypassed it, so no default tenant secret may be substituted.
+    // bypassed it, so no default tenant login path may be substituted.
     expect(TENANT_LOGIN_PATH_HEADER).toBe('x-finan-login-path');
     await expect(getRequestLoginPath()).rejects.toThrow(/404/);
     expect(notFound).toHaveBeenCalledOnce();
