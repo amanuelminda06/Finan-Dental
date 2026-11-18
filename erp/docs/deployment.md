@@ -41,9 +41,7 @@ Fill, at minimum:
 | `AUTH_SECRET` | `openssl rand -base64 32` |
 | `DEFAULT_TENANT_SLUG` | `finandentalclinic` — where `/` redirects and which tenant seed/scripts use (never a fallback in request handling) |
 | `E2E_SECOND_TENANT` | `bright-dental` — local isolation-check tenant created by `tenant:create` |
-| `OWNER_EMAIL` / `OWNER_PASSWORD` | first owner account; password ≥ 10 chars |
-| `RECEPTION_EMAIL` / `RECEPTION_PASSWORD` | created with forced password change |
-| `STAFF_EMAIL` / `STAFF_PASSWORD` | created with forced password change |
+| Trial logins | fixed for every tenant: `owner`/`owner123`, `reception`/`reception123`, `doctor`/`doctor123`; no env vars, no credentials file |
 | `UPLOAD_DIR` | persistent volume path (e.g. `/var/lib/vision-erp/uploads`); ignored when `STORAGE_DRIVER=db` |
 | `STORAGE_DRIVER` | `db` keeps uploads in Postgres — required on ephemeral platforms such as Vercel |
 | `PUBLIC_BASE_URL` | canonical https origin (SEO/hreflang/sitemap) |
@@ -76,7 +74,7 @@ DATABASE_URL="$DIRECT_URL" npm run tenant:create -- \
   <slug> "<clinic name>" <owner email> --allow-hosted
 ```
 
-The CLI prints the target host/database and the credentials file path. The OWNER
+The CLI prints the target host/database and the fixed trial logins. Run `npm run tenant:activate -- <slug>` before real use to force a strong-password change. The OWNER
 edits branding at `/<tenant>/erp/branding`;
 `public/` images are only seed defaults copied into the tenant's own storage.
 

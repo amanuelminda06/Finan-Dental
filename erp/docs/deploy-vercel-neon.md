@@ -50,9 +50,7 @@ Preview environment, using that branch's pooled/direct URLs):
 | `AUTH_SECRET`                           | `openssl rand -base64 32`                                          |
 | `AUTH_URL`                              | full canonical origin, e.g. `https://erp.example.com`              |
 | `DEFAULT_TENANT_SLUG`                   | `finandentalclinic` — `/` redirect target                            |
-| `OWNER_EMAIL`, `OWNER_PASSWORD`         | intended first owner (used by seed scripts)                        |
-| `RECEPTION_EMAIL`, `RECEPTION_PASSWORD` | seed-only values; use strong random strings if not seeding         |
-| `STAFF_EMAIL`, `STAFF_PASSWORD`         | seed-only values; use strong random strings if not seeding         |
+| Fixed trial logins                      | `owner`/`owner123`, `reception`/`reception123`, `doctor`/`doctor123`; no env vars |
 | `PUBLIC_BASE_URL`                       | same canonical origin as `AUTH_URL`                                |
 | `STORAGE_DRIVER`                        | `db` — uploads live in Postgres; Vercel has no persistent disk     |
 | `NEXT_PUBLIC_TRIAL_BANNER`              | `false` once the first clinic is live                              |
@@ -105,16 +103,13 @@ DATABASE_URL="$DIRECT_URL" npm run tenant:create -- \
 
 The CLI checks the slug (3–40 lowercase letters/digits/hyphens, reserved names
 rejected), prints `Database: <host>:<port>/<database>`, seeds the dental
-template into **that tenant only**, creates OWNER/RECEPTION/DOCTOR trial accounts
-with `mustChangePassword: false`, and writes their emails and demo passwords to a
-mode-600 file outside the repo:
-
-```
-/tmp/opencode/erp-tenant-credentials/<slug>.txt
-```
-
-Only that path is printed. The login page is open at `/<slug>/erp/login`; tenant
-isolation comes from the URL, not from a secret path.
+template into **that tenant only** and creates OWNER/RECEPTION/DOCTOR trial
+accounts with `mustChangePassword: false`. Their logins are fixed for every
+tenant (`owner`/`owner123`, `reception`/`reception123`, `doctor`/`doctor123`) —
+no env vars and no credentials file. Before taking a clinic live, run
+`npm run tenant:activate -- <slug> --allow-hosted` to set it ACTIVE and force
+every user through a strong-password change. The login page is open at
+`/<slug>/erp/login`; tenant isolation comes from the URL, not from a secret path.
 
 Other maintenance commands:
 
@@ -142,7 +137,7 @@ curl -fsS https://erp.example.com/finandentalclinic/robots.txt | head      # sco
 curl -fsS https://erp.example.com/<slug>/erp/login >/dev/null              # open login
 ```
 
-Sign in with the credentials file, then open
+Sign in with the fixed trial logins, then open
 `/<tenant>/erp/branding`. That form is the source of truth for clinic name,
 tagline, address, phones, email, socials, colors, logo, hero, doctor information,
 SMS sender and languages. All metadata, JSON-LD, OpenGraph, CSS variables, public
@@ -171,7 +166,7 @@ limit, split the fan-out or move it to a long-running worker.
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `AUTH_SECRET`      | Generate a new value, set it in Vercel, redeploy. All existing JWT sessions are invalidated, so users sign in again.                                                                                                                             |
 | `CRON_SECRET`      | Set the new value in Vercel and in the scheduler together. Expect at most one failed run during the cutover.                                                                                                                                     |
-| Owner password     | OWNER resets it from `/<tenant>/erp/users`; trial credentials are in the mode-600 file written by `tenant:create`.                                                                                                                            |
+| Owner password     | OWNER resets it from `/<tenant>/erp/users`; `tenant:activate` forces all users through a strong-password change before go-live.                                                                                                             |
 | Neon role password | Rotate in Neon, update `DATABASE_URL` and `DIRECT_URL` in Vercel, redeploy, and rerun the migration command with the new direct URL.                                                                                                             |
 
 

@@ -43,7 +43,7 @@ edited by that clinic's OWNER at `/<tenant>/erp/branding`. See `docs/tenancy.md`
 ```bash
 npm install
 npm run db:up          # embedded local Postgres on :5433 (or point DATABASE_URL elsewhere)
-cp .env.example .env   # then fill AUTH_SECRET and seed passwords
+cp .env.example .env   # then fill AUTH_SECRET (trial logins need no env vars)
 npm run db:migrate     # apply prisma/migrations
 npm run seed:platform  # creates protected finandentalclinic only if missing (idempotent)
 npm run dev            # http://localhost:3000 → redirects to the default tenant
@@ -54,15 +54,18 @@ clinic gets a real 404 at this URL; lockout and rate limiting still apply.
 
 `npm run db:seed` is for legacy local seeding only: it refuses to overwrite the
 protected platform tenant. Use `npm run tenant:create` for new trial clinics;
-it writes OWNER/RECEPTION/DOCTOR credentials to a mode-600 file outside the repo.
+every tenant gets the fixed trial logins `owner`/`owner123`, `reception`/`reception123` and `doctor`/`doctor123` (short names work in the login field); run `tenant:activate` before real use.
 
-Seeded accounts (passwords come from `.env`):
+Fixed trial logins (every tenant, short names accepted in the login field):
 
-| Role      | Email (default)          | First login                 |
-| --------- | ------------------------ | --------------------------- |
-| OWNER     | `owner@finandental.com`     | already changed in dev seed |
-| RECEPTION | `reception@finandental.com` | forced password change      |
-| STAFF     | `doctor@finandental.com`    | forced password change      |
+| Role      | Login                   | First login                     |
+| --------- | ----------------------- | ------------------------------- |
+| OWNER     | `owner` / `owner123`      | no forced change during trial   |
+| RECEPTION | `reception` / `reception123` | no forced change during trial |
+| STAFF     | `doctor` / `doctor123`    | no forced change during trial   |
+
+`npm run tenant:activate -- <slug>` clears the trial and forces a strong-password
+change for all three accounts before real use.
 
 ## Commands
 
@@ -76,6 +79,7 @@ npm test               # Vitest unit tests
 npm run test:e2e       # Playwright specs (npx playwright install once; seeded DB + server)
 npx tsx scripts/seed-e2e-tenants.ts  # local-only: seed the two URL-tenancy e2e tenants
 npm run tenant:create -- <slug> "<clinic name>" <owner email> [--demo-data]
+npm run tenant:activate -- <slug>
 npm run tenant:extend -- <slug> [--days 30]
 npm run tenant:suspend -- <slug>
 npm run tenant:reset-demo -- <slug>

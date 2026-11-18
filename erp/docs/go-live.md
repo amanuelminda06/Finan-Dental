@@ -10,17 +10,40 @@ Work top to bottom. Do not launch with unchecked items in **Critical**.
 - [ ] `npm run build` succeeds; `bash scripts/smoke.sh` passes with no new failures.
 - [ ] `npm run security:scan` shows **0** "needs manual review" endpoints.
 - [ ] `npm run audit:deps` reports no high/critical advisories.
-- [ ] Production `.env`: real `AUTH_SECRET`, real owner email, strong passwords,
-      `DIRECT_URL` for migrations/CLI; `.env` is **not** in git.
-- [ ] First tenant created with `npm run tenant:create` (no demo data); its
-      demo credentials file stored in the clinic password manager.
-- [ ] All seeded demo passwords changed; `mustChangePassword` cleared for the
-      real accounts after first login.
+- [ ] Production `.env`: real `AUTH_SECRET`, `DIRECT_URL` for migrations/CLI;
+      `.env` is **not** in git. Trial logins are fixed (`owner`/`owner123`,
+      `reception`/`reception123`, `doctor`/`doctor123`) and need no env vars or
+      credentials file.
+- [ ] First tenant created with `npm run tenant:create` (no demo data), then
+      `npm run tenant:activate -- <slug>` to set it ACTIVE and force every user
+      to choose a strong password at next login.
+- [ ] All three trial accounts have completed the forced strong-password change
+      (`mustChangePassword` now false) before handing the clinic to the customer.
 - [ ] Backup job scheduled **and** a restore has been rehearsed into a scratch
       database (`docs/backup-restore.md`).
 - [ ] Off-site backup copy configured.
 - [ ] `CRON_SECRET` set and the message job scheduled (or deliberately disabled).
 - [ ] Every location/URL in README/this doc points at the real domain.
+
+## Taking a tenant live (`tenant:activate`)
+
+Trial tenants are created with fixed short logins and `mustChangePassword=false`
+so the customer can evaluate immediately. Before real use, activate the clinic:
+
+```bash
+# Local: embedded Postgres
+npm run tenant:activate -- <slug>
+
+# Hosted Neon: use the direct URL and pass --allow-hosted deliberately
+DATABASE_URL="$DIRECT_URL" npm run tenant:activate -- <slug> --allow-hosted
+```
+
+The command sets `status=ACTIVE`, clears `trialEndsAt`, and sets
+`mustChangePassword=true` for **every** user in that tenant (also clearing
+lockout state). The next login for each account goes straight to
+`/<tenant>/erp/change-password`, where the normal strength rules apply. The
+protected platform tenant (`finandentalclinic`) is refused — it is platform-owned
+and already live.
 
 ## Content & clinic readiness
 

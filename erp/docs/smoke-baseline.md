@@ -18,9 +18,10 @@ Captured at commit `c786978` (the commit immediately before
 - `scripts/smoke.sh` at `c786978` hardcodes `owner@finandental.com`,
   `reception@finandental.com` and `doctor@finandental.com`, while the seed at
   that commit uses the addresses configured in `.env`. Only those three login
-  identities were replaced with the existing `OWNER_EMAIL`, `RECEPTION_EMAIL`
-  and `STAFF_EMAIL` variables in the temporary worktree. No application source
-  was changed.
+  identities were replaced with the seeded-account env variables that existed
+  at that commit in the temporary worktree. Those variables were later removed
+  in favour of fixed trial logins (`owner`/`owner123`, `reception`/`reception123`,
+  `doctor`/`doctor123`) accepted as short names. No application source was changed.
 
 ## Result
 
