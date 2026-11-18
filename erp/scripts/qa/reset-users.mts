@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { hash } from '@node-rs/argon2';
 import { readFileSync } from 'node:fs';
+import { TRIAL_LOGINS } from '../../src/lib/trial-credentials';
 
 const dotenv = readFileSync('.env', 'utf8');
 const val = (k: string): string => {
@@ -17,21 +18,20 @@ const tenantId = (
 )?.id;
 if (!tenantId) throw new Error('default tenant not found');
 
-const users = [
-  { email: val('OWNER_EMAIL'), password: val('OWNER_PASSWORD'), mustChangePassword: false },
-  { email: val('RECEPTION_EMAIL'), password: val('RECEPTION_PASSWORD'), mustChangePassword: true },
-  { email: val('STAFF_EMAIL'), password: val('STAFF_PASSWORD'), mustChangePassword: true },
-];
-
-for (const u of users) {
-  if (!u.email) throw new Error(`missing env for ${u.email}`);
-  const passwordHash = await hash(u.password);
-  await prisma.user.upsert({
-    where: { tenantId_email: { tenantId, email: u.email.toLowerCase() } },
-    update: { passwordHash, mustChangePassword: u.mustChangePassword, failedLoginCount: 0, lockedUntil: null, active: true },
-    create: { tenantId, email: u.email.toLowerCase(), passwordHash, name: u.email.split('@')[0], role: 'OWNER', mustChangePassword: u.mustChangePassword },
+// Fixed trial logins are role-based, so reset by role — no credential env vars.
+for (const login of TRIAL_LOGINS) {
+  const passwordHash = await hash(login.password);
+  await prisma.user.updateMany({
+    where: { tenantId, role: login.role },
+    data: {
+      passwordHash,
+      mustChangePassword: false,
+      failedLoginCount: 0,
+      lockedUntil: null,
+      active: true,
+    },
   });
-  console.log(`reset ${u.email} (mustChange=${u.mustChangePassword})`);
+  console.log(`reset ${login.shortName} (${login.role}, mustChange=false)`);
 }
 
 await prisma.$disconnect();

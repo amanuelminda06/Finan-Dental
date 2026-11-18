@@ -9,7 +9,7 @@ test.describe('smoke', () => {
 
   test('wrong password is rejected', async ({ page }) => {
     await page.goto(loginUrl());
-    await page.fill('#email', process.env.OWNER_EMAIL ?? '');
+    await page.fill('#email', 'owner');
     await page.fill('#password', 'definitely-wrong-password');
     await page.getByRole('button', { name: /sign in/i }).click();
     // Next's route announcer is also role="alert"; scope to the form.

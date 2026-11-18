@@ -45,7 +45,10 @@ async function req(path, { method = 'GET', body, headers = {} } = {}) {
 const db = new Client({ connectionString: DB });
 await db.connect();
 
-const receptIdRow = await db.query(`select id from "User" where email=$1`, [val('RECEPTION_EMAIL')]);
+const receptIdRow = await db.query(
+  `select u.id from "User" u join "Tenant" t on t.id=u."tenantId" where t.slug=$1 and u.role='RECEPTION'`,
+  [TENANT],
+);
 const RECEPTION_ID = receptIdRow.rows[0].id;
 
 const auditCount = async (where) => {
@@ -81,8 +84,8 @@ const ownerLogin = async () =>
     method: 'POST',
     body: new URLSearchParams({
       csrfToken: csrf.csrfToken,
-      email: val('OWNER_EMAIL'),
-      password: val('OWNER_PASSWORD'),
+      email: 'owner',
+      password: 'owner123',
       callbackUrl: `${ORIGIN}${APP_PATH}/dashboard`,
     }).toString(),
   });
@@ -111,7 +114,7 @@ for (let i = 0; i < 5; i++) {
     method: 'POST',
     body: new URLSearchParams({
       csrfToken: csrf.csrfToken,
-      email: val('RECEPTION_EMAIL'),
+      email: 'reception',
       password: 'definitely-wrong-password',
     }).toString(),
   });
@@ -121,14 +124,14 @@ const afterFail = await auditCount(`action='LOGIN_FAILED' and "entityId"='${RECE
 check('D2 each failure is audited (+5)', afterFail - beforeFail === 5, `delta=${afterFail - beforeFail}`);
 
 // ---- E: account lockout (5th failure) ----
-const lock = await db.query(`select "failedLoginCount", "lockedUntil" from "User" where email=$1`, [val('RECEPTION_EMAIL')]);
+const lock = await db.query(`select "failedLoginCount", "lockedUntil" from "User" where id=$1`, [RECEPTION_ID]);
 check('E1 failedLoginCount=5', lock.rows[0].failedLoginCount === 5, `count=${lock.rows[0].failedLoginCount}`);
 check('E2 lockedUntil set in the future', !!lock.rows[0].lockedUntil && new Date(lock.rows[0].lockedUntil).getTime() > Date.now());
 
 const beforeLocked = await auditCount(`action='LOGIN_FAILED' and "entityId"='${RECEPTION_ID}'`);
 const lockedLogin = await req('/api/auth/callback/credentials', {
   method: 'POST',
-  body: new URLSearchParams({ csrfToken: csrf.csrfToken, email: val('RECEPTION_EMAIL'), password: val('RECEPTION_PASSWORD') }).toString(),
+  body: new URLSearchParams({ csrfToken: csrf.csrfToken, email: 'reception', password: 'reception123' }).toString(),
 });
 const afterLocked = await auditCount(`action='LOGIN_FAILED' and "entityId"='${RECEPTION_ID}'`);
 check('E3 correct password still rejected while locked', (lockedLogin.headers.get('set-cookie') || '').includes('session-token') === false, `status=${lockedLogin.status}`);
@@ -162,13 +165,13 @@ const afterRate31 = await auditCount(`action='LOGIN_FAILED' and "entityId"='emai
 check('F2 the 31st attempt is rate-limited (no audit, no DB touch)', afterRate31 - afterRate30 === 0, `delta=${afterRate31 - afterRate30}`);
 
 // ---- G: unlock reception, then force-change redirect ----
-await db.query(`update "User" set "failedLoginCount"=0, "lockedUntil"=null where email=$1`, [val('RECEPTION_EMAIL')]);
+await db.query(`update "User" set "failedLoginCount"=0, "lockedUntil"=null where id=$1`, [RECEPTION_ID]);
 
 let rc = await req('/api/auth/csrf');
 const receptCsrf = (await rc.json()).csrfToken;
 rc = await req('/api/auth/callback/credentials', {
   method: 'POST',
-  body: new URLSearchParams({ csrfToken: receptCsrf, email: val('RECEPTION_EMAIL'), password: val('RECEPTION_PASSWORD') }).toString(),
+  body: new URLSearchParams({ csrfToken: receptCsrf, email: 'reception', password: 'reception123' }).toString(),
 });
 check('G1 reception logs in after unlock', rc.status === 302 && (rc.headers.get('set-cookie') || '').includes('session-token'), `status=${rc.status}`);
 
@@ -187,7 +190,7 @@ check(
 );
 
 // ---- G4: role gate precedence (mustChangePassword → change-password, not 403)
-await db.query(`update "User" set "mustChangePassword"=true where email=$1`, [val('RECEPTION_EMAIL')]);
+await db.query(`update "User" set "mustChangePassword"=true where id=$1`, [RECEPTION_ID]);
 r = await req(`${APP_PATH}/users`);
 const usersBody = await r.text();
 const usersFlight = (usersBody.match(/NEXT_REDIRECT;replace;([^;\\\\"']+)/) || [])[1] || '';

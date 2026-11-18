@@ -4,10 +4,11 @@ import { expect, type Page } from '@playwright/test';
 /**
  * Shared E2E helpers.
  *
- * Credentials come from the same `.env` as the app (loaded in
- * playwright.config.ts). Seeded RECEPTION and STAFF accounts are created with
- * `mustChangePassword: true`, so `login()` transparently completes the forced
- * change once and remembers the derived password on later runs.
+ * Every tenant uses the same fixed trial logins (owner/owner123,
+ * reception/reception123, doctor/doctor123); the login field accepts the short
+ * name. No credentials are read from `.env`. When a test sets
+ * `mustChangePassword`, `login()` transparently completes the forced change
+ * and remembers the derived password on later runs.
  */
 
 export type RoleKey = 'OWNER' | 'RECEPTION' | 'STAFF';
@@ -33,18 +34,9 @@ export function loginUrl(): string {
 }
 
 const CREDENTIALS: Record<RoleKey, { email: string; password: string }> = {
-  OWNER: {
-    email: process.env.OWNER_EMAIL ?? '',
-    password: process.env.OWNER_PASSWORD ?? '',
-  },
-  RECEPTION: {
-    email: process.env.RECEPTION_EMAIL ?? '',
-    password: process.env.RECEPTION_PASSWORD ?? '',
-  },
-  STAFF: {
-    email: process.env.STAFF_EMAIL ?? '',
-    password: process.env.STAFF_PASSWORD ?? '',
-  },
+  OWNER: { email: 'owner', password: 'owner123' },
+  RECEPTION: { email: 'reception', password: 'reception123' },
+  STAFF: { email: 'doctor', password: 'doctor123' },
 };
 
 /**
@@ -63,9 +55,7 @@ function derivedPassword(): string {
 function assertConfigured(role: RoleKey) {
   const { email, password } = CREDENTIALS[role];
   if (!email || !password) {
-    throw new Error(
-      `E2E not configured: set ${role}_EMAIL/${role}_PASSWORD in .env (or .env.example).`,
-    );
+    throw new Error(`No trial login defined for role ${role}.`);
   }
 }
 
@@ -141,8 +131,6 @@ export type E2eTenant = {
   name: string;
   clinicName: string;
   loginPath: string;
-  ownerEmail?: string;
-  ownerPassword?: string;
   colors: { primary: string; secondary: string; accent: string };
   heroUrl: string | null;
   logoUrl: string | null;
@@ -167,12 +155,12 @@ export function tenantSnapshot(): E2eTenantSnapshot {
 export async function loginSecondTenant(page: Page): Promise<E2eTenant> {
   const snapshot = tenantSnapshot();
   const tenant = snapshot.tenants[SECOND_TENANT];
-  if (!tenant?.ownerEmail || !tenant.ownerPassword) {
-    throw new Error(`No local OWNER credentials for ${SECOND_TENANT}; run scripts/seed-e2e-tenants.ts`);
+  if (!tenant) {
+    throw new Error(`No local snapshot for ${SECOND_TENANT}; run scripts/seed-e2e-tenants.ts`);
   }
   await page.goto(tenant.loginPath);
-  await page.locator('#email').fill(tenant.ownerEmail);
-  await page.locator('#password').fill(tenant.ownerPassword);
+  await page.locator('#email').fill('owner');
+  await page.locator('#password').fill('owner123');
   await page.getByRole('button', { name: /sign in/i }).click();
   await expect(page).toHaveURL(/\/dashboard/);
   return tenant;

@@ -10,7 +10,9 @@ const val = (k: string): string => {
 
 const BASE = process.env.BASE || 'http://127.0.0.1:3101';
 const prisma = new PrismaClient();
-const email = val('RECEPTION_EMAIL');
+// Fixed trial login — the short name works in the login field.
+const email = 'reception';
+const seedPassword = 'reception123';
 const tenantId = (
   await prisma.tenant.findUnique({
     where: { slug: val('DEFAULT_TENANT_SLUG') || 'finan' },
@@ -36,7 +38,7 @@ const expectValidation = async (label: string, current: string, next: string) =>
   }
 };
 
-const u = await prisma.user.findUnique({ where: { tenantId_email: { tenantId, email } } });
+const u = await prisma.user.findFirst({ where: { tenantId, role: 'RECEPTION' } });
 if (!u) {
   console.error(`user not found: ${email}`);
   process.exit(1);
@@ -44,12 +46,12 @@ if (!u) {
 user.id = u.id;
 
 await expectValidation('K1 wrong current password rejected', 'wrong-current', 'Fresh-Pass-77#Xq');
-await expectValidation('K2 new password too short rejected', val('RECEPTION_PASSWORD'), 'short');
-await expectValidation('K3 common password rejected', val('RECEPTION_PASSWORD'), 'password123');
-await expectValidation('K4 personal (email-derived) password rejected', val('RECEPTION_PASSWORD'), `Super${email.split('@')[0]}99!`);
+await expectValidation('K2 new password too short rejected', seedPassword, 'short');
+await expectValidation('K3 common password rejected', seedPassword, 'password123');
+await expectValidation('K4 personal (email-derived) password rejected', seedPassword, `Super${email.split('@')[0]}99!`);
 
 const newPass = 'Qw9!dune-Vault#44';
-await changeUserPassword(user, val('RECEPTION_PASSWORD'), newPass);
+await changeUserPassword(user, seedPassword, newPass);
 check('K5 password change succeeds (resolves)', true);
 
 const after = await prisma.user.findUnique({ where: { id: u.id } });
@@ -75,12 +77,12 @@ const login = async (password: string): Promise<boolean> => {
   return (res.headers.get('set-cookie') || '').includes('session-token');
 };
 
-check('K9 old password no longer works', (await login(val('RECEPTION_PASSWORD'))) === false);
+check('K9 old password no longer works', (await login(seedPassword)) === false);
 check('K10 new password works', (await login(newPass)) === true);
 
 // cleanup: restore the seeded password + forced-change flag for repeat runs
 import { hash } from '@node-rs/argon2';
-const seedHash = await hash(val('RECEPTION_PASSWORD'));
+const seedHash = await hash(seedPassword);
 await prisma.user.update({ where: { id: u.id }, data: { passwordHash: seedHash, mustChangePassword: true } });
 
 await prisma.$disconnect();

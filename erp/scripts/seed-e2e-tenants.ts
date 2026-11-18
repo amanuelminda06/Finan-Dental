@@ -21,13 +21,11 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
-import { hash } from '@node-rs/argon2';
 import { PrismaClient } from '@prisma/client';
 import { parseTenantSlug } from '../src/lib/tenant-slug';
 import { brandAssetUrl } from '../src/modules/tenant-brand/defaults';
 import { previewTemplate } from '../src/modules/messaging/templates';
 
-const E2E_OWNER_PASSWORD = 'Bright!Pass-2026';
 const SECOND_CLINIC = 'Bright Dental';
 const RENAMED_SERVICE = 'Bright Dental Whitening';
 
@@ -62,8 +60,6 @@ type TenantSnapshot = {
   name: string;
   clinicName: string;
   loginPath: string;
-  ownerEmail?: string;
-  ownerPassword?: string;
   colors: { primary: string; secondary: string; accent: string };
   heroUrl: string | null;
   logoUrl: string | null;
@@ -75,7 +71,6 @@ type TenantSnapshot = {
 async function snapshotTenant(
   prisma: PrismaClient,
   row: { id: string; slug: string; name: string },
-  credentials?: { email: string; password: string },
 ): Promise<TenantSnapshot> {
   const [brand, services, clinicSetting, reminderRow] = await Promise.all([
     prisma.tenantBrand.findUnique({ where: { tenantId: row.id } }),
@@ -116,7 +111,6 @@ async function snapshotTenant(
     name: row.name,
     clinicName,
     loginPath: `/${row.slug}/erp/login`,
-    ...(credentials ? { ownerEmail: credentials.email, ownerPassword: credentials.password } : {}),
     colors: brand.colors as { primary: string; secondary: string; accent: string },
     heroUrl: brand.heroKey ? brandAssetUrl(brand.heroKey) : null,
     logoUrl: brand.logoKey ? brandAssetUrl(brand.logoKey) : null,
@@ -172,12 +166,8 @@ async function main(): Promise<void> {
     }
 
     // Make the CLI-provisioned tenant deterministic for repeat e2e/smoke runs.
-    // These are OWNER-style edits through the same TenantBrand/service rows the
-    // ERP branding form writes; only this local script uses direct DB access.
-    await prisma.user.updateMany({
-      where: { tenantId: second.id, email: ownerEmail, role: 'OWNER' },
-      data: { passwordHash: await hash(E2E_OWNER_PASSWORD), mustChangePassword: false },
-    });
+    // Trial logins are fixed for every tenant, so no password override is
+    // needed here; only branding/service rows are locally edited.
     await prisma.tenant.update({
       where: { id: second.id },
       data: { status: 'TRIAL', trialEndsAt: new Date(Date.now() + 365 * 86_400_000) },
@@ -241,7 +231,7 @@ async function main(): Promise<void> {
 
     const [a, b] = await Promise.all([
       snapshotTenant(prisma, primary),
-      snapshotTenant(prisma, second, { email: ownerEmail, password: E2E_OWNER_PASSWORD }),
+      snapshotTenant(prisma, second),
     ]);
     const snapshot = {
       generatedAt: new Date().toISOString(),
