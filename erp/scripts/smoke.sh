@@ -82,6 +82,25 @@ const p = new PrismaClient();
 $1
 await p.\$disconnect();"; }
 
+# E2E runs deliberately change the seeded reception/staff passwords as part of
+# their forced-password-change checks. Restore the documented local test login
+# before each smoke section so the script is repeatable in either order.
+reset_login_user() { # reset_login_user <email> <password> <mustChange:true|false>
+  EMAIL="$1" PASSWORD="$2" MUST_CHANGE="$3" TENANT_ID="$TENANT_ID" node --input-type=module -e "
+import { PrismaClient } from '@prisma/client';
+import { hash } from '@node-rs/argon2';
+const p = new PrismaClient();
+await p.user.updateMany({
+  where: { tenantId: process.env.TENANT_ID, email: process.env.EMAIL },
+  data: {
+    passwordHash: await hash(process.env.PASSWORD),
+    mustChangePassword: process.env.MUST_CHANGE === 'true',
+    failedLoginCount: 0,
+    lockedUntil: null,
+  },
+});
+await p.\$disconnect();"; }
+
 TENANT_ID=$(sql "const t = await p.tenant.findUnique({ where: { slug: '$TENANT_SLUG' }, select: { id: true } }); console.log(t ? t.id : '');")
 [ -n "$TENANT_ID" ] || { echo "Tenant '$TENANT_SLUG' not found — seed the local DB first"; exit 1; }
 
@@ -146,8 +165,10 @@ code=$(curl -s -b "$JAR" -o /dev/null -w '%{http_code}' "$API/uploads/..%2F..%2F
 check "traversal key → 404" 404 "$code"
 
 # 7. Reception: forced-change gate first, then 403 for owner-only pages
+RECEPTION_PASSWORD=$(grep '^RECEPTION_PASSWORD=' .env | cut -d= -f2- | tr -d '\"')
+reset_login_user "$RECEPTION_EMAIL" "$RECEPTION_PASSWORD" true
 JAR2=/tmp/opencode/erp-smoke2.jar
-login "$JAR2" $RECEPTION_EMAIL "$(grep '^RECEPTION_PASSWORD=' .env | cut -d= -f2- | tr -d '\"')"
+login "$JAR2" $RECEPTION_EMAIL "$RECEPTION_PASSWORD"
 if has_session "$JAR2"; then PASS=$((PASS+1)); echo "✓ reception login sets session"; else FAIL=$((FAIL+1)); echo "✗ reception login: no session cookie"; fi
 code=$(curl -s -b "$JAR2" -o /tmp/opencode/rec-users.html -w '%{http_code}' "$APP/users")
 check "reception /users → 200 (flight redirect)" 200 "$code"
@@ -160,16 +181,17 @@ contains "403 content" "403" /tmp/opencode/403.html
 # expect the role redirect to /403 instead
 sql "await p.user.update({ where: { tenantId_email: { tenantId: '$TENANT_ID', email: '$RECEPTION_EMAIL' } }, data: { mustChangePassword: false } }); console.log('reset');"
 JAR2B=/tmp/opencode/erp-smoke2b.jar
-login "$JAR2B" $RECEPTION_EMAIL "$(grep '^RECEPTION_PASSWORD=' .env | cut -d= -f2- | tr -d '\"')"
+login "$JAR2B" $RECEPTION_EMAIL "$RECEPTION_PASSWORD"
 code=$(curl -s -b "$JAR2B" -o /tmp/opencode/rec-users2.html -w '%{http_code}' "$APP/users")
 check "reception /users (no force) → 200 (flight redirect)" 200 "$code"
 contains "reception forbidden redirect" "NEXT_REDIRECT;replace;$APP_PATH/403" /tmp/opencode/rec-users2.html
 sql "await p.user.update({ where: { tenantId_email: { tenantId: '$TENANT_ID', email: '$RECEPTION_EMAIL' } }, data: { mustChangePassword: true } }); console.log('restored');"
 
-# 8. Staff: forced password change (clean any leftover lockout first)
-sql "await p.user.update({ where: { tenantId_email: { tenantId: '$TENANT_ID', email: '$STAFF_EMAIL' } }, data: { failedLoginCount: 0, lockedUntil: null } }); console.log('unlocked');"
+# 8. Staff: forced password change (restore the seeded login state first)
+STAFF_PASSWORD=$(grep '^STAFF_PASSWORD=' .env | cut -d= -f2- | tr -d '\"')
+reset_login_user "$STAFF_EMAIL" "$STAFF_PASSWORD" true
 JAR3=/tmp/opencode/erp-smoke3.jar
-login "$JAR3" $STAFF_EMAIL "$(grep '^STAFF_PASSWORD=' .env | cut -d= -f2- | tr -d '\"')"
+login "$JAR3" $STAFF_EMAIL "$STAFF_PASSWORD"
 if has_session "$JAR3"; then PASS=$((PASS+1)); echo "✓ staff login sets session"; else FAIL=$((FAIL+1)); echo "✗ staff login: no session cookie"; fi
 code=$(curl -s -b "$JAR3" -o /tmp/opencode/staff-home.html -w '%{http_code}' "$APP/dashboard")
 check "staff /dashboard → 200 (flight redirect)" 200 "$code"
@@ -186,7 +208,7 @@ done
 if has_session "$JAR4"; then FAIL=$((FAIL+1)); echo "✗ wrong passwords must not set session"; else PASS=$((PASS+1)); echo "✓ wrong passwords set no session"; fi
 state=$(sql "const u = await p.user.findUnique({ where: { tenantId_email: { tenantId: '$TENANT_ID', email: '$STAFF_EMAIL' } }, select: { failedLoginCount: true, lockedUntil: true } }); console.log(u.failedLoginCount + ':' + (u.lockedUntil ? 'locked' : 'open'));")
 check "5 failures counted + locked" "5:locked" "$state"
-login "$JAR4" $STAFF_EMAIL "$(grep '^STAFF_PASSWORD=' .env | cut -d= -f2- | tr -d '\"')"
+login "$JAR4" $STAFF_EMAIL "$STAFF_PASSWORD"
 if has_session "$JAR4"; then FAIL=$((FAIL+1)); echo "✗ correct password rejected while locked"; else PASS=$((PASS+1)); echo "✓ correct password rejected while locked"; fi
 
 # 10. Patients module (list, search, detail + VIEW audit, export, role gate)
@@ -231,7 +253,7 @@ check "export without session → 307 to login" 307 "$code"
 # STAFF must be denied the patients module (clear the lockout from section 9 first)
 sql "await p.user.update({ where: { tenantId_email: { tenantId: '$TENANT_ID', email: '$STAFF_EMAIL' } }, data: { mustChangePassword: false, failedLoginCount: 0, lockedUntil: null } }); console.log('ok');"
 JAR5=/tmp/opencode/erp-smoke5.jar
-login "$JAR5" $STAFF_EMAIL "$(grep '^STAFF_PASSWORD=' .env | cut -d= -f2- | tr -d '\"')"
+login "$JAR5" $STAFF_EMAIL "$STAFF_PASSWORD"
 code=$(curl -s -b "$JAR5" -o /tmp/opencode/staff-patients.html -w '%{http_code}' "$APP/patients")
 check "staff /patients → 200 (flight redirect)" 200 "$code"
 contains "staff /patients forbidden" "NEXT_REDIRECT;replace;$APP_PATH/403" /tmp/opencode/staff-patients.html
