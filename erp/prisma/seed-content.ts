@@ -1,26 +1,36 @@
 import type { PrismaClient } from '@prisma/client';
 import { SERVICES } from '../src/config/services';
-import { CONTENT_KEYS, DEFAULT_CONTENT } from '../src/modules/public-site/content';
-import { ensureSeedTenant } from './seed-tenant';
+import {
+  CONTENT_KEYS,
+  DEFAULT_CONTENT,
+  type Bilingual,
+  type SiteContentKey,
+} from '../src/modules/public-site/content';
 
-/** Seed bilingual website defaults without overwriting clinic-edited copy. */
+/**
+ * Seeds bilingual website defaults without overwriting clinic-edited copy.
+ * Overrides carry the legacy demo clinic's real contact details/socials; a new
+ * tenant gets the neutral placeholders only.
+ */
 export async function seedSiteContent(
   prisma: PrismaClient,
+  tenantId: string,
+  overrides: Partial<Record<SiteContentKey, Bilingual>> = {},
 ): Promise<{ keys: number; publicServices: number }> {
-  const tenantId = await ensureSeedTenant(prisma);
   for (const key of CONTENT_KEYS) {
-    const value = DEFAULT_CONTENT[key];
+    const value = overrides[key] ?? DEFAULT_CONTENT[key];
     await prisma.siteContent.upsert({
       where: { tenantId_key: { tenantId, key } },
       update: {},
-      create: { tenantId, key, valueEn: value.en, valueAm: value.am },
+      create: { tenantId, key, valueEn: value.en, valueAm: value.am || value.en },
     });
   }
 
   let publicServices = 0;
+  const names = SERVICES.map((service) => service.nameEn);
   for (const [displayOrder, service] of SERVICES.entries()) {
     const result = await prisma.service.updateMany({
-      where: { nameEn: service.nameEn },
+      where: { tenantId, nameEn: service.nameEn },
       data: {
         isPublic: true,
         publicDescriptionEn: service.descriptionEn,
@@ -30,6 +40,10 @@ export async function seedSiteContent(
     });
     publicServices += result.count;
   }
+  await prisma.service.updateMany({
+    where: { tenantId, nameEn: { notIn: names } },
+    data: { isPublic: false },
+  });
 
   return { keys: CONTENT_KEYS.length, publicServices };
 }

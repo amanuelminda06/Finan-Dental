@@ -181,8 +181,8 @@ Postgres driver used by infrastructure/QA scripts.
 | 4 | `src/app/[tenant]/app/patients/[id]/page.tsx:53` | `$executeRaw` | `SELECT pg_advisory_xact_lock(hashtext('view:<tenantId>:<patientId>:<userId>'))` | **Yes** — lock key namespaced by tenant |
 | 5 | `prisma/seed.ts:199` | `$executeRawUnsafe` | `CREATE INDEX IF NOT EXISTS "Patient_tenantId_birthday_md_idx" ... ("tenantId", EXTRACT(...birthDate...))` | **Yes** — index leads with `tenantId`; DDL, no row data |
 | 6 | `src/lib/tenant-uniqueness.test.ts:274` | `$queryRaw` | `SELECT indexdef FROM pg_indexes WHERE schemaname='public' AND tablename='Patient' AND indexname=...` | **N/A** — metadata read asserting the index definition starts with `"tenantId"`; no business rows |
-| 7 | `scripts/tmp-null-check.mts:6` | `$queryRawUnsafe` | `SELECT count(*) FROM "<t>" WHERE "tenantId" IS NULL` over all 28 tenant-owned tables | **Intentional global audit** — one-time migration check that no rows have a NULL tenant; no cross-tenant data returned, only per-table counts |
-| 8 | `scripts/tmp-backfill.mts:7` | `$executeRawUnsafe` | `UPDATE "<t>" SET "tenantId" = $tenantId WHERE "tenantId" IS NULL` over all 28 tables | **Intentional global repair** — one-time backfill that assigns leftover NULL rows to a single known tenant; only touches rows with no tenant at all |
+| 7 | `scripts/tmp-null-check.mts:6` | `$queryRawUnsafe` | `SELECT count(*) FROM "<t>" WHERE "tenantId" IS NULL` over all 29 tenant-owned tables | **Intentional global audit** — one-time migration check that no rows have a NULL tenant; no cross-tenant data returned, only per-table counts |
+| 8 | `scripts/tmp-backfill.mts:7` | `$executeRawUnsafe` | `UPDATE "<t>" SET "tenantId" = $tenantId WHERE "tenantId" IS NULL` over all 29 tables | **Intentional global repair** — one-time backfill that assigns leftover NULL rows to a single known tenant; only touches rows with no tenant at all |
 | 9 | `scripts/db.mjs:92,99` | `pg client.query` | `SELECT 1 FROM pg_database WHERE datname=$1`; `CREATE DATABASE "<name>"` | **N/A** — embedded-Postgres instance bootstrap; operates above the tenant level |
 | 10 | `scripts/qa/phase1-test.mjs:46,50,122,134,163,188` | `pg client.query` | Login-lockout / audit QA assertions by email and entity id against a dedicated `vision_erp_test` database | **N/A in production** — QA-only test harness; not application code and not deployed |
 
@@ -198,7 +198,7 @@ tenants (backfill NULLs, bootstrap the instance, run QA).
 `.github/workflows/tenancy.yml`) fails CI if any file outside
 `scripts/prisma-base-allowlist.txt` imports `prisma-base`, imports/constructs
 `PrismaClient`, or requires/dynamic-imports `@prisma/client`. The allowlist is
-20 files, grouped as:
+21 files, grouped as:
 
 - **Library/core** — `prisma-base.ts` (the client itself), `tenant-prisma.ts`
   (the extension), and the three tenant test files that deliberately use the
@@ -209,7 +209,9 @@ tenants (backfill NULLs, bootstrap the instance, run QA).
 - **Seeds** — `prisma/seed*.ts`, which create tenants and need the unscoped
   client to bootstrap data across tenants.
 - **Maintenance/QA scripts** — client export, login-secret setter, the
-  local-only two-tenant e2e seeder, QA reset/change scripts, and the two global
+  local-only two-tenant e2e seeder, provisioning CLI (`scripts/tenant-cli.ts`,
+  which creates/deletes the tenant row itself and runs tenant-scoped raw deletes
+  for `tenant:reset-demo`), QA reset/change scripts, and the two global
   backfill/audit scripts above.
 
 Any new file that needs the unscoped client must be added to the allowlist with

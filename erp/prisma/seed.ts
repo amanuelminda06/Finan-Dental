@@ -1,6 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { hash } from '@node-rs/argon2';
-import type { Prisma } from '@prisma/client';
 import { ensureSeedTenant } from './seed-tenant';
 
 /** tsx does not load .env automatically — minimal loader for seed runs. */
@@ -23,81 +22,34 @@ function loadEnv(): void {
 
 loadEnv();
 
-type SettingSeed = { key: string; value: unknown };
-
-const SETTINGS: SettingSeed[] = [
-  { key: 'clinic_name', value: 'Finan Speciality Dental Clinic' },
-  { key: 'currency', value: 'ETB' },
-  { key: 'timezone', value: 'Africa/Addis_Ababa' },
-  {
-    key: 'working_hours',
-    value: {
-      mon: { open: '08:00', close: '17:00', closed: false },
-      tue: { open: '08:00', close: '17:00', closed: false },
-      wed: { open: '08:00', close: '17:00', closed: false },
-      thu: { open: '08:00', close: '17:00', closed: false },
-      fri: { open: '08:00', close: '17:00', closed: false },
-      sat: { open: '08:00', close: '12:00', closed: false },
-      sun: { open: '08:00', close: '12:00', closed: true },
-    },
-  },
-  { key: 'reminder_send_time', value: '14:00' },
-  { key: 'reminder_send_by_offset_minutes', value: 60 },
-  { key: 'followup_lead_days', value: 3 },
-  { key: 'recall_months', value: 12 },
-  { key: 'review_link', value: '' },
-  { key: 'sms_mode', value: 'MANUAL_LINK' },
-  { key: 'reception_can_send_campaigns', value: false },
-  { key: 'campaign_max_recipients', value: 300 },
-  { key: 'digest_enabled', value: false },
-  { key: 'digest_email', value: '' },
-  { key: 'default_language', value: 'en' },
-  { key: 'group_sms_allow_for_filtered', value: false },
-  { key: 'group_sms_max_recipients', value: 15 },
-];
-
 async function main(): Promise<void> {
   // Fail fast on bad/missing env (validated by src/env.ts).
   const { env } = await import('../src/env');
   const { PrismaClient } = await import('@prisma/client');
-  const { seedPatientRows, TAG_NAMES, tagColorFor } =
-    process.env.SEED_DEMO_DATA === 'true'
-      ? await import('./seed-patients')
-      : { seedPatientRows: () => [], TAG_NAMES: [], tagColorFor: () => '' };
-  const { seedServicesAndSales } = await import('./seed-services');
+  const { applyDentalTemplate } = await import('./tenant-template');
   const { seedHr } = await import('./seed-hr');
   const { seedAppointments } = await import('./seed-appointments');
-    const { seedMessageTemplates } = await import('./seed-messages');
   const { seedMessageLibrary, seedAudiences } = await import('./seed-library');
-    const { seedSiteContent } = await import('./seed-content');
   const prisma = new PrismaClient();
 
   try {
     const tenantId = await ensureSeedTenant(prisma);
 
-    for (const setting of SETTINGS) {
-      await prisma.setting.upsert({
-        where: { tenantId_key: { tenantId, key: setting.key } },
-        update: {},
-        create: { tenantId, key: setting.key, value: setting.value as Prisma.InputJsonValue },
-      });
-    }
-    console.log(`✓ ${SETTINGS.length} settings`);
-
-    const doctor = await prisma.staff.upsert({
-      where: { id: 'staff-doctor-1' },
-      update: { fullName: 'Dr. Abebe Kebede', jobTitle: 'Ophthalmologist', isDoctor: true },
-      create: {
-        tenantId,
-        id: 'staff-doctor-1',
-        fullName: 'Dr. Abebe Kebede',
-        jobTitle: 'Ophthalmologist',
-        isDoctor: true,
-        specialty: 'Ophthalmology',
-        showOnWebsite: true,
-      },
+    const template = await applyDentalTemplate(prisma, tenantId, {
+      clinicName: 'Finan Speciality Dental Clinic',
+      legacy: true,
+      demoData: process.env.SEED_DEMO_DATA === 'true',
     });
-    console.log(`✓ staff: ${doctor.fullName}`);
+    console.log(
+      `✓ dental template: ${template.services} services, ${template.templates} message templates, ` +
+        `${template.content} site-content keys, ${template.demoPatients} demo patients`,
+    );
+
+    const doctor = await prisma.staff.findFirst({
+      where: { tenantId, isDoctor: true, showOnWebsite: true },
+      orderBy: { createdAt: 'asc' },
+      select: { id: true, fullName: true },
+    });
 
     const users = [
       {
@@ -106,7 +58,6 @@ async function main(): Promise<void> {
         role: 'OWNER' as const,
         password: env.OWNER_PASSWORD,
         staffId: null,
-        mustChangePassword: false,
       },
       {
         email: env.RECEPTION_EMAIL.toLowerCase(),
@@ -114,15 +65,13 @@ async function main(): Promise<void> {
         role: 'RECEPTION' as const,
         password: env.RECEPTION_PASSWORD,
         staffId: null,
-        mustChangePassword: false,
       },
       {
         email: env.STAFF_EMAIL.toLowerCase(),
-        name: 'Dr. Abebe Kebede',
+        name: doctor?.fullName ?? 'Clinic Dentist',
         role: 'STAFF' as const,
         password: env.STAFF_PASSWORD,
-        staffId: doctor.id,
-        mustChangePassword: false,
+        staffId: doctor?.id ?? null,
       },
     ];
 
@@ -134,7 +83,7 @@ async function main(): Promise<void> {
         role: user.role,
         staffId: user.staffId,
         active: true,
-        mustChangePassword: user.mustChangePassword,
+        mustChangePassword: false,
         failedLoginCount: 0,
         lockedUntil: null,
       };
@@ -146,85 +95,21 @@ async function main(): Promise<void> {
       console.log(`✓ user ${user.email} (${user.role})`);
     }
 
-    // --- Tags + demo patients (idempotent, phones normalized by src/lib/phone) ---
-    const owner = await prisma.user.findFirst({
-      where: { role: 'OWNER' },
-      orderBy: { createdAt: 'asc' },
-      select: { id: true },
-    });
-
-    const tagIds = new Map<string, string>();
-    for (const name of TAG_NAMES) {
-      const tag = await prisma.tag.upsert({
-        where: { tenantId_name: { tenantId, name } },
-        update: {},
-        create: { tenantId, name, color: tagColorFor(name) },
-      });
-      tagIds.set(name, tag.id);
-    }
-
-    const rows = seedPatientRows();
-    for (const row of rows) {
-      const data = {
-        tenantId,
-        fullName: row.fullName,
-        phoneE164: row.phoneE164 ?? row.phone,
-        sex: row.sex,
-        birthDate: row.birthDateDate,
-        preferredLanguage: row.preferredLanguage,
-        notesNonClinical: row.notesNonClinical ?? null,
-        doNotMessage: row.doNotMessage ?? false,
-        doNotMessageReason: row.doNotMessageReason ?? null,
-        active: row.active ?? true,
-        createdBy: owner?.id ?? 'seed',
-      };
-      const patient = await prisma.patient.upsert({
-        where: { tenantId_phoneE164: { tenantId, phoneE164: row.phoneE164 ?? row.phone } },
-        update: data,
-        create: data,
-      });
-
-      for (const tagName of row.tags) {
-        const tagId = tagIds.get(tagName);
-        if (!tagId) continue;
-        await prisma.patientTag.upsert({
-          where: { patientId_tagId: { patientId: patient.id, tagId } },
-          update: {},
-          create: { tenantId, patientId: patient.id, tagId },
-        });
-      }
-    }
-
-    // Birthday (month/day) lookup index — tenant-aware expression index, safe to re-run.
-    await prisma.$executeRawUnsafe(
-      'CREATE INDEX IF NOT EXISTS "Patient_tenantId_birthday_md_idx" ON "Patient" ' +
-        '("tenantId", (EXTRACT(MONTH FROM "birthDate") * 100 + EXTRACT(DAY FROM "birthDate")))',
-    );
-    console.log(
-      `✓ ${rows.length} patients, ${tagIds.size} tags, birthday index`,
-    );
-
-    // --- Services + demo sales (idempotent) ---
-    await seedServicesAndSales(prisma);
-
     // --- HR: staff, shifts, templates, leave (idempotent) ---
     await seedHr(prisma);
 
     // --- Appointments, website requests, follow-ups (idempotent) ---
     await seedAppointments(prisma);
 
-    // --- SMS templates: English + Amharic drafts (idempotent) ---
-    const templates = await seedMessageTemplates(prisma);
-    console.log(`✓ ${templates} message templates (en + am)`);
-
     // --- Message library + saved audiences (idempotent) ---
+    const owner = await prisma.user.findFirst({
+      where: { tenantId, role: 'OWNER' },
+      orderBy: { createdAt: 'asc' },
+      select: { id: true },
+    });
     const library = await seedMessageLibrary(prisma, owner?.id ?? 'seed');
     const audiences = await seedAudiences(prisma, owner?.id ?? 'seed');
     console.log(`✓ ${library} library messages, ${audiences} saved audiences`);
-
-    // --- Public website content + public services (idempotent) ---
-    const content = await seedSiteContent(prisma);
-    console.log(`✓ ${content.keys} site-content keys, ${content.publicServices} public services`);
 
     console.log('Seed complete.');
   } finally {

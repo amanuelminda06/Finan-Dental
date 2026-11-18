@@ -1,5 +1,4 @@
 import type { Locale } from '@/i18n/config';
-import { brand } from '@/config/brand';
 
 /**
  * CMS-lite content keys. Values live in the `SiteContent` table (bilingual) and
@@ -68,8 +67,8 @@ export const DEFAULT_CONTENT: Record<SiteContentKey, Bilingual> = {
     am: 'ይህ ድህረ ገጽ ለአጠቃላይ መረጃ ብቻ ነው፤ የህክምና ምክርን አይተካም።',
   },
   privacy_body: {
-    en: `PLACEHOLDER — This privacy policy has not been finalised. ${brand.clinicName} collects the information you submit through the appointment request form (your name, phone number, preferred date and time) only to contact you about your request. We do not ask for or store medical details on this website. The clinic must replace this text with its reviewed privacy policy before launch.`,
-    am: 'ጊዜያዊ — ይህ የግላዊነት ፖሊሲ አልተጠናቀቀም። ፊናን ስፔሻሊቲ የጥርስ ክሊኒክ በቀጠሮ ጥያቄ ቅጽ የሚያስገቡትን መረጃ (ስምዎን፣ ስልክ ቁጥርዎን፣ የሚፈልጉትን ቀንና ሰዓት) ስለ ጥያቄዎ ለማግኘት ብቻ ይሰበስባል። በዚህ ድህረ ገጽ የህክምና ዝርዝር አንጠይቅም አናከማችም። ክሊኒኩ ከመጀመሩ በፊት ይህን ጽሑፍ በተገመገመ የግላዊነት ፖሊሲ መተካት አለበት።',
+    en: 'PLACEHOLDER — This privacy policy has not been finalised. This clinic collects the information you submit through the appointment request form (your name, phone number, preferred date and time) only to contact you about your request. We do not ask for or store medical details on this website. The clinic must replace this text with its reviewed privacy policy before launch.',
+    am: 'ጊዜያዊ — ይህ የግላዊነት ፖሊሲ አልተጠናቀቀም። ይህ ክሊኒክ በቀጠሮ ጥያቄ ቅጽ የሚያስገቡትን መረጃ (ስምዎን፣ ስልክ ቁጥርዎን፣ የሚፈልጉትን ቀንና ሰዓት) ስለ ጥያቄዎ ለማግኘት ብቻ ይሰበስባል። በዚህ ድህረ ገጽ የህክምና ዝርዝር አንጠይቅም አናከማችም። ክሊኒኩ ከመጀመሩ በፊት ይህን ጽሑፍ በተገመገመ የግላዊነት ፖሊሲ መተካት አለበት።',
   },
   announcement_text: {
     en: '',
@@ -138,32 +137,32 @@ export const DEFAULT_CONTENT: Record<SiteContentKey, Bilingual> = {
     ]),
   },
   contact_address: {
-    en: brand.address,
-    am: brand.address,
+    en: '',
+    am: '',
   },
   contact_phone_primary: {
-    en: brand.phones[0],
-    am: brand.phones[0],
+    en: '',
+    am: '',
   },
   contact_phone_backup: {
-    en: brand.phones[1],
-    am: brand.phones[1],
+    en: '',
+    am: '',
   },
   contact_map_url: {
     en: 'https://maps.app.goo.gl/Cyye5QKD3qjUWVXA6',
     am: 'https://maps.app.goo.gl/Cyye5QKD3qjUWVXA6',
   },
   social_tiktok: {
-    en: 'https://tiktok.com/@finandentalclinic',
-    am: 'https://tiktok.com/@finandentalclinic',
+    en: '',
+    am: '',
   },
   social_instagram: {
-    en: 'https://instagram.com/finandentalclinic',
-    am: 'https://instagram.com/finandentalclinic',
+    en: '',
+    am: '',
   },
   social_telegram: {
-    en: `https://t.me/${brand.telegram.slice(1)}`,
-    am: `https://t.me/${brand.telegram.slice(1)}`,
+    en: '',
+    am: '',
   },
   doctors_intro: {
     en: 'Meet our dental team — skilled dentists combining modern equipment with attentive, personal care.',

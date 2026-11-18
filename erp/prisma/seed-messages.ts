@@ -1,10 +1,11 @@
 import type { PrismaClient } from '@prisma/client';
-import { ensureSeedTenant } from './seed-tenant';
+import type { MessageTemplateKey } from '@prisma/client';
 
 /**
- * Seeded SMS templates (en + am). Amharic bodies are first-pass drafts marked
- * "needs native review" in the template editor — the clinic should refine them
- * before going live. Variables are limited to `TEMPLATE_VARIABLES`.
+ * Seeded SMS templates (en + am) for every clinic. Amharic bodies are first-pass
+ * drafts marked "needs native review" in the template editor — the clinic should
+ * refine them before going live. The clinic name is supplied at render time by
+ * `TenantBrand`, never baked into the stored body.
  */
 
 type Language = 'en' | 'am';
@@ -42,7 +43,6 @@ export const TEMPLATES: Record<string, Record<Language, string>> = {
     en: 'Hello {name}, your glasses are ready at {clinic}. You can collect them during working hours.',
     am: 'ሰላም {name}፣ መነጽርዎ በ{clinic} ተዘጋጅቷል። በስራ ሰዓት መውሰድ ይችላሉ።',
   },
-
   THANK_YOU: {
     en: 'Thank you for visiting {clinic}, {name}. We hope you feel better.\nPlease leave us a review: {review_link}',
     am: 'ስለ ጉብኝትዎ እናመሰግናለን {name}። እንዲሻሻልልዎ ተስፋ እናደርጋለን።\nአስተያየትዎን ይስጡን: {review_link}',
@@ -65,17 +65,16 @@ export const TEMPLATES: Record<string, Record<Language, string>> = {
   },
 };
 
-export async function seedMessageTemplates(prisma: PrismaClient): Promise<number> {
-  const tenantId = await ensureSeedTenant(prisma);
+export async function seedMessageTemplates(prisma: PrismaClient, tenantId: string): Promise<number> {
   let count = 0;
   for (const [key, bodies] of Object.entries(TEMPLATES)) {
     for (const language of ['en', 'am'] as const) {
       await prisma.messageTemplate.upsert({
         where: {
-          tenantId_key_language: { tenantId, key: key as never, language },
+          tenantId_key_language: { tenantId, key: key as MessageTemplateKey, language },
         },
         update: {},
-        create: { tenantId, key: key as never, language, body: bodies[language], active: true },
+        create: { tenantId, key: key as MessageTemplateKey, language, body: bodies[language], active: true },
       });
       count += 1;
     }
