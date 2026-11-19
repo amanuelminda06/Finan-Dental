@@ -167,6 +167,7 @@ export async function createTenant(input: {
 
   await applyDentalTemplate(basePrisma, tenant.id, {
     clinicName: tenant.name,
+    slug: tenant.slug,
     shortName: tenant.name.replace(/\s*/g, '').slice(0, 24) || tenant.slug,
     smsSenderName: (tenant.name.replace(/\s*/g, '').slice(0, 24) || tenant.slug).slice(0, 11),
     demoData: input.demoData,

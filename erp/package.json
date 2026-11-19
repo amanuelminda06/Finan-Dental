@@ -17,6 +17,7 @@
     "db:deploy": "prisma migrate deploy",
     "db:seed": "tsx prisma/seed.ts",
     "seed:platform": "tsx scripts/seed-platform.ts",
+    "hero:set": "tsx scripts/set-tenant-hero.ts",
     "db:load": "tsx prisma/seed-load.ts",
     "db:reset": "prisma migrate reset --force",
     "db:studio": "prisma studio",

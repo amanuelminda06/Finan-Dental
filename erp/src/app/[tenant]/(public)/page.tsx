@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import TenantImage from '@/components/TenantImage';
 import { TenantLink as Link } from '@/components/tenant-navigation';
 import { telLink } from '@/lib/phone';
+import { tenantHref } from '@/lib/tenant-path';
 import { getRequestTenant } from '@/lib/tenant-request';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { getPublicDoctorStatus } from '@/modules/hr';
@@ -43,15 +44,18 @@ type DisplayTestimonial = { name: string; text: string; rating?: number | null }
 export default async function HomePage() {
   const t = await getTranslations('site');
   const locale = await getLocale();
-  const [content, services, profile, doctors, approvedFeedback, tenantBrand] = await Promise.all([
-    getSiteContent(),
-    getPublicServices(),
-    getClinicProfile(),
-    getPublicDoctorStatus(),
-    getPublicFeedbackTestimonials(),
-    getTenantBrand(),
-  ]);
+  const [content, services, profile, doctors, approvedFeedback, tenantBrand, tenant] =
+    await Promise.all([
+      getSiteContent(),
+      getPublicServices(),
+      getClinicProfile(),
+      getPublicDoctorStatus(),
+      getPublicFeedbackTestimonials(),
+      getTenantBrand(),
+      getRequestTenant(),
+    ]);
 
+  const heroUrl = tenantBrand.heroUrl ? tenantHref(tenantBrand.heroUrl, tenant.slug) : null;
   const phonePrimary = tenantBrand.phones[0] ?? null;
   const phonePrimaryHref = telLink(phonePrimary);
   const featured = services.slice(0, 6);
@@ -92,11 +96,11 @@ export default async function HomePage() {
   return (
     <>
       <section className="relative overflow-hidden bg-white -mt-16">
-        {tenantBrand.heroUrl ? (
+        {heroUrl ? (
           <div
             className="absolute inset-0"
             style={{
-              backgroundImage: `url(${tenantBrand.heroUrl})`,
+              backgroundImage: `url(${heroUrl})`,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
               filter: 'blur(3px)',

@@ -128,6 +128,12 @@ test.describe('URL tenant isolation', () => {
     const readClinic = async (slug: string) => {
       const response = await page.goto(`/${slug}`);
       expect(response?.status(), `public home for ${slug}`).toBe(200);
+
+      // The home page lives in the /(public) route group, so it must inherit
+      // the same site chrome as every other public page.
+      expect(await page.locator('header nav').count(), `header nav for ${slug}`).toBeGreaterThan(0);
+      expect(await page.locator('footer').count(), `footer for ${slug}`).toBeGreaterThan(0);
+
       const [title, siteName, primary, html] = await Promise.all([
         page.title(),
         page.locator('meta[property="og:site_name"]').getAttribute('content'),
@@ -165,9 +171,13 @@ test.describe('URL tenant isolation', () => {
     expect(homeB.html).not.toContain(a.clinicName);
 
     // Tenant-owned images: the hero and first service image are stored under
-    // the tenant id and served through that tenant's URL tree.
-    if (a.heroUrl) expect(homeA.html).toContain(a.id);
-    if (b.heroUrl) expect(homeB.html).toContain(b.id);
+    // the tenant id and served through that tenant's URL tree. The starter
+    // hero files are different for each clinic.
+    expect(a.heroUrl).not.toBeNull();
+    expect(b.heroUrl).not.toBeNull();
+    if (a.heroUrl) expect(homeA.html).toContain(a.heroUrl);
+    if (b.heroUrl) expect(homeB.html).toContain(b.heroUrl);
+    expect(a.heroUrl?.split('/').pop()).not.toBe(b.heroUrl?.split('/').pop());
     expect(a.serviceImageUrl).toContain(`/${a.id}/`);
     expect(b.serviceImageUrl).toContain(`/${b.id}/`);
     expect(a.serviceImageUrl).not.toContain(b.id);

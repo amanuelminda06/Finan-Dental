@@ -155,6 +155,7 @@ async function main(): Promise<void> {
         const shortName = name.replace(/\s*/g, '').slice(0, 24) || slug;
         const template = await applyDentalTemplate(prisma, tenant.id, {
           clinicName: name,
+          slug,
           shortName,
           smsSenderName: shortName.slice(0, 11),
           demoData: args.includes('--demo-data'),

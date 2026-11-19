@@ -14,6 +14,8 @@ import { seedPatientRows, TAG_NAMES, tagColorFor } from './seed-patients';
  */
 export type ApplyDentalTemplateOptions = {
   clinicName: string;
+  /** Used to pick tenant-specific starter images such as the hero photo. */
+  slug?: string;
   shortName?: string;
   smsSenderName?: string;
   /** Legacy demo values from the old global config; never used for new clinics. */
@@ -159,7 +161,7 @@ export async function applyDentalTemplate(
   options: ApplyDentalTemplateOptions,
 ): Promise<DentalTemplateResult> {
   const legacy = options.legacy ?? false;
-  const assets = await seedBrandAssets(tenantId, { legacy });
+  const assets = await seedBrandAssets(tenantId, { legacy, slug: options.slug });
   const brand = neutralTenantBrand({
     clinicName: options.clinicName,
     shortName: options.shortName,

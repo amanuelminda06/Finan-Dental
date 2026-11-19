@@ -23,7 +23,9 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { PrismaClient } from '@prisma/client';
 import { parseTenantSlug } from '../src/lib/tenant-slug';
+import { tenantHref } from '../src/lib/tenant-path';
 import { brandAssetUrl } from '../src/modules/tenant-brand/defaults';
+import { assignTenantHero } from '../prisma/tenant-hero-assets';
 import { previewTemplate } from '../src/modules/messaging/templates';
 
 const SECOND_CLINIC = 'Bright Dental';
@@ -93,6 +95,8 @@ async function snapshotTenant(
   if (!brand) throw new Error(`Tenant "${row.slug}" has no TenantBrand row`);
 
   const clinicName = brand.clinicName;
+  const brandHeroUrl = brandAssetUrl(brand.heroKey);
+  const heroUrl = brandHeroUrl ? tenantHref(brandHeroUrl, row.slug) : null;
   const reminderClinic =
     typeof clinicSetting?.value === 'string' && clinicSetting.value ? clinicSetting.value : clinicName;
   const reminder = reminderRow
@@ -112,7 +116,7 @@ async function snapshotTenant(
     clinicName,
     loginPath: `/${row.slug}/erp/login`,
     colors: brand.colors as { primary: string; secondary: string; accent: string },
-    heroUrl: brand.heroKey ? brandAssetUrl(brand.heroKey) : null,
+    heroUrl,
     logoUrl: brand.logoKey ? brandAssetUrl(brand.logoKey) : null,
     serviceNames: services.map((service) => service.nameEn),
     serviceImageUrl: services.find((service) => service.imageUrl)?.imageUrl ?? null,
@@ -213,6 +217,9 @@ async function main(): Promise<void> {
       update: distinctBrand,
       create: { tenantId: second.id, ...distinctBrand },
     });
+    // Keep the demo tenant's hero deterministic even if it was created before
+    // the tenant-specific starter images existed.
+    await assignTenantHero(prisma, second);
     await prisma.setting.upsert({
       where: { tenantId_key: { tenantId: second.id, key: 'clinic_name' } },
       update: { value: SECOND_CLINIC },

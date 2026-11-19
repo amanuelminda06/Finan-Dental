@@ -3,6 +3,7 @@ import { seedAssetPath } from '../src/lib/seed-asset-path';
 import { storage } from '../src/lib/storage';
 import { runWithTenant } from '../src/lib/tenant-scope';
 import { SERVICES } from '../src/config/services';
+import { heroAssetForSlug } from './tenant-hero-assets';
 
 /**
  * Static files under `public/` are seed defaults only. They are copied into the
@@ -40,12 +41,17 @@ async function copy(tenantId: string, source: string, key: string): Promise<stri
 
 export async function seedBrandAssets(
   tenantId: string,
-  options: { legacy?: boolean } = {},
+  options: { legacy?: boolean; slug?: string } = {},
 ): Promise<SeedAssetKeys> {
   // DatabaseStorage resolves the tenant from this explicit scope, so a seed or
   // CLI run can never write an image into another clinic's storage.
   return runWithTenant(tenantId, async () => {
-    const heroKey = await copy(tenantId, 'hero.jpg', `${tenantId}/seed-hero.jpg`);
+    const heroAsset = heroAssetForSlug(options.slug);
+    const heroKey = await copy(
+      tenantId,
+      heroAsset?.file ?? 'hero.jpg',
+      heroAsset ? `${tenantId}/${heroAsset.key}` : `${tenantId}/seed-hero.jpg`,
+    );
     const heroSecondaryKey = await copy(
       tenantId,
       'hero-serene-tooth.jpg',

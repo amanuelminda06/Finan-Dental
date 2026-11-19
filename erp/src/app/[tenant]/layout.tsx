@@ -13,10 +13,10 @@ import { getTenantBrand } from '@/modules/tenant-brand/queries';
  * mix two clinics. A session from another clinic is allowed to view the public
  * site; protected pages additionally call assertSessionTenant().
  *
- * Deliberately contains no site chrome: the public site and the ERP are
- * siblings below this segment, so the ERP does not inherit the public header
- * and footer. The brand variables below override the neutral root values for
- * every page in this clinic.
+ * Deliberately contains no site chrome: every public page (including the
+ * home page) lives in the `/(public)` route group, while the ERP is a sibling
+ * path. This keeps the public header/footer off ERP screens. The brand
+ * variables below override the neutral root values for every page in this clinic.
  */
 export async function generateMetadata(): Promise<Metadata> {
   const brand = await getTenantBrand();

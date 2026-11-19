@@ -89,6 +89,7 @@ async function main(): Promise<void> {
 
     const template = await applyDentalTemplate(prisma, tenant.id, {
       clinicName: 'Finan Speciality Dental Clinic',
+      slug: PLATFORM_TENANT_SLUG,
       legacy: true,
       demoData: true,
     });
