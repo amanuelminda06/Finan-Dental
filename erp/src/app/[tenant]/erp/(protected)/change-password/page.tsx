@@ -2,10 +2,7 @@ import { getTranslations } from 'next-intl/server';
 import { requireAuth } from '@/lib/require-role';
 import ChangePasswordForm from '@/modules/auth/components/ChangePasswordForm';
 
-/**
- * Uses requireAuth (not requirePageRole) so it stays reachable while the
- * forced first-login password change is pending.
- */
+/** Voluntary password change; authenticated users can open it at any time. */
 export default async function ChangePasswordPage() {
   await requireAuth();
   const t = await getTranslations('changePassword');

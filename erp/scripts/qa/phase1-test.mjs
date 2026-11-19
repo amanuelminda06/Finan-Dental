@@ -164,8 +164,8 @@ await req('/api/auth/callback/credentials', {
 const afterRate31 = await auditCount(`action='LOGIN_FAILED' and "entityId"='email:ghost@example.org'`);
 check('F2 the 31st attempt is rate-limited (no audit, no DB touch)', afterRate31 - afterRate30 === 0, `delta=${afterRate31 - afterRate30}`);
 
-// ---- G: unlock reception, then force-change redirect ----
-await db.query(`update "User" set "failedLoginCount"=0, "lockedUntil"=null where id=$1`, [RECEPTION_ID]);
+// ---- G: unlock reception; there is no forced password change ----
+await db.query(`update "User" set "mustChangePassword"=false, "failedLoginCount"=0, "lockedUntil"=null where id=$1`, [RECEPTION_ID]);
 
 let rc = await req('/api/auth/csrf');
 const receptCsrf = (await rc.json()).csrfToken;
@@ -177,25 +177,17 @@ check('G1 reception logs in after unlock', rc.status === 302 && (rc.headers.get(
 
 r = await req('/api/auth/session');
 const rs = await r.json();
-check('G2 reception session flags forced password change', rs.user?.mustChangePassword === true, JSON.stringify(rs.user));
+check('G2 reception session has no forced password change', rs.user?.mustChangePassword === false, JSON.stringify(rs.user));
 
 r = await req(`${APP_PATH}/dashboard`);
-const rloc = r.headers.get('location') || '';
-const body = await r.text();
-const flightRedirect = (body.match(/NEXT_REDIRECT;replace;([^;\\\\"']+)/) || [])[1] || '';
-check(
-  'G3 forced-change user is pushed to /change-password',
-  ([302, 307].includes(r.status) && rloc.endsWith('/change-password')) || flightRedirect.endsWith('/change-password'),
-  `status=${r.status} loc=${rloc} flight=${flightRedirect}`,
-);
+check('G3 reception reaches /dashboard', r.status === 200, `status=${r.status}`);
 
-// ---- G4: role gate precedence (mustChangePassword → change-password, not 403)
-await db.query(`update "User" set "mustChangePassword"=true where id=$1`, [RECEPTION_ID]);
+// ---- G4: the wrong role still redirects to /403 ----
 r = await req(`${APP_PATH}/users`);
 const usersBody = await r.text();
 const usersFlight = (usersBody.match(/NEXT_REDIRECT;replace;([^;\\\\"']+)/) || [])[1] || '';
-check('G4 mustChangePassword takes precedence (redirects to /change-password before FORBIDDEN)',
-  ([302, 307].includes(r.status) && (r.headers.get('location') || '').endsWith('/change-password')) || usersFlight.endsWith('/change-password'),
+check('G4 reception /users redirects to /403',
+  ([302, 307].includes(r.status) && (r.headers.get('location') || '').endsWith('/403')) || usersFlight.endsWith('/403'),
   `status=${r.status} flight=${usersFlight}`);
 
 // ---- H: logout clears the session ----

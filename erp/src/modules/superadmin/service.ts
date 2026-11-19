@@ -261,7 +261,7 @@ export async function activateTenant(slug: string): Promise<void> {
     }),
     basePrisma.user.updateMany({
       where: { tenantId: tenant.id },
-      data: { mustChangePassword: true, failedLoginCount: 0, lockedUntil: null },
+      data: { failedLoginCount: 0, lockedUntil: null },
     }),
   ]);
   await audit(tenant.id, 'TENANT_ACTIVATED');

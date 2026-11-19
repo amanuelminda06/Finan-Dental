@@ -36,7 +36,7 @@ export function fail(
  * Wraps a server action with authentication + authorization + validation:
  * - not signed in → rethrows Next's redirect() (never swallowed)
  * - wrong role    → { ok:false, error:'forbidden' }
- * - forced pw change → { ok:false, error:'passwordChangeRequired' }
+ * - legacy forced-change error → { ok:false, error:'passwordChangeRequired' }
  * - zod failure   → { ok:false, error:'validationError', fields }
  * - anything else → rethrown (unknown errors surface in server logs)
  */

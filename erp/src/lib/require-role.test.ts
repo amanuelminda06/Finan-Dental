@@ -36,7 +36,6 @@ function owner(overrides: Record<string, unknown> = {}) {
     email: 'owner@clinic.test',
     name: 'Owner',
     role: 'OWNER',
-    mustChangePassword: false,
     ...overrides,
   };
 }
@@ -67,20 +66,18 @@ describe('requireRole', () => {
     });
   });
 
-  it('blocks while a password change is still pending', async () => {
+  it('ignores a legacy mustChangePassword flag', async () => {
     withSession(owner({ mustChangePassword: true }));
-    await expect(requireRole(['OWNER'])).rejects.toMatchObject({
-      code: 'PASSWORD_CHANGE_REQUIRED',
-    });
+    const user = await requireRole(['OWNER']);
+    expect(user.id).toBe('user-1');
   });
 });
 
 describe('requireAuth', () => {
-  it('stays reachable while a password change is pending', async () => {
+  it('allows a user even with the legacy flag set', async () => {
     withSession(owner({ mustChangePassword: true }));
     const user = await requireAuth();
     expect(user.id).toBe('user-1');
-    expect(user.mustChangePassword).toBe(true);
   });
 
   it('still redirects anonymous requests', async () => {
@@ -95,9 +92,10 @@ describe('requirePageRole', () => {
     await expect(requirePageRole(['OWNER'])).rejects.toThrow('REDIRECT:/403');
   });
 
-  it('maps a pending password change to /change-password', async () => {
+  it('does not redirect a legacy flag to /change-password', async () => {
     withSession(owner({ mustChangePassword: true }));
-    await expect(requirePageRole(['OWNER'])).rejects.toThrow('REDIRECT:/change-password');
+    const user = await requirePageRole(['OWNER']);
+    expect(user.role).toBe('OWNER');
   });
 
   it('passes through a successful check', async () => {

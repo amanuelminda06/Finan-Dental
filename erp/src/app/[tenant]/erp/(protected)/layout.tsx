@@ -33,7 +33,6 @@ export default async function ProtectedLayout({ children }: { children: React.Re
           name: user.name ?? user.email ?? '',
           email: user.email ?? '',
           role: user.role,
-          mustChangePassword: user.mustChangePassword,
         }}
         loginUrl={loginPath}
         messageCount={messageCount}

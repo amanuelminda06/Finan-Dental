@@ -111,11 +111,11 @@ DATABASE_URL="$DIRECT_URL" npm run tenant:create -- \
 The CLI checks the slug (3–40 lowercase letters/digits/hyphens, reserved names
 rejected), prints `Database: <host>:<port>/<database>`, seeds the dental
 template into **that tenant only** and creates OWNER/RECEPTION/DOCTOR trial
-accounts with `mustChangePassword: false`. Their logins are fixed for every
+accounts. Their logins are fixed for every
 tenant (`owner`/`owner123`, `reception`/`reception123`, `doctor`/`doctor123`) —
 no env vars and no credentials file. Before taking a clinic live, run
-`npm run tenant:activate -- <slug> --allow-hosted` to set it ACTIVE and force
-every user through a strong-password change. The login page is open at
+`npm run tenant:activate -- <slug> --allow-hosted` to set it ACTIVE; password
+changes are voluntary from the user menu. The login page is open at
 `/<slug>/erp/login`; tenant isolation comes from the URL, not from a secret path.
 
 Other maintenance commands:
@@ -176,7 +176,7 @@ limit, split the fan-out or move it to a long-running worker.
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `AUTH_SECRET`      | Generate a new value, set it in Vercel, redeploy. All existing JWT sessions are invalidated, so users sign in again.                                                                                                                             |
 | `CRON_SECRET`      | Set the new value in Vercel and in the scheduler together. Expect at most one failed run during the cutover.                                                                                                                                     |
-| Owner password     | OWNER resets it from `/<tenant>/erp/users`; `tenant:activate` forces all users through a strong-password change before go-live.                                                                                                             |
+| Owner password     | OWNER resets it from `/<tenant>/erp/users`, or any user changes their own from the user menu; no forced change at go-live.                                                                                                                |
 | Neon role password | Rotate in Neon, update `DATABASE_URL` and `DIRECT_URL` in Vercel, redeploy, and rerun the migration command with the new direct URL.                                                                                                             |
 
 

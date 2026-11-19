@@ -7,7 +7,7 @@ import { passwordError } from '@/lib/passwords';
 /**
  * Changes a user's own password after verifying the current one.
  * - enforces min length / common-password / personal-info rules
- * - clears mustChangePassword (first-login force)
+ * - clears the legacy mustChangePassword flag for old sessions
  * - audits PASSWORD_CHANGED (passwordHash values are redacted by writeAudit)
  * Throws ValidationError with field keys on failure.
  */

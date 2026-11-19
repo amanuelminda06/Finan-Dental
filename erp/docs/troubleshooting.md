@@ -34,12 +34,12 @@ tenant **and** IP is rate-limited (one tenant's attempts do not block another).
 An OWNER can reset the user's password from `/<tenant>/erp/users` (sends a
 one-time temp password). Check `/<tenant>/erp/audit` for `LOGIN_FAILED`.
 
-## Forced back to "Change password"
+## Changing your password
 
-Accounts created with `mustChangePassword` must change it before using any
-other page. After changing, the app re-signs you in. If you are stuck in a
-loop, sign out and in again; if it persists, an OWNER can toggle the flag by
-resetting the password.
+Password changes are voluntary in the free trial. Open "Change password" from
+the user menu at `/<tenant>/erp/change-password`; after a successful change the
+app signs you in again with the new password. There is no forced first-login
+gate and no support loop to escape.
 
 ## Forbidden page (403) for the wrong person
 

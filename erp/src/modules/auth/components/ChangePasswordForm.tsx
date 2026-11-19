@@ -8,11 +8,10 @@ import { changePasswordAction } from '@/modules/auth/actions';
 import type { ActionResult } from '@/lib/action';
 
 /**
- * Forced (and voluntary) password change.
+ * Voluntary password change from the user menu.
  *
  * After a successful change we immediately re-login with the NEW password so
- * the JWT claims refresh (mustChangePassword → false). Without this the old
- * claim would bounce the user back to this page.
+ * the JWT claims refresh and any legacy mustChangePassword claim is cleared.
  */
 export default function ChangePasswordForm() {
   const router = useRouter();

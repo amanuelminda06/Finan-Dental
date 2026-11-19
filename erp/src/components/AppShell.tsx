@@ -1,8 +1,7 @@
 'use client';
 
-import { TenantLink as Link, useTenantHref } from '@/components/tenant-navigation';
+import { TenantLink as Link } from '@/components/tenant-navigation';
 import { usePathname } from 'next/navigation';
-import { useTenantRouter as useRouter } from '@/components/tenant-navigation';
 import { useEffect, useState } from 'react';
 import { signOut } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
@@ -14,7 +13,7 @@ import NavModule from '@/components/NavModule';
 import { NAV_MODULES, type NavModule as NavModuleDef } from '@/modules/nav';
 
 type Props = {
-  user: { name: string; email: string; role: Role; mustChangePassword: boolean };
+  user: { name: string; email: string; role: Role };
   loginUrl: string;
   /** Messages due now or overdue → shown as a badge on /messages. */
   messageCount?: number;
@@ -37,17 +36,8 @@ export default function AppShell({
   children,
 }: Props) {
   const pathname = usePathname();
-  const router = useRouter();
-  const resolve = useTenantHref();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-
-  const forced = user.mustChangePassword && pathname !== resolve('/change-password');
-
-  // Forced password change: bounce every page except /change-password (rule 3).
-  useEffect(() => {
-    if (forced) router.replace('/change-password');
-  }, [forced, router]);
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
@@ -78,7 +68,6 @@ export default function AppShell({
       shortName={shortName}
       logoUrl={logoUrl}
       modules={modules}
-      forced={forced}
       drawerOpen={drawerOpen}
       setDrawerOpen={setDrawerOpen}
       menuOpen={menuOpen}
@@ -93,7 +82,6 @@ export default function AppShell({
 type ShellProps = Props & {
   modules: NavModuleDef[];
   trialBanner: boolean;
-  forced: boolean;
   drawerOpen: boolean;
   setDrawerOpen: (fn: (open: boolean) => boolean) => void;
   menuOpen: boolean;
@@ -109,7 +97,6 @@ function Shell({
   trialBannerText,
   shortName,
   logoUrl,
-  forced,
   drawerOpen,
   setDrawerOpen,
   menuOpen,
@@ -225,7 +212,7 @@ function Shell({
           ))}
         </aside>
 
-        <main className="min-w-0 flex-1 px-4 py-6 md:px-6">{forced ? null : children}</main>
+        <main className="min-w-0 flex-1 px-4 py-6 md:px-6">{children}</main>
       </div>
 
       {drawerOpen ? (

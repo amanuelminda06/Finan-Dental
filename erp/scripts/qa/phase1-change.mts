@@ -80,10 +80,10 @@ const login = async (password: string): Promise<boolean> => {
 check('K9 old password no longer works', (await login(seedPassword)) === false);
 check('K10 new password works', (await login(newPass)) === true);
 
-// cleanup: restore the seeded password + forced-change flag for repeat runs
+// cleanup: restore the seeded password for repeat runs
 import { hash } from '@node-rs/argon2';
 const seedHash = await hash(seedPassword);
-await prisma.user.update({ where: { id: u.id }, data: { passwordHash: seedHash, mustChangePassword: true } });
+await prisma.user.update({ where: { id: u.id }, data: { passwordHash: seedHash, mustChangePassword: false } });
 
 await prisma.$disconnect();
 console.log(`\nPHASE 1 CHANGE-PASSWORD: ${pass} passed, ${fail} failed`);

@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useState } from 'react';
+import { useActionState } from 'react';
 import { useTranslations } from 'next-intl';
 import ActionError from '@/components/ActionError';
 import { setUserPasswordAction } from '@/modules/users/actions';
@@ -23,7 +23,6 @@ export default function SetPasswordForm({ userId }: Props) {
     setUserPasswordAction,
     null,
   );
-  const [mustChange, setMustChange] = useState(false);
 
   const failed = !!state && !state.ok;
   const fields = failed ? state.fields : undefined;
@@ -86,18 +85,6 @@ export default function SetPasswordForm({ userId }: Props) {
           </p>
         ) : null}
       </div>
-
-      <label className="flex items-center gap-2 text-xs text-slate-600">
-        <input
-          type="checkbox"
-          name="mustChange"
-          value="true"
-          checked={mustChange}
-          disabled={pending}
-          onChange={(e) => setMustChange(e.target.checked)}
-        />
-        {t('mustChangeLabel')}
-      </label>
 
       <p className="text-xs text-slate-500">{t('setPasswordHint')}</p>
 

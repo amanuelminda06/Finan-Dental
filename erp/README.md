@@ -68,14 +68,14 @@ every tenant gets the fixed trial logins `owner`/`owner123`, `reception`/`recept
 
 Fixed trial logins (every tenant, short names accepted in the login field):
 
-| Role      | Login                        | First login                   |
+| Role      | Login                        | Password change               |
 | --------- | ---------------------------- | ----------------------------- |
-| OWNER     | `owner` / `owner123`         | no forced change during trial |
-| RECEPTION | `reception` / `reception123` | no forced change during trial |
-| STAFF     | `doctor` / `doctor123`       | no forced change during trial |
+| OWNER     | `owner` / `owner123`         | voluntary from the user menu  |
+| RECEPTION | `reception` / `reception123` | voluntary from the user menu  |
+| STAFF     | `doctor` / `doctor123`       | voluntary from the user menu  |
 
-`npm run tenant:activate -- <slug>` clears the trial and forces a strong-password
-change for all three accounts before real use.
+`npm run tenant:activate -- <slug>` clears the trial; passwords can be changed
+voluntarily from the user menu at any time.
 
 ## Commands
 
@@ -301,9 +301,8 @@ erp/
 - **Password**: argon2id, min 10 chars, common/personal-password rejection,
   15-min lockout after 5 failed attempts, rate limit (30/5 min) keyed by tenant
   **and** IP, every attempt audited (`LOGIN_FAILED`/`LOGIN_SUCCESS`).
-- **Forced first login**: `mustChangePassword` — pages redirect to
-  `/<tenant>/erp/change-password`, server actions refuse with `passwordChangeRequired`
-  until the password changes (JWT claim refreshed by auto re-login).
+- **Password change**: voluntary from the user menu at
+  `/<tenant>/erp/change-password`; the free trial has no forced first-login gate.
 - **Authorization**: `requireRole()` for actions, `requirePageRole()` for pages
   (wrong role → `/<tenant>/erp/403`), `<RoleGate>` for UI-only hiding. OWNER-only menus.
 - **HR**: OWNER manages shifts/templates and decides leave; RECEPTION sees the
@@ -391,9 +390,10 @@ verifies per-tenant public data and SEO.
    with another clinic's session); B's public site opens with A's session.
 2. Wrong password ×5 → account locked (15 min), `LOGIN_FAILED` rows with IP.
 3. Rate limit: >30 attempts / 5 min from one IP → rejected.
-4. Login as RECEPTION → forced to `/<tenant>/erp/change-password`; other pages bounce back
-   until the password changes; new password must pass strength rules.
-5. After change: lands on dashboard, session still valid, `PASSWORD_CHANGED` audited.
+4. Login as RECEPTION → lands on dashboard; owner-only pages still redirect to
+   `/<tenant>/erp/403`.
+5. Voluntary password change from the user menu: new password must pass strength
+   rules, session stays valid, `PASSWORD_CHANGED` audited.
 6. OWNER: create a user (weak password rejected, duplicate email rejected),
    edit, deactivate (cannot deactivate yourself), reset → temporary password.
 7. OWNER: staff CRUD + photo upload (reject >2 MB / wrong type), deactivate.

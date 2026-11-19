@@ -130,11 +130,11 @@ npm run tenant:delete -- <slug> [--force]
 `tenant:create` validates the slug and reserved names, applies the shared dental
 starter template (`prisma/tenant-template.ts`, also used by `db:seed`), creates a
 random legacy `loginSecret` placeholder, sets a 30-day trial, and creates OWNER,
-RECEPTION and DOCTOR accounts with `mustChangePassword=false`. Their logins are
+RECEPTION and DOCTOR trial accounts. Their logins are
 fixed for every tenant (`owner`/`owner123`, `reception`/`reception123`,
 `doctor`/`doctor123`), accepted as short names in the login field — no env vars
-and no credentials file. `tenant:activate` sets a tenant ACTIVE, clears
-`trialEndsAt` and forces every user to choose a strong password at next login.
+and no credentials file. `tenant:activate` sets a tenant ACTIVE and clears
+`trialEndsAt`; password changes remain voluntary.
 `--demo-data` adds invented patients. `tenant:delete` refuses an `ACTIVE` tenant without
 `--force`; suspended and expired tenants answer 404 everywhere.
 `tenant:reset-demo` preserves identity and OWNER-edited branding.

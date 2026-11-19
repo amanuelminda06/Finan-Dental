@@ -76,7 +76,7 @@ DATABASE_URL="$DIRECT_URL" npm run tenant:create -- \
   <slug> "<clinic name>" <owner email> --allow-hosted
 ```
 
-The CLI prints the target host/database and the fixed trial logins. Run `npm run tenant:activate -- <slug>` before real use to force a strong-password change. The OWNER
+The CLI prints the target host/database and the fixed trial logins. Run `npm run tenant:activate -- <slug>` before real use; password changes are voluntary from the user menu. The OWNER
 edits branding at `/<tenant>/erp/branding`;
 `public/` images are only seed defaults copied into the tenant's own storage.
 

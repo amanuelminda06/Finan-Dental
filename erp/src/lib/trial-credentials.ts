@@ -1,11 +1,11 @@
 /**
  * Fixed trial logins for every clinic.
  *
- * `tenant:create` and `seed:platform` create these three accounts with
- * `mustChangePassword=false`. They are deliberately short and bypass the
+ * `tenant:create` and `seed:platform` create these three accounts with no
+ * forced password change. They are deliberately short and bypass the
  * normal password-strength rules: they exist so an evaluator can sign in
- * immediately. `tenant:activate` flips a clinic live and forces every user
- * through the strong-password change flow before real use.
+ * immediately. `tenant:activate` flips a clinic live; password changes remain
+ * voluntary from the user menu.
  *
  * The login field accepts either the short name below or a full email. Short
  * names are resolved to a *role within the clinic in the URL*, never globally.

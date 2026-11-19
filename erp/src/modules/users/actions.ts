@@ -62,7 +62,6 @@ export async function createUserAction(
           role: values.role,
           staffId: values.staffId ?? null,
           passwordHash,
-          mustChangePassword: true,
         },
       });
     } catch (err) {
@@ -179,7 +178,7 @@ export async function resetUserPasswordAction(
 
     const before = await prisma.user.findUnique({
       where: { id },
-      select: { mustChangePassword: true },
+      select: { id: true },
     });
     if (!before) return fail('unknownError');
 
@@ -187,7 +186,7 @@ export async function resetUserPasswordAction(
     const passwordHash = await hash(tempPassword);
     await prisma.user.update({
       where: { id },
-      data: { passwordHash, mustChangePassword: true, failedLoginCount: 0, lockedUntil: null },
+      data: { passwordHash, failedLoginCount: 0, lockedUntil: null },
     });
 
     await writeAudit({
@@ -195,8 +194,6 @@ export async function resetUserPasswordAction(
       entity: 'User',
       entityId: id,
       action: 'USER_PASSWORD_RESET',
-      old: { mustChangePassword: before.mustChangePassword },
-      new: { mustChangePassword: true },
     });
 
     return ok({ tempPassword });
@@ -207,7 +204,6 @@ export async function resetUserPasswordAction(
  * Owner-chosen password for a user (direct edit, no temp-password roundtrip).
  * - enforces the same strength rules as self-service changes
  * - clears any lockout so the user can sign in right away
- * - optionally forces a change at next sign-in (checkbox)
  * - audits USER_PASSWORD_SET (the hash is redacted by writeAudit)
  */
 export async function setUserPasswordAction(
@@ -216,7 +212,6 @@ export async function setUserPasswordAction(
 ): Promise<ActionResult> {
   return withAuth(['OWNER'], async (actor) => {
     const id = String(formData.get('id') ?? '');
-    const mustChange = String(formData.get('mustChange') ?? '') === 'true';
     const values = validate(userPasswordSetSchema, {
       password: String(formData.get('password') ?? ''),
       confirmPassword: String(formData.get('confirmPassword') ?? ''),
@@ -224,7 +219,7 @@ export async function setUserPasswordAction(
 
     const before = await prisma.user.findUnique({
       where: { id },
-      select: { email: true, name: true, passwordHash: true, mustChangePassword: true },
+      select: { email: true, name: true },
     });
     if (!before) return fail('unknownError');
 
@@ -236,7 +231,6 @@ export async function setUserPasswordAction(
       where: { id },
       data: {
         passwordHash,
-        mustChangePassword: mustChange,
         failedLoginCount: 0,
         lockedUntil: null,
       },
@@ -247,8 +241,6 @@ export async function setUserPasswordAction(
       entity: 'User',
       entityId: id,
       action: 'USER_PASSWORD_SET',
-      old: { passwordHash: before.passwordHash, mustChangePassword: before.mustChangePassword },
-      new: { passwordHash, mustChangePassword: mustChange },
     });
 
     return ok();

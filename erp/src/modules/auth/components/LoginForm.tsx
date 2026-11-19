@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from 'react';
 import { useTenantRouter as useRouter } from '@/components/tenant-navigation';
-import { getSession, signIn } from 'next-auth/react';
+import { signIn } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 import LocaleSwitcher from '@/components/LocaleSwitcher';
 
@@ -30,11 +30,9 @@ export default function LoginForm() {
       return;
     }
 
-    // First-login forced change: the JWT still says mustChangePassword, so
-    // send the user straight to /change-password instead of the app. Otherwise
-    // land on the dashboard (the app root `/` is the public marketing site).
-    const session = await getSession();
-    router.push(session?.user?.mustChangePassword ? '/change-password' : '/dashboard');
+    // Password changes are voluntary in the free trial; land on the dashboard
+    // directly (the app root `/` is the public marketing site).
+    router.push('/dashboard');
     router.refresh();
   }
 

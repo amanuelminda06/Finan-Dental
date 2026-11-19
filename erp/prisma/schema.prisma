@@ -148,7 +148,7 @@ model User {
   staffId            String?
   staff              Staff?    @relation(fields: [staffId], references: [id])
   active             Boolean   @default(true)
-  mustChangePassword Boolean   @default(true)
+  mustChangePassword Boolean   @default(false)
   failedLoginCount   Int       @default(0)
   lockedUntil        DateTime? @db.Timestamptz
   lastLoginAt        DateTime? @db.Timestamptz

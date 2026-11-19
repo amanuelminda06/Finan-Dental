@@ -38,7 +38,7 @@ All are pre-existing categories. Sub-causes:
 
 | Sub-cause | Failures | Examples |
 | --- | --- | --- |
-| Stale redirect-shape expectations (the app intentionally renders `NEXT_REDIRECT` in the RSC flight payload; `cacheComponents` makes HTTP status differ from the flight payload) | 7 | `reception /users (no force)`, reception/staff role redirects |
+| Stale redirect-shape expectations (the app intentionally renders `NEXT_REDIRECT` in the RSC flight payload; `cacheComponents` makes HTTP status differ from the flight payload) | 7 | `reception /users`, reception/staff role redirects |
 | Missing confirmed sales after a clean seed | 4 | `sales list has receipts`, `owner sale detail` |
 | Public booking fails closed without Turnstile keys (environment, not code) | 4 | `public booking valid → 200`, `public booking auto-created a CONFIRMED appointment` |
 | CSV/template header drift | 3 | `CSV header`, `template columns`, `consent filter → 11 rows` |
@@ -46,7 +46,7 @@ All are pre-existing categories. Sub-causes:
 
 ### Full failing check names (current)
 
-1. `reception /users (no force) → 200 (flight redirect)`
+1. `reception /users → 200 (flight redirect)`
 2. `CSV header`
 3. `consent filter → 11 rows`
 4. `template columns`

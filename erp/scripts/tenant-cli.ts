@@ -216,7 +216,7 @@ async function main(): Promise<void> {
         console.log(`✓ created tenant ${slug} (${url.host}/${url.pathname.replace(/^\//, '')})`);
         console.log(`✓ dental template: ${template.services} services, ${template.templates} templates`);
         console.log(
-          '✓ trial logins: owner/owner123, reception/reception123, doctor/doctor123 (mustChangePassword=false)',
+          '✓ trial logins: owner/owner123, reception/reception123, doctor/doctor123 (no forced password change)',
         );
         console.log(`✓ open login: /${slug}/erp/login — run tenant:activate before real use`);
         break;
@@ -233,12 +233,10 @@ async function main(): Promise<void> {
           }),
           prisma.user.updateMany({
             where: { tenantId: tenant.id },
-            data: { mustChangePassword: true, failedLoginCount: 0, lockedUntil: null },
+            data: { failedLoginCount: 0, lockedUntil: null },
           }),
         ]);
-        console.log(
-          `✓ ${slug} is ACTIVE; ${users.count} user(s) must set a strong password at next login`,
-        );
+        console.log(`✓ ${slug} is ACTIVE; ${users.count} user(s) can sign in with their trial logins`);
         break;
       }
 

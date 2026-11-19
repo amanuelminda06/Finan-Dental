@@ -11,7 +11,6 @@ export type SessionUser = {
   email: string;
   name: string;
   role: Role;
-  mustChangePassword: boolean;
 };
 
 export type AuthErrorCode = 'UNAUTHENTICATED' | 'FORBIDDEN' | 'PASSWORD_CHANGE_REQUIRED';
@@ -31,11 +30,10 @@ function toSessionUser(user: NonNullable<Session>['user']): SessionUser {
     email: user.email ?? '',
     name: user.name ?? user.email ?? '',
     role: user.role,
-    mustChangePassword: user.mustChangePassword,
   };
 }
 
-/** Any authenticated user (used by /change-password — allowed even while forced). */
+/** Any authenticated user (used by the voluntary /change-password page). */
 export async function requireAuth(): Promise<SessionUser> {
   const session = await auth();
   const user = session?.user;
@@ -50,7 +48,6 @@ export async function requireAuth(): Promise<SessionUser> {
  *
  * - No session               → redirect to this clinic's open login page.
  * - Session from another clinic → 404 (see assertSessionTenant).
- * - mustChangePassword       → throws PASSWORD_CHANGE_REQUIRED.
  * - Wrong role               → throws FORBIDDEN.
  * - `redirect()` errors are never converted — they are not AuthorizationError.
  */
@@ -59,25 +56,20 @@ export async function requireRole(allowed: Role[]): Promise<SessionUser> {
   const user = session?.user;
   if (!user?.id) redirect(await getLoginPath());
   await assertSessionTenant(user.tenantId);
-  if (user.mustChangePassword) throw new AuthorizationError('PASSWORD_CHANGE_REQUIRED');
   if (!hasRole(user.role, allowed)) throw new AuthorizationError('FORBIDDEN');
   return toSessionUser(user);
 }
 
 /**
- * Page variant: turns AuthorizationError into friendly redirects —
- * 403 page for wrong role, change-password when a password change is forced.
+ * Page variant: turns a wrong-role AuthorizationError into a friendly 403
+ * redirect. Password changes are voluntary in the free trial, so there is no
+ * change-password gate here.
  */
 export async function requirePageRole(allowed: Role[]): Promise<SessionUser> {
   try {
     return await requireRole(allowed);
   } catch (err) {
-    if (err instanceof AuthorizationError) {
-      if (err.code === 'PASSWORD_CHANGE_REQUIRED') {
-        redirect(await tenantServerHref('/change-password'));
-      }
-      redirect(await tenantServerHref('/403'));
-    }
+    if (err instanceof AuthorizationError) redirect(await tenantServerHref('/403'));
     throw err;
   }
 }

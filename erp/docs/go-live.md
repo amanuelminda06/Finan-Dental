@@ -15,10 +15,9 @@ Work top to bottom. Do not launch with unchecked items in **Critical**.
       `reception`/`reception123`, `doctor`/`doctor123`) and need no env vars or
       credentials file.
 - [ ] First tenant created with `npm run tenant:create` (no demo data), then
-      `npm run tenant:activate -- <slug>` to set it ACTIVE and force every user
-      to choose a strong password at next login.
-- [ ] All three trial accounts have completed the forced strong-password change
-      (`mustChangePassword` now false) before handing the clinic to the customer.
+      `npm run tenant:activate -- <slug>` to set it ACTIVE.
+- [ ] Trial logins are understood to be temporary; ask the clinic to change its
+      passwords voluntarily from the user menu after handover.
 - [ ] Backup job scheduled **and** a restore has been rehearsed into a scratch
       database (`docs/backup-restore.md`).
 - [ ] Off-site backup copy configured.
@@ -27,8 +26,8 @@ Work top to bottom. Do not launch with unchecked items in **Critical**.
 
 ## Taking a tenant live (`tenant:activate`)
 
-Trial tenants are created with fixed short logins and `mustChangePassword=false`
-so the customer can evaluate immediately. Before real use, activate the clinic:
+Trial tenants are created with fixed short logins so the customer can evaluate
+immediately. Before real use, activate the clinic:
 
 ```bash
 # Local: embedded Postgres
@@ -38,9 +37,9 @@ npm run tenant:activate -- <slug>
 DATABASE_URL="$DIRECT_URL" npm run tenant:activate -- <slug> --allow-hosted
 ```
 
-The command sets `status=ACTIVE`, clears `trialEndsAt`, and sets
-`mustChangePassword=true` for **every** user in that tenant (also clearing
-lockout state). The next login for each account goes straight to
+The command sets `status=ACTIVE`, clears `trialEndsAt`, and clears lockout state
+for every user in that tenant. Password changes are voluntary, so accounts keep
+their trial logins until someone changes them from
 `/<tenant>/erp/change-password`, where the normal strength rules apply. The
 protected platform tenant (`finandentalclinic`) is refused — it is platform-owned
 and already live.
