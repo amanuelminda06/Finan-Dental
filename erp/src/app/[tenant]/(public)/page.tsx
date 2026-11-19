@@ -118,20 +118,12 @@ export default async function HomePage() {
           <div>
             <div className="flex flex-wrap items-center gap-4">
               <SiteLogo
-                height={60}
+                height={96}
                 priority
                 src={tenantBrand.logoUrl}
                 alt={tenantBrand.clinicName}
                 label={tenantBrand.shortName}
               />
-              <div>
-                <p className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-                  {tenantBrand.clinicName}
-                </p>
-                {tenantBrand.tagline ? (
-                  <p className="text-base font-medium text-brand-800">{tenantBrand.tagline}</p>
-                ) : null}
-              </div>
             </div>
             <p className="mt-5 inline-flex rounded-full bg-white px-3 py-1 text-sm font-medium text-brand-800 ring-1 ring-brand-100">
               {pick(locale, content.hero_promise)}

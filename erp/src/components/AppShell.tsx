@@ -133,8 +133,7 @@ function Shell({
             href="/dashboard"
             className="flex items-center gap-2 text-sm font-semibold text-slate-900"
           >
-            <SiteLogo height={28} className="rounded-md" src={logoUrl} alt={shortName} label={shortName} />
-            <span className="hidden sm:inline">{shortName}</span>
+            <SiteLogo height={56} className="rounded-md" src={logoUrl} alt={shortName} label={shortName} />
           </Link>
 
           {user.role !== 'STAFF' ? (

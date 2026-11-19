@@ -23,10 +23,9 @@ type Props = {
   phoneHref: string | null;
   /** Tenant-owned logo URL (a neutral monogram is rendered when absent). */
   logoUrl?: string | null;
-  tagline?: string;
 };
 
-export default function PublicHeader({ clinicName, phoneHref, logoUrl, tagline }: Props) {
+export default function PublicHeader({ clinicName, phoneHref, logoUrl }: Props) {
   const t = useTranslations('site');
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -61,11 +60,7 @@ export default function PublicHeader({ clinicName, phoneHref, logoUrl, tagline }
       <div className="w-full px-4 sm:px-6">
         <div className="flex h-16 w-full items-center gap-3 rounded-full bg-slate-200 px-5 sm:px-6">
           <Link href="/" className="flex items-center gap-3" aria-label={clinicName}>
-            <SiteLogo height={34} priority src={logoUrl} alt={clinicName} label={clinicName} />
-            <span className="hidden flex-col justify-center leading-tight sm:flex lg:flex">
-              <span className="text-sm font-bold tracking-tight text-slate-900">{clinicName}</span>
-              {tagline ? <span className="text-[11px] font-medium text-brand-900">{tagline}</span> : null}
-            </span>
+            <SiteLogo height={64} priority src={logoUrl} alt={clinicName} label={clinicName} />
           </Link>
 
           <nav className="ml-4 hidden items-center gap-0.5 lg:flex" aria-label={t('menuLabel')}>
