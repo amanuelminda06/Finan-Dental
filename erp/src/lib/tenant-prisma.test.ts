@@ -57,7 +57,7 @@ describe('schema-derived tenant models', () => {
     expect(isTenantOwnedModel('ReceiptCounter')).toBe(true);
     expect(isTenantOwnedModel('Tenant')).toBe(false);
     expect(TENANT_OWNED_MODELS).toContain('Patient');
-    expect(TENANT_OWNED_MODELS).toHaveLength(29);
+    expect(TENANT_OWNED_MODELS).toHaveLength(37);
   });
 });
 

@@ -49,6 +49,25 @@
 - Results show age column prominently
 - Amharic/English name toggle available
 
+### 1.5 Clinical Charts (Doctors only)
+- **Access**: `/clinical` is available only to users with the `STAFF` role
+  (trial login `doctor`). Patient admin pages remain OWNER/RECEPTION only.
+- **Flexibility first**: every clinical list is a suggestion, never a required
+  dropdown. Conditions, allergies, medications, habits, history, findings,
+  materials, anesthesia, diagnoses and procedures can all be typed freely.
+- **Medical alerts**: every allergy entry appears in the red alert banner at the
+  top of the chart; nothing is hidden because it was not a preset.
+- **Odontogram**: tap a tooth, choose a suggested condition or type a finding,
+  and add free-text notes for the tooth and each surface. Typed findings are
+  shown in neutral grey and remembered for the clinic.
+- **Visit notes**: one free-text note is enough; SOAP fields are optional. Type
+  `#36` or `tooth 36` to link directly to that tooth in the odontogram.
+- **Treatment plan**: pick a catalog service or type a custom procedure. Price
+  is optional. Plan items can change status and be converted to a normal
+  receipt; custom items become private catalog rows when invoiced.
+- **Chart search**: chart-local full-text search covers notes, findings,
+  history and plan text. Global search is not available to STAFF.
+
 ---
 
 ## 2. Appointment Management

@@ -27,8 +27,8 @@ test.describe('patient → sale', () => {
       await page.getByRole('button', { name: 'Walk-in' }).click();
 
       const serviceInput = page.getByPlaceholder('Type a service, press Enter to add');
-      await serviceInput.click();
-      await page.getByRole('option').first().click();
+      await serviceInput.fill('a');
+      await serviceInput.press('Enter');
 
       await page.getByRole('button', { name: 'Confirm sale' }).click();
       await page.waitForURL(/\/sales\/[^/]+$/, { timeout: 15_000 });

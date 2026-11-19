@@ -15,6 +15,7 @@ const QUICK_LINKS: Array<{ href: string; labelKey: string; roles: Role[] }> = [
   { href: '/appointments', labelKey: 'appointments', roles: ['OWNER', 'RECEPTION'] },
   { href: '/follow-ups', labelKey: 'followUps', roles: ['OWNER', 'RECEPTION'] },
   { href: '/messages', labelKey: 'messages', roles: ['OWNER', 'RECEPTION'] },
+  { href: '/clinical', labelKey: 'clinicalCharts', roles: ['STAFF'] },
   { href: '/schedule', labelKey: 'schedule', roles: ['OWNER', 'RECEPTION', 'STAFF'] },
   { href: '/leave', labelKey: 'leave', roles: ['OWNER', 'RECEPTION', 'STAFF'] },
   { href: '/leave/inbox', labelKey: 'leaveInbox', roles: ['OWNER'] },

@@ -74,6 +74,15 @@ enum FollowUpStatus {
   CANCELLED
 }
 
+/// The only structured workflow value in a treatment plan. Every other plan
+/// field is flexible text so doctors are never forced into a fixed catalog.
+enum ClinicalPlanStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
 /// Non-clinical patient messages the clinic prepares and sends by hand.
 enum MessageTemplateKey {
   APPT_REMINDER
@@ -387,6 +396,15 @@ model Patient {
   updatedAt          DateTime     @updatedAt @db.Timestamptz
   tags               PatientTag[]
 
+  /// Doctor-only clinical chart records. These are the ONLY clinical fields in
+  /// the system; Patient.notesNonClinical stays admin-only by design.
+  clinicalProfile   ClinicalProfile?
+  clinicalTextItems ClinicalTextItem[]
+  clinicalTeeth     ClinicalTooth[]
+  clinicalVisits    ClinicalVisit[]
+  clinicalPlanItems ClinicalPlanItem[]
+  clinicalSearch    ClinicalSearch?
+
   sales Sale[]
 
   appointments Appointment[]
@@ -509,11 +527,12 @@ model Service {
   createdAt           DateTime @default(now()) @db.Timestamptz
   updatedAt           DateTime @updatedAt @db.Timestamptz
 
-  priceHistory ServicePriceHistory[]
-  saleLines    SaleLine[]
-  appointments Appointment[]
-  tenantId     String
-  tenant       Tenant?               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  priceHistory      ServicePriceHistory[]
+  saleLines         SaleLine[]
+  appointments      Appointment[]
+  clinicalPlanItems ClinicalPlanItem[]
+  tenantId          String
+  tenant            Tenant?               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([category])
   @@index([name])
@@ -563,9 +582,10 @@ model Sale {
   createdAt   DateTime  @default(now()) @db.Timestamptz
   updatedAt   DateTime  @updatedAt @db.Timestamptz
 
-  lines    SaleLine[]
-  tenantId String
-  tenant   Tenant?    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  lines             SaleLine[]
+  clinicalPlanItems ClinicalPlanItem[]
+  tenantId          String
+  tenant            Tenant?            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, receiptNumber])
   @@index([saleDate])
@@ -843,6 +863,167 @@ model Feedback {
   @@index([tenantId])
 }
 
+/**
+ * Doctor-only clinical chart. Every user-facing clinical value is text; the
+ * structured fields are only tooth number, plan status and visit date.
+ */
+model ClinicalSuggestion {
+  id            String   @id @default(cuid())
+  /// `condition`, `allergy`, `medication`, `habit`, `history`, `toothFinding`,
+  /// `material`, `anesthesia`, `procedure` or `diagnosis`.
+  category      String
+  /// Display text. Suggestions are never mandatory — any value may be typed.
+  label         String
+  /// Normalized for case-insensitive uniqueness within a clinic.
+  normalizedKey String
+  /// Suggested terms get a category colour; typed terms use neutral grey.
+  color         String   @default("#64748b")
+  isCustom      Boolean  @default(false)
+  active        Boolean  @default(true)
+  createdBy     String?
+  createdAt     DateTime @default(now()) @db.Timestamptz
+  tenantId      String
+  tenant        Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, category, normalizedKey])
+  @@index([tenantId, category, active])
+}
+
+model ClinicalProfile {
+  id           String   @id @default(cuid())
+  patientId    String   @unique
+  patient      Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  /// Free-form "other / notes" box beside the optional medical-history list.
+  historyNotes String?
+  createdAt    DateTime @default(now()) @db.Timestamptz
+  updatedAt    DateTime @updatedAt @db.Timestamptz
+  tenantId     String
+  tenant       Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+}
+
+/// One free-text entry: condition, allergy, medication, habit or history item.
+model ClinicalTextItem {
+  id        String   @id @default(cuid())
+  patientId String
+  patient   Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  kind      String
+  text      String
+  createdBy String?
+  createdAt DateTime @default(now()) @db.Timestamptz
+  tenantId  String
+  tenant    Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, patientId, kind, text])
+  @@index([patientId, kind])
+  @@index([tenantId])
+}
+
+model ClinicalTooth {
+  id              String            @id @default(cuid())
+  patientId       String
+  patient         Patient           @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  /// FDI permanent tooth number (11–48).
+  toothNumber     Int
+  /// Suggested condition or fully typed finding — never an enum.
+  finding         String?
+  findingColor    String?
+  findingIsCustom Boolean           @default(false)
+  /// Free-text note for the whole tooth.
+  note            String?
+  updatedBy       String?
+  createdAt       DateTime          @default(now()) @db.Timestamptz
+  updatedAt       DateTime          @updatedAt @db.Timestamptz
+  tenantId        String
+  tenant          Tenant?           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  surfaces        ClinicalSurface[]
+
+  @@unique([tenantId, patientId, toothNumber])
+  @@index([patientId])
+  @@index([tenantId])
+}
+
+/// Per-surface free-text note. `surface` is a suggestion, not a fixed enum.
+model ClinicalSurface {
+  id       String        @id @default(cuid())
+  toothId  String
+  tooth    ClinicalTooth @relation(fields: [toothId], references: [id], onDelete: Cascade)
+  surface  String
+  note     String?
+  tenantId String
+  tenant   Tenant?       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, toothId, surface])
+  @@index([toothId])
+  @@index([tenantId])
+}
+
+model ClinicalVisit {
+  id         String   @id @default(cuid())
+  patientId  String
+  patient    Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  /// Structured essential: the calendar day of the visit.
+  visitDate  DateTime @db.Date
+  /// One free-text note is enough; SOAP sections below are all optional.
+  body       String?
+  subjective String?
+  objective  String?
+  assessment String?
+  plan       String?
+  diagnosis  String?
+  materials  String?
+  anesthesia String?
+  createdBy  String
+  createdAt  DateTime @default(now()) @db.Timestamptz
+  updatedAt  DateTime @updatedAt @db.Timestamptz
+  tenantId   String
+  tenant     Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([patientId, visitDate])
+  @@index([tenantId])
+}
+
+model ClinicalPlanItem {
+  id            String             @id @default(cuid())
+  patientId     String
+  patient       Patient            @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  /// Catalog service when chosen; null for a fully typed custom procedure.
+  serviceId     String?
+  service       Service?           @relation(fields: [serviceId], references: [id])
+  procedureName String
+  /// Optional manual price. Null means "not priced yet" (printed as —).
+  unitPrice     Decimal?           @db.Decimal(12, 2)
+  toothNumber   Int?
+  status        ClinicalPlanStatus @default(PLANNED)
+  notes         String?
+  /// Set when this item has been converted into a sale/receipt.
+  saleId        String?
+  sale          Sale?              @relation(fields: [saleId], references: [id])
+  createdBy     String
+  createdAt     DateTime           @default(now()) @db.Timestamptz
+  updatedAt     DateTime           @updatedAt @db.Timestamptz
+  tenantId      String
+  tenant        Tenant?            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([patientId, status])
+  @@index([tenantId])
+}
+
+/// One maintained text row per patient powers the chart's full-text search.
+/// A GIN expression index on to_tsvector('simple', "searchText") is added in
+/// the migration (Prisma has no portable generated-column syntax for tsvector).
+model ClinicalSearch {
+  patientId  String   @id
+  patient    Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  searchText String   @default("")
+  updatedAt  DateTime @updatedAt @db.Timestamptz
+  tenantId   String
+  tenant     Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+}
+
 enum TenantStatus {
   TRIAL
   ACTIVE
@@ -894,6 +1075,14 @@ model Tenant {
   audiences           Audience[]
   feedbacks           Feedback[]
   brand               TenantBrand?
+  clinicalSuggestions ClinicalSuggestion[]
+  clinicalProfiles    ClinicalProfile[]
+  clinicalTextItems   ClinicalTextItem[]
+  clinicalTeeth       ClinicalTooth[]
+  clinicalSurfaces    ClinicalSurface[]
+  clinicalVisits      ClinicalVisit[]
+  clinicalPlanItems   ClinicalPlanItem[]
+  clinicalSearches    ClinicalSearch[]
 }
 
 /// Per-clinic identity and public-site presentation. Every value is editable by

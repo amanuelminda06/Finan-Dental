@@ -16,6 +16,9 @@ const KNOWN_KEYS = new Set([
   'confirmationRequired',
   'missingColumns',
   'tooManyRows',
+  'patientRequired',
+  'alreadyInvoiced',
+  'planItemCancelled',
 ]);
 
 /**

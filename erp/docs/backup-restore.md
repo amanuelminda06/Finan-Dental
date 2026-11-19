@@ -70,9 +70,13 @@ For handing the clinic a plain copy of their records:
 npm run export:client -- /path/to/out
 ```
 
-Writes `patients.csv` and `sales-line-level.csv` (one row per sale line). No
-diagnoses or clinical data exist in this system; these are the patient contact
-and POS records only. Google Sheets / Excel open CSV directly.
+Writes `patients.csv`, `sales.csv` (one row per sale line) and the doctor-only
+clinical chart tables: `clinical-history.csv`, `clinical-teeth.csv`,
+`clinical-visits.csv` and `clinical-plan.csv`. Clinical values are exported as
+stored free text; only tooth numbers and plan statuses are structured. Clinical
+records are accessible in the app to `STAFF` doctors only, so store the export
+directory with the same care as the database backup. Google Sheets / Excel open
+CSV directly.
 
 ## Recovery targets (suggested)
 

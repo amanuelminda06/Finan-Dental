@@ -51,6 +51,11 @@ export const NAV_MODULES: NavModule[] = [
     ],
   },
   {
+    key: 'clinical',
+    labelKey: 'clinical',
+    items: [{ href: '/clinical', labelKey: 'clinicalCharts', roles: ['STAFF'] }],
+  },
+  {
     key: 'hrm',
     acronym: 'HRM',
     fullName: 'Human Resource Management System',

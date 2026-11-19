@@ -5,8 +5,16 @@ seam for a follow-up slice.
 
 ## Product
 
-- **No clinical records.** Patients hold contact/admin data only — never
-  diagnoses, treatments or prescriptions. This is a design boundary.
+- **Clinical charts are Phase 1 / doctor-only.** `/clinical` is available to
+  `STAFF` users only. Patient admin pages stay `OWNER`/`RECEPTION`; clinical
+  records live in dedicated models and never in `Patient.notesNonClinical`,
+  `Appointment.notes` or sick-leave text.
+- **Clinical charts are flexibility-first, not a full EHR.** Conditions,
+  allergies, medications, habits, history, findings, materials, anesthesia,
+  diagnoses and procedures are free text with optional clinic-owned
+  suggestions. The only structured essentials are tooth number, plan item
+  status and visit date. There are no prescriptions, lab results, imaging or
+  clinical decision support yet.
 - **SMS is manual-link only.** No gateway sends automatically; the app builds
   `sms:` links for the receptionist to send from the clinic phone.
   `GatewayProvider` (`src/modules/messaging/provider.ts`) is where a real SMS

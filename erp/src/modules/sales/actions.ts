@@ -3,17 +3,13 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { writeAudit } from '@/lib/audit';
-import { getTenantId } from '@/lib/tenant-context';
 import { ok, fail, withAuth, type ActionResult } from '@/lib/action';
 import { validate } from '@/lib/errors';
-import { formatMoney, toDecimalString } from '@/lib/money';
 import { phoneSearchVariants } from '@/lib/phone';
-import { getSettingsMap, timezoneFrom } from '@/modules/settings';
 import { SALES_ROLES, SALES_OWNER_ROLES } from './roles';
-import { saleFormSchema, voidReasonSchema, type SaleLineInput } from './schemas';
+import { voidReasonSchema, type SaleLineInput } from './schemas';
 import { MAX_PATIENT_QUERY } from './constants';
-import { computeSaleLines, type ServiceSnapshot } from './lines';
-import { nextReceiptNumber } from './receipt';
+import { createSaleForActor } from './create';
 
 function parseLines(raw: string): SaleLineInput[] | null {
   try {
@@ -22,34 +18,6 @@ function parseLines(raw: string): SaleLineInput[] | null {
   } catch {
     return null;
   }
-}
-
-/**
- * True when the write collided on `Sale.receiptNumber` (P2002). The claim
- * self-heals, so this should not happen — the retry only covers a race with a
- * receipt issued by another process between our claim and our insert.
- */
-function isReceiptNumberClash(error: unknown): boolean {
-  if (typeof error !== 'object' || error === null) return false;
-  const candidate = error as { code?: unknown; meta?: { target?: unknown } };
-  if (candidate.code !== 'P2002') return false;
-  const target = candidate.meta?.target;
-  if (Array.isArray(target)) return target.includes('receiptNumber');
-  return target === 'receiptNumber';
-}
-
-/** Runs `write`, retrying only on a receipt-number clash. `null` = exhausted. */
-async function withReceiptRetry<T>(write: () => Promise<T>): Promise<T | null> {
-  const MAX_ATTEMPTS = 3;
-  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
-    try {
-      return await write();
-    } catch (error) {
-      if (!isReceiptNumberClash(error)) throw error;
-      if (attempt === MAX_ATTEMPTS) return null;
-    }
-  }
-  return null;
 }
 
 function readSaleForm(formData: FormData) {
@@ -63,111 +31,16 @@ function readSaleForm(formData: FormData) {
 }
 
 /**
- * Fast entry: validates, recomputes all money server-side, claims the next
- * gap-free receipt number and stores the sale as CONFIRMED in one transaction.
+ * Fast entry: authorization, validation, pricing, receipt numbering and audit
+ * all stay in the shared sale writer so clinical conversions use the same path.
  */
 export async function createSaleAction(
   _prev: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult<{ id: string; receiptNumber: string }>> {
-  return withAuth<{ id: string; receiptNumber: string }>(SALES_ROLES, async (actor) => {
-    const values = validate(saleFormSchema, readSaleForm(formData));
-
-    let patientId: string | null = null;
-    if (!values.walkIn) {
-      if (!values.patientId) return fail('validationError', { patientId: 'required' });
-      const patient = await prisma.patient.findUnique({
-        where: { id: values.patientId },
-        select: { id: true, active: true },
-      });
-      if (!patient || !patient.active) return fail('validationError', { patientId: 'invalid' });
-      patientId = patient.id;
-    }
-
-    let doctorId: string | null = null;
-    if (values.doctorId) {
-      const doctor = await prisma.staff.findUnique({
-        where: { id: values.doctorId },
-        select: { id: true, active: true },
-      });
-      if (!doctor || !doctor.active) return fail('validationError', { doctorId: 'invalid' });
-      doctorId = doctor.id;
-    }
-
-    const serviceIds = [...new Set(values.lines.map((line) => line.serviceId))];
-    const services = await prisma.service.findMany({
-      where: { id: { in: serviceIds } },
-      select: { id: true, name: true, currentPrice: true, active: true },
-    });
-    const snapshots: ServiceSnapshot[] = services.map((service) => ({
-      id: service.id,
-      name: service.name,
-      currentPrice: service.currentPrice ? toDecimalString(service.currentPrice) : null,
-      active: service.active,
-    }));
-
-    const computed = computeSaleLines(snapshots, values.lines);
-    if (!computed.ok) return fail('validationError', { lines: computed.error });
-
-    const settings = await getSettingsMap();
-    const tz = timezoneFrom(settings);
-    const now = new Date();
-    const tenantId = await getTenantId();
-
-    const sale = await withReceiptRetry(() =>
-      prisma.$transaction(async (tx) => {
-        const receiptNumber = await nextReceiptNumber(tx, now, tz, tenantId);
-        return tx.sale.create({
-          data: {
-            tenantId,
-            receiptNumber,
-            patientId,
-            doctorId,
-            saleDate: now,
-            status: 'CONFIRMED',
-            paymentMethod: values.paymentMethod,
-            total: computed.total,
-            createdBy: actor.id,
-            confirmedAt: now,
-            lines: {
-              create: computed.lines.map((line) => ({
-                tenantId,
-                serviceId: line.serviceId,
-                serviceNameSnapshot: line.serviceNameSnapshot,
-                qty: line.qty,
-                unitPrice: line.unitPrice,
-                lineTotal: line.lineTotal,
-              })),
-            },
-          },
-        });
-      }),
-    );
-    if (!sale) return fail('unknownError');
-
-    await writeAudit({
-      user: actor,
-      entity: 'Sale',
-      entityId: sale.id,
-      action: 'SALE_CREATED',
-      new: {
-        receiptNumber: sale.receiptNumber,
-        patientId,
-        doctorId,
-        paymentMethod: sale.paymentMethod,
-        status: sale.status,
-        total: toDecimalString(sale.total),
-        lines: computed.lines.map((line) => ({
-          service: line.serviceNameSnapshot,
-          qty: line.qty,
-          unitPrice: formatMoney(line.unitPrice),
-          lineTotal: formatMoney(line.lineTotal),
-        })),
-      },
-    });
-
-    return ok({ id: sale.id, receiptNumber: sale.receiptNumber });
-  });
+  return withAuth<{ id: string; receiptNumber: string }>(SALES_ROLES, async (actor) =>
+    createSaleForActor(actor, readSaleForm(formData)),
+  );
 }
 
 /** RECEPTION (or OWNER) asks the OWNER to void a confirmed sale. */
