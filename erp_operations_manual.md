@@ -49,9 +49,10 @@
 - Results show age column prominently
 - Amharic/English name toggle available
 
-### 1.5 Clinical Charts (Doctors only)
-- **Access**: `/clinical` is available only to users with the `STAFF` role
-  (trial login `doctor`). Patient admin pages remain OWNER/RECEPTION only.
+### 1.5 Clinical Charts (Doctors and owners)
+- **Access**: `/clinical` is available to users with the `OWNER` or `STAFF`
+  role (trial logins `owner` and `doctor`). Reception cannot access clinical
+  charts. Patient admin pages remain OWNER/RECEPTION only.
 - **Flexibility first**: every clinical list is a suggestion, never a required
   dropdown. Conditions, allergies, medications, habits, history, findings,
   materials, anesthesia, diagnoses and procedures can all be typed freely.
@@ -66,7 +67,8 @@
   is optional. Plan items can change status and be converted to a normal
   receipt; custom items become private catalog rows when invoiced.
 - **Chart search**: chart-local full-text search covers notes, findings,
-  history and plan text. Global search is not available to STAFF.
+  history and plan text. Global search is not available to STAFF; owners can
+  also use global search where available.
 
 ---
 

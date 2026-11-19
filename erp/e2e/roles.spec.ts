@@ -18,17 +18,21 @@ test.describe('role-based access', () => {
     await expectForbidden(page, '/patients');
   });
 
-  test('staff sees clinical charts and can open them', async ({ page }) => {
+  test('staff and owner can open clinical charts', async ({ page }) => {
     await login(page, 'STAFF');
+    await expect(page.getByRole('link', { name: 'Clinical charts' }).first()).toBeVisible();
+    await page.goto(appUrl('/clinical'));
+    await expect(page).toHaveURL(/\/clinical/);
+    await expect(page.getByRole('heading', { name: 'Clinical charts' })).toBeVisible();
+
+    await login(page, 'OWNER');
     await expect(page.getByRole('link', { name: 'Clinical charts' }).first()).toBeVisible();
     await page.goto(appUrl('/clinical'));
     await expect(page).toHaveURL(/\/clinical/);
     await expect(page.getByRole('heading', { name: 'Clinical charts' })).toBeVisible();
   });
 
-  test('non-doctors cannot open clinical charts', async ({ page }) => {
-    await login(page, 'OWNER');
-    await expectForbidden(page, '/clinical');
+  test('reception cannot open clinical charts', async ({ page }) => {
     await login(page, 'RECEPTION');
     await expectForbidden(page, '/clinical');
   });

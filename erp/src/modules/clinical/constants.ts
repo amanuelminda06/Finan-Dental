@@ -1,7 +1,7 @@
 import type { Role } from '@prisma/client';
 
-/** The doctor-only chart never widens the existing patient-admin roles. */
-export const CLINICAL_ROLES: Role[] = ['STAFF'];
+/** Clinical charts are available to doctors and owners, never to reception. */
+export const CLINICAL_ROLES: Role[] = ['OWNER', 'STAFF'];
 
 /** Suggestion categories. Every value is optional text — these are hints only. */
 export const SUGGESTION_CATEGORIES = [

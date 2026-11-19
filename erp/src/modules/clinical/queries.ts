@@ -44,7 +44,7 @@ export async function listClinicalSuggestions(): Promise<
   });
 }
 
-/** Patient picker for the doctor-only chart (never uses non-clinical notes). */
+/** Patient picker for the clinical chart (never uses non-clinical notes). */
 export async function listClinicalPatients(query: string): Promise<
   Array<{
     id: string;

@@ -5,10 +5,11 @@ seam for a follow-up slice.
 
 ## Product
 
-- **Clinical charts are Phase 1 / doctor-only.** `/clinical` is available to
-  `STAFF` users only. Patient admin pages stay `OWNER`/`RECEPTION`; clinical
-  records live in dedicated models and never in `Patient.notesNonClinical`,
-  `Appointment.notes` or sick-leave text.
+- **Clinical charts are Phase 1 and limited to doctors and owners.** `/clinical`
+  is available to `OWNER` and `STAFF` users. Patient admin pages stay
+  `OWNER`/`RECEPTION`; clinical records live in dedicated models and never in
+  `Patient.notesNonClinical`, `Appointment.notes` or sick-leave text. Reception
+  cannot access clinical charts.
 - **Clinical charts are flexibility-first, not a full EHR.** Conditions,
   allergies, medications, habits, history, findings, materials, anesthesia,
   diagnoses and procedures are free text with optional clinic-owned

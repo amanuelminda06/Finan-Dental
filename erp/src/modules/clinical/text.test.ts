@@ -9,8 +9,8 @@ import {
 } from './text';
 
 describe('clinical roles', () => {
-  it('only grants chart access to STAFF', () => {
-    expect(CLINICAL_ROLES).toEqual(['STAFF']);
+  it('grants chart access to owners and staff', () => {
+    expect(CLINICAL_ROLES).toEqual(['OWNER', 'STAFF']);
   });
 });
 

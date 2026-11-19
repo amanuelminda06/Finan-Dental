@@ -53,7 +53,7 @@ export const NAV_MODULES: NavModule[] = [
   {
     key: 'clinical',
     labelKey: 'clinical',
-    items: [{ href: '/clinical', labelKey: 'clinicalCharts', roles: ['STAFF'] }],
+    items: [{ href: '/clinical', labelKey: 'clinicalCharts', roles: ['OWNER', 'STAFF'] }],
   },
   {
     key: 'hrm',

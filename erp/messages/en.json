@@ -1354,8 +1354,8 @@
  },
  "clinical": {
   "title": "Clinical charts",
-  "intro": "Doctor-only patient charts. All clinical lists are optional suggestions — type anything you need.",
-  "roleNote": "Doctors only",
+  "intro": "Clinical charts for doctors and owners. All clinical lists are optional suggestions — type anything you need.",
+  "roleNote": "Doctors and owners",
   "chartTitle": "Clinical chart",
   "patient": "Patient",
   "idNo": "Patient ID",

@@ -2,10 +2,10 @@ import { test, expect } from '@playwright/test';
 import { appUrl, login } from './helpers';
 
 /**
- * Doctor-only clinical chart: free text is always accepted, alerts show every
- * allergy, tooth mentions link to the odontogram, and custom plan items save.
+ * Clinical chart (doctors and owners): free text is always accepted, alerts show
+ * every allergy, tooth mentions link to the odontogram, and custom plan items save.
  *
- * Reception creates the patient first because STAFF cannot use patient admin.
+ * Reception creates the patient first because the chart role cannot use patient admin.
  */
 test.describe('clinical chart', () => {
   test('records free-text history, findings, a linked visit and a custom plan item', async ({
