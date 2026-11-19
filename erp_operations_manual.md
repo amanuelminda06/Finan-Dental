@@ -49,10 +49,10 @@
 - Results show age column prominently
 - Amharic/English name toggle available
 
-### 1.5 Clinical Charts (Doctors and owners)
+### 1.5 Clinical Data Management (CDM) (Doctors and owners)
 - **Access**: `/clinical` is available to users with the `OWNER` or `STAFF`
-  role (trial logins `owner` and `doctor`). Reception cannot access clinical
-  charts. Patient admin pages remain OWNER/RECEPTION only.
+  role (trial logins `owner` and `doctor`). Reception cannot access CDM.
+  Patient admin pages remain OWNER/RECEPTION only.
 - **Flexibility first**: every clinical list is a suggestion, never a required
   dropdown. Conditions, allergies, medications, habits, history, findings,
   materials, anesthesia, diagnoses and procedures can all be typed freely.

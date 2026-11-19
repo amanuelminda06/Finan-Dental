@@ -347,9 +347,9 @@ NO_SHOW`); terminal states are frozen unless an OWNER overrides, and every
   only; overlap with an existing approved leave is rejected; requests cannot
   modify/cancel an already-approved leave except by an OWNER cancel.
 - Phones: normalized to E.164 `+2519…` (`src/lib/phone.ts`).
-- No hard deletes (soft `active` flags). Clinical records are in `/clinical`
+- No hard deletes (soft `active` flags). Clinical Data Management (CDM) records are in `/clinical`
   for doctors and owners (`OWNER`/`STAFF`); reception and patient contact/admin
-  pages do not expose clinical chart data. Clinical values are free text with
+  pages do not expose CDM data. CDM values are free text with
   optional suggestions; only tooth numbers, plan statuses and visit dates are
   structured.
 - Appointments store UTC instants and are bucketed/displayed in the clinic

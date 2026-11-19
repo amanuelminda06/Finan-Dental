@@ -98,8 +98,7 @@
   "expand": "Expand module",
   "collapse": "Collapse module",
   "branding": "የክሊኒክ ብራንዲንግ",
-  "clinical": "ክሊኒካዊ",
-  "clinicalCharts": "ክሊኒካዊ መዝገቦች"
+  "clinicalDataManagement": "የክሊኒካዊ መረጃ አስተዳደር (CDM)"
  },
  "feedback": {
   "title": "የድር ገጽ አስተያየቶች",
@@ -1353,10 +1352,10 @@
   "mapEmbedAlt": "የክሊኒክ አድራሻ ካርታ"
  },
  "clinical": {
-  "title": "ክሊኒካዊ መዝገቦች",
-  "intro": "ለሐኪሞችና ለባለቤቶች የሆኑ የታካሚ መዝገቦች። ሁሉም ክሊኒካዊ ዝርዝሮች አማራጭ ጥቆማዎች ናቸው — የሚፈልጉትን ሁሉ ጻፉ።",
+  "title": "የክሊኒካዊ መረጃ አስተዳደር (CDM)",
+  "intro": "ለሐኪሞችና ለባለቤቶች የሆነ የክሊኒካዊ መረጃ አስተዳደር (CDM)። ሁሉም ክሊኒካዊ ዝርዝሮች አማራጭ ጥቆማዎች ናቸው — የሚፈልጉትን ሁሉ ጻፉ።",
   "roleNote": "ለሐኪሞችና ለባለቤቶች",
-  "chartTitle": "ክሊኒካዊ መዝገብ",
+  "chartTitle": "የCDM መዝገብ",
   "patient": "ታካሚ",
   "idNo": "የታካሚ መታወቂያ",
   "phone": "ስልክ",
@@ -1438,7 +1437,7 @@
   "searchButton": "መዝገብ ፈልግ",
   "searchFound": "የሚመሳሰል የመዝገብ ጽሑፍ",
   "searchNone": "በዚህ መዝገብ ውስጥ ምንም አልተገኘም።",
-  "receiptTitle": "ክሊኒካዊ ደረሰኝ",
+  "receiptTitle": "የCDM ደረሰኝ",
   "receiptBack": "ወደ መዝገብ ተመለስ",
   "signedInAs": "መዝገብ በ {name} ተቀምጧል"
  },

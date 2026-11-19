@@ -2,12 +2,13 @@ import { test, expect } from '@playwright/test';
 import { appUrl, login } from './helpers';
 
 /**
- * Clinical chart (doctors and owners): free text is always accepted, alerts show
- * every allergy, tooth mentions link to the odontogram, and custom plan items save.
+ * Clinical Data Management (CDM, doctors and owners): free text is always
+ * accepted, alerts show every allergy, tooth mentions link to the odontogram,
+ * and custom plan items save.
  *
- * Reception creates the patient first because the chart role cannot use patient admin.
+ * Reception creates the patient first because the CDM role cannot use patient admin.
  */
-test.describe('clinical chart', () => {
+test.describe('clinical data management', () => {
   test('records free-text history, findings, a linked visit and a custom plan item', async ({
     page,
   }) => {
@@ -34,7 +35,7 @@ test.describe('clinical chart', () => {
       await login(page, 'STAFF');
       await page.goto(appUrl(`/clinical/${patientId}`));
       await expect(
-        page.getByRole('heading', { name: `Clinical chart: ${fullName}` }),
+        page.getByRole('heading', { name: `CDM chart: ${fullName}` }),
       ).toBeVisible();
       await expect(page.getByText('No medical alerts recorded.')).toBeVisible();
     });

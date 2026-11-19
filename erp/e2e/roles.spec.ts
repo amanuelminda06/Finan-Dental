@@ -18,21 +18,21 @@ test.describe('role-based access', () => {
     await expectForbidden(page, '/patients');
   });
 
-  test('staff and owner can open clinical charts', async ({ page }) => {
+  test('staff and owner can open Clinical Data Management (CDM)', async ({ page }) => {
     await login(page, 'STAFF');
-    await expect(page.getByRole('link', { name: 'Clinical charts' }).first()).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Clinical Data Management' }).first()).toBeVisible();
     await page.goto(appUrl('/clinical'));
     await expect(page).toHaveURL(/\/clinical/);
-    await expect(page.getByRole('heading', { name: 'Clinical charts' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Clinical Data Management' })).toBeVisible();
 
     await login(page, 'OWNER');
-    await expect(page.getByRole('link', { name: 'Clinical charts' }).first()).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Clinical Data Management' }).first()).toBeVisible();
     await page.goto(appUrl('/clinical'));
     await expect(page).toHaveURL(/\/clinical/);
-    await expect(page.getByRole('heading', { name: 'Clinical charts' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Clinical Data Management' })).toBeVisible();
   });
 
-  test('reception cannot open clinical charts', async ({ page }) => {
+  test('reception cannot open Clinical Data Management (CDM)', async ({ page }) => {
     await login(page, 'RECEPTION');
     await expectForbidden(page, '/clinical');
   });

@@ -52,8 +52,9 @@ export const NAV_MODULES: NavModule[] = [
   },
   {
     key: 'clinical',
-    labelKey: 'clinical',
-    items: [{ href: '/clinical', labelKey: 'clinicalCharts', roles: ['OWNER', 'STAFF'] }],
+    acronym: 'CDM',
+    labelKey: 'clinicalDataManagement',
+    items: [{ href: '/clinical', labelKey: 'clinicalDataManagement', roles: ['OWNER', 'STAFF'] }],
   },
   {
     key: 'hrm',

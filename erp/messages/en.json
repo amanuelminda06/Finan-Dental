@@ -98,8 +98,7 @@
   "expand": "Expand module",
   "collapse": "Collapse module",
   "branding": "Clinic branding",
-  "clinical": "Clinical",
-  "clinicalCharts": "Clinical charts"
+  "clinicalDataManagement": "Clinical Data Management"
  },
  "feedback": {
   "title": "Website feedback",
@@ -1353,10 +1352,10 @@
   "mapEmbedAlt": "Clinic location map"
  },
  "clinical": {
-  "title": "Clinical charts",
-  "intro": "Clinical charts for doctors and owners. All clinical lists are optional suggestions — type anything you need.",
+  "title": "Clinical Data Management",
+  "intro": "Clinical Data Management (CDM) for doctors and owners. All clinical lists are optional suggestions — type anything you need.",
   "roleNote": "Doctors and owners",
-  "chartTitle": "Clinical chart",
+  "chartTitle": "CDM chart",
   "patient": "Patient",
   "idNo": "Patient ID",
   "phone": "Phone",
@@ -1438,7 +1437,7 @@
   "searchButton": "Search chart",
   "searchFound": "Matching chart text",
   "searchNone": "No matches in this chart.",
-  "receiptTitle": "Clinical receipt",
+  "receiptTitle": "CDM receipt",
   "receiptBack": "Back to chart",
   "signedInAs": "Chart saved by {name}"
  },

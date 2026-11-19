@@ -70,10 +70,10 @@ For handing the clinic a plain copy of their records:
 npm run export:client -- /path/to/out
 ```
 
-Writes `patients.csv`, `sales.csv` (one row per sale line) and the clinical
-chart tables: `clinical-history.csv`, `clinical-teeth.csv`,
-`clinical-visits.csv` and `clinical-plan.csv`. Clinical values are exported as
-stored free text; only tooth numbers and plan statuses are structured. Clinical
+Writes `patients.csv`, `sales.csv` (one row per sale line) and the Clinical
+Data Management (CDM) export tables: `clinical-history.csv`, `clinical-teeth.csv`,
+`clinical-visits.csv` and `clinical-plan.csv`. CDM values are exported as
+stored free text; only tooth numbers and plan statuses are structured. CDM
 records are accessible in the app to doctors and owners only, so store the
 export directory with the same care as the database backup. Google Sheets / Excel
 open CSV directly.
