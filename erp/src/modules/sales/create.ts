@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { ok, fail, type ActionResult } from '@/lib/action';
 import { writeAudit } from '@/lib/audit';
 import { formatMoney, toDecimalString } from '@/lib/money';
@@ -6,6 +7,7 @@ import type { SessionUser } from '@/lib/require-role';
 import { getTenantId } from '@/lib/tenant-context';
 import { validate } from '@/lib/errors';
 import { getSettingsMap, timezoneFrom } from '@/modules/settings';
+import { MAX_CUSTOM_LINE_NAME } from './constants';
 import { computeSaleLines, type ServiceSnapshot } from './lines';
 import { nextReceiptNumber } from './receipt';
 import { saleFormSchema } from './schemas';
@@ -20,7 +22,12 @@ export type CreateSaleInput = {
   doctorId: string;
   paymentMethod: string;
   walkIn: boolean;
-  lines: Array<{ serviceId: string; qty: number }>;
+  lines: Array<{
+    serviceId?: string;
+    customName?: string;
+    qty: number;
+    unitPrice?: string;
+  }>;
 };
 
 function isReceiptNumberClash(error: unknown): boolean {
@@ -72,9 +79,27 @@ export async function createSaleForActor(
     doctorId = doctor.id;
   }
 
-  const serviceIds = [...new Set(values.lines.map((line) => line.serviceId))];
+  // Custom items get an id up front so pricing can be validated before any
+  // database write. They are persisted as private Service rows in the same
+  // transaction as the sale.
+  const customNames = new Map<string, string>();
+  const customPrices = new Map<string, string>();
+  const requested = values.lines.map((line) => {
+    if (line.serviceId) {
+      return { serviceId: line.serviceId, qty: line.qty, unitPrice: line.unitPrice };
+    }
+    const id = randomUUID();
+    const name = line.customName ?? 'Custom item';
+    customNames.set(id, name);
+    customPrices.set(id, line.unitPrice);
+    return { serviceId: id, qty: line.qty, unitPrice: line.unitPrice };
+  });
+
+  const catalogIds = [
+    ...new Set(values.lines.map((line) => line.serviceId).filter((id): id is string => !!id)),
+  ];
   const services = await prisma.service.findMany({
-    where: { id: { in: serviceIds } },
+    where: { id: { in: catalogIds } },
     select: { id: true, name: true, currentPrice: true, active: true },
   });
   const snapshots: ServiceSnapshot[] = services.map((service) => ({
@@ -83,8 +108,11 @@ export async function createSaleForActor(
     currentPrice: service.currentPrice ? toDecimalString(service.currentPrice) : null,
     active: service.active,
   }));
+  for (const [id, name] of customNames) {
+    snapshots.push({ id, name, currentPrice: customPrices.get(id) ?? '0.00', active: true });
+  }
 
-  const computed = computeSaleLines(snapshots, values.lines);
+  const computed = computeSaleLines(snapshots, requested);
   if (!computed.ok) return fail('validationError', { lines: computed.error });
 
   const settings = await getSettingsMap();
@@ -94,6 +122,22 @@ export async function createSaleForActor(
 
   const sale = await withReceiptRetry(() =>
     prisma.$transaction(async (tx) => {
+      for (const [id, name] of customNames) {
+        await tx.service.create({
+          data: {
+            id,
+            tenantId,
+            name,
+            nameEn: name,
+            category: 'other',
+            currentPrice: customPrices.get(id) ?? '0.00',
+            active: true,
+            isPublic: false,
+            receiptLabelEn: name.slice(0, MAX_CUSTOM_LINE_NAME),
+          },
+        });
+      }
+
       const receiptNumber = await nextReceiptNumber(tx, now, tz, tenantId);
       return tx.sale.create({
         data: {
@@ -140,6 +184,8 @@ export async function createSaleForActor(
         qty: line.qty,
         unitPrice: formatMoney(line.unitPrice),
         lineTotal: formatMoney(line.lineTotal),
+        custom: customNames.has(line.serviceId),
+        priceOverridden: line.priceOverridden,
       })),
     },
   });

@@ -354,22 +354,10 @@ export async function convertClinicalPlanItemAction(
     if (item.saleId) return fail('alreadyInvoiced');
     if (item.status === 'CANCELLED') return fail('planItemCancelled');
 
-    let serviceId = item.serviceId;
-    if (!serviceId) {
-      const custom = await prisma.service.create({
-        data: {
-          tenantId: await getTenantId(),
-          name: item.procedureName,
-          nameEn: item.procedureName,
-          category: 'other',
-          currentPrice: item.unitPrice ? toDecimalString(item.unitPrice) : '0.00',
-          active: true,
-          isPublic: false,
-          receiptLabelEn: item.procedureName.slice(0, 120),
-        },
-      });
-      serviceId = custom.id;
-    }
+    const unitPrice = item.unitPrice ? toDecimalString(item.unitPrice) : undefined;
+    const line = item.serviceId
+      ? { serviceId: item.serviceId, qty: 1, unitPrice }
+      : { customName: item.procedureName, qty: 1, unitPrice };
 
     const doctor = await prisma.user.findUnique({
       where: { id: actor.id },
@@ -380,7 +368,7 @@ export async function convertClinicalPlanItemAction(
       doctorId: doctor?.staffId ?? '',
       paymentMethod: values.paymentMethod,
       walkIn: false,
-      lines: [{ serviceId, qty: 1 }],
+      lines: [line],
     });
     if (!saleResult.ok) {
       return fail(saleResult.error ?? 'unknownError', saleResult.fields);

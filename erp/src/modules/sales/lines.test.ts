@@ -15,7 +15,7 @@ const cleaning: ServiceSnapshot = {
 };
 
 describe('computeSaleLines', () => {
-  it('uses the server price snapshot, never a client value', () => {
+  it('uses the database price when no explicit override is sent', () => {
     const result = computeSaleLines(
       [consultation, cleaning],
       [
@@ -31,24 +31,47 @@ describe('computeSaleLines', () => {
       unitPrice: '0.00',
       qty: 2,
       lineTotal: '0.00',
+      priceOverridden: false,
     });
     expect(result.total).toBe('1500.50');
   });
 
-  it('merges duplicate service rows by summing quantities', () => {
+  it('uses an explicit, validated unit price override', () => {
     const result = computeSaleLines(
-      [consultation],
+      [cleaning],
+      [{ serviceId: 'svc-2', qty: 2, unitPrice: '999.99' }],
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.lines[0]).toMatchObject({
+      unitPrice: '999.99',
+      lineTotal: '1999.98',
+      priceOverridden: true,
+    });
+    expect(result.total).toBe('1999.98');
+  });
+
+  it('rejects an invalid explicit override', () => {
+    const result = computeSaleLines([cleaning], [{ serviceId: 'svc-2', qty: 1, unitPrice: '-5' }]);
+    expect(result).toMatchObject({ ok: false, error: 'invalidPrice' });
+  });
+
+  it('merges duplicate service rows only when they carry the same override', () => {
+    const result = computeSaleLines(
+      [cleaning],
       [
-        { serviceId: 'svc-1', qty: 1 },
-        { serviceId: 'svc-1', qty: 2 },
+        { serviceId: 'svc-2', qty: 1, unitPrice: '100.00' },
+        { serviceId: 'svc-2', qty: 2, unitPrice: '100.00' },
+        { serviceId: 'svc-2', qty: 1, unitPrice: '200.00' },
       ],
     );
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.lines).toHaveLength(1);
-    expect(result.lines[0].qty).toBe(3);
-    expect(result.lines[0].lineTotal).toBe('0.00');
+    expect(result.lines).toHaveLength(2);
+    expect(result.lines[0]).toMatchObject({ qty: 3, unitPrice: '100.00' });
+    expect(result.lines[1]).toMatchObject({ qty: 1, unitPrice: '200.00' });
   });
 
   it('keeps the price frozen at sale time (later price changes do not apply)', () => {
@@ -63,6 +86,17 @@ describe('computeSaleLines', () => {
     if (!second.ok) return;
     expect(second.lines[0].unitPrice).toBe('400.00');
     expect(first.lines[0].unitPrice).toBe('0.00');
+  });
+
+  it('allows an unpriced service when an explicit price is supplied', () => {
+    const unpriced: ServiceSnapshot = { ...consultation, currentPrice: null };
+    const result = computeSaleLines(
+      [unpriced],
+      [{ serviceId: 'svc-1', qty: 1, unitPrice: '0.00' }],
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.lines[0].unitPrice).toBe('0.00');
   });
 
   it('allows the ERP to record a sale only after a price is entered', () => {

@@ -34,3 +34,4 @@ export const MAX_SALE_LINES = 50;
 export const MAX_QTY = 999;
 export const MAX_REASON = 300;
 export const MAX_PATIENT_QUERY = 100;
+export const MAX_CUSTOM_LINE_NAME = 120;

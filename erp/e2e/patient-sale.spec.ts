@@ -30,9 +30,18 @@ test.describe('patient → sale', () => {
       await serviceInput.fill('a');
       await serviceInput.press('Enter');
 
+      const priceInputs = page.getByLabel(/^Unit price/);
+      await priceInputs.nth(0).fill('250.00');
+
+      await page.getByRole('button', { name: 'Add custom item' }).click();
+      await page.getByPlaceholder('Custom item name').fill('E2E Custom Item');
+      await priceInputs.nth(1).fill('75.00');
+
       await page.getByRole('button', { name: 'Confirm sale' }).click();
       await page.waitForURL(/\/sales\/[^/]+$/, { timeout: 15_000 });
       await expect(page.getByText(/receipt/i).first()).toBeVisible();
+      await expect(page.getByText('E2E Custom Item').first()).toBeVisible();
+      await expect(page.getByText(/325\.00/).first()).toBeVisible();
     });
   });
 });

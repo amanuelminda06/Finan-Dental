@@ -1,16 +1,14 @@
-import { multiplyMoney, sumLineTotals, toDecimalString } from '@/lib/money';
+import { isMoneyInRange, multiplyMoney, sumLineTotals, toDecimalString } from '@/lib/money';
 import { MAX_QTY } from './constants';
 
 /**
  * Sales line computation (pure — unit tested).
  *
- * The client only sends `serviceId` + `qty`. Prices, names and totals are
- * ALWAYS taken from the database rows here, so:
- *  - a tampered client price is impossible (it is never read),
- *  - the line keeps the price that was current when the sale was made,
- *  - later service price changes never touch existing sales.
+ * The client sends service/custom-item details, qty and an OPTIONAL explicit
+ * unit price. Prices are normalized here: a valid explicit override is used,
+ * otherwise the database service price is used. Names and prices are captured
+ * as snapshots, so later catalog changes never touch existing sales.
  */
-
 export type ServiceSnapshot = {
   id: string;
   name: string;
@@ -18,7 +16,11 @@ export type ServiceSnapshot = {
   active: boolean;
 };
 
-export type RequestedLine = { serviceId: string; qty: number };
+export type RequestedLine = {
+  serviceId: string;
+  qty: number;
+  unitPrice?: string | null;
+};
 
 export type ComputedLine = {
   serviceId: string;
@@ -26,21 +28,41 @@ export type ComputedLine = {
   qty: number;
   unitPrice: string;
   lineTotal: string;
+  priceOverridden: boolean;
 };
 
-export type ComputeError = 'serviceMissing' | 'serviceInactive' | 'serviceUnpriced' | 'quantityTooHigh';
+export type ComputeError =
+  'serviceMissing' | 'serviceInactive' | 'serviceUnpriced' | 'invalidPrice' | 'quantityTooHigh';
 
 export type ComputeSaleLinesResult =
   | { ok: true; lines: ComputedLine[]; total: string }
   | { ok: false; error: ComputeError; serviceNames: string[] };
 
-/** Merges duplicate service rows (same service added twice → summed qty). */
+const PRICE_RE = /^\d{1,10}(\.\d{1,2})?$/;
+
+function normalizedOverride(value: string | null | undefined): string | null {
+  if (value === undefined || value === null || value.trim() === '') return null;
+  return value.trim();
+}
+
+/** Duplicate rows merge only when they carry the same explicit price. */
 function mergeRequested(requested: RequestedLine[]): RequestedLine[] {
-  const merged = new Map<string, number>();
+  const merged = new Map<string, RequestedLine>();
   for (const line of requested) {
-    merged.set(line.serviceId, (merged.get(line.serviceId) ?? 0) + line.qty);
+    const override = normalizedOverride(line.unitPrice);
+    const key = `${line.serviceId}|${override ?? ''}`;
+    const existing = merged.get(key);
+    if (existing) {
+      existing.qty += line.qty;
+      continue;
+    }
+    merged.set(key, {
+      serviceId: line.serviceId,
+      qty: line.qty,
+      unitPrice: override ?? undefined,
+    });
   }
-  return [...merged].map(([serviceId, qty]) => ({ serviceId, qty }));
+  return [...merged.values()];
 }
 
 export function computeSaleLines(
@@ -53,6 +75,7 @@ export function computeSaleLines(
   const missing: string[] = [];
   const inactive: string[] = [];
   const unpriced: string[] = [];
+  const invalidPrices: string[] = [];
   const lines: ComputedLine[] = [];
 
   for (const requestedLine of merged) {
@@ -65,22 +88,34 @@ export function computeSaleLines(
       inactive.push(service.name);
       continue;
     }
-    if (service.currentPrice === null) {
-      unpriced.push(service.name);
-      continue;
-    }
     if (requestedLine.qty < 1 || requestedLine.qty > MAX_QTY) {
       return { ok: false, error: 'quantityTooHigh', serviceNames: [service.name] };
     }
+
+    const override = normalizedOverride(requestedLine.unitPrice);
+    if (override !== null && (!PRICE_RE.test(override) || !isMoneyInRange(override))) {
+      invalidPrices.push(service.name);
+      continue;
+    }
+    const price = override ?? service.currentPrice;
+    if (price === null) {
+      unpriced.push(service.name);
+      continue;
+    }
+
     lines.push({
       serviceId: service.id,
       serviceNameSnapshot: service.name,
       qty: requestedLine.qty,
-      unitPrice: toDecimalString(multiplyMoney(service.currentPrice, 1)),
-      lineTotal: toDecimalString(multiplyMoney(service.currentPrice, requestedLine.qty)),
+      unitPrice: toDecimalString(price),
+      lineTotal: toDecimalString(multiplyMoney(price, requestedLine.qty)),
+      priceOverridden: override !== null,
     });
   }
 
+  if (invalidPrices.length > 0) {
+    return { ok: false, error: 'invalidPrice', serviceNames: invalidPrices };
+  }
   if (inactive.length > 0) return { ok: false, error: 'serviceInactive', serviceNames: inactive };
   if (unpriced.length > 0) return { ok: false, error: 'serviceUnpriced', serviceNames: unpriced };
   if (missing.length > 0) return { ok: false, error: 'serviceMissing', serviceNames: missing };

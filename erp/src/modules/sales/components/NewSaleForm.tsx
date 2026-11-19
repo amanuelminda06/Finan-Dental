@@ -10,7 +10,12 @@ import {
   searchPatientsAction,
   type PatientSearchResult,
 } from '@/modules/sales/actions';
-import { MAX_QTY, PAYMENT_METHODS, PAYMENT_LABEL_KEYS } from '@/modules/sales/constants';
+import {
+  MAX_CUSTOM_LINE_NAME,
+  MAX_QTY,
+  PAYMENT_METHODS,
+  PAYMENT_LABEL_KEYS,
+} from '@/modules/sales/constants';
 import type { ActionResult } from '@/lib/action';
 
 type ServiceOption = {
@@ -34,7 +39,26 @@ type Props = {
   };
 };
 
-type Line = { serviceId: string; name: string; unitPrice: string; qty: number };
+type Line = {
+  key: string;
+  serviceId?: string;
+  customName?: string;
+  name: string;
+  unitPrice: string;
+  qty: number;
+};
+
+let nextLineId = 0;
+function newLineKey(): string {
+  nextLineId += 1;
+  return `sale-line-${nextLineId}`;
+}
+
+function safeMoney(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed || !/^\d{1,10}(\.\d{0,2})?$/.test(trimmed)) return '0.00';
+  return trimmed;
+}
 
 function initialLines(
   prefill: Props['prefill'],
@@ -47,11 +71,9 @@ function initialLines(
   return line
     ? [
         {
+          key: newLineKey(),
           serviceId: line.id,
-          name:
-            locale === 'am' && line.nameAm
-              ? line.nameAm
-              : line.nameEn || line.name,
+          name: locale === 'am' && line.nameAm ? line.nameAm : line.nameEn || line.name,
           unitPrice: line.currentPrice ?? '0.00',
           qty: 1,
         },
@@ -89,7 +111,8 @@ export default function NewSaleForm({ services, doctors, locale, prefill }: Prop
 
   const suggestions = useMemo(() => {
     const q = serviceQuery.trim().toLowerCase();
-    if (!q) return [];      return services
+    if (!q) return [];
+    return services
       .filter(
         (service) =>
           service.nameEn.toLowerCase().includes(q) ||
@@ -102,7 +125,9 @@ export default function NewSaleForm({ services, doctors, locale, prefill }: Prop
   const total = useMemo(
     () =>
       toDecimalString(
-        sumLineTotals(lines.map((line) => ({ unitPrice: line.unitPrice, quantity: line.qty }))),
+        sumLineTotals(
+          lines.map((line) => ({ unitPrice: safeMoney(line.unitPrice), quantity: line.qty })),
+        ),
       ),
     [lines],
   );
@@ -133,17 +158,28 @@ export default function NewSaleForm({ services, doctors, locale, prefill }: Prop
       return [
         ...current,
         {
+          key: newLineKey(),
           serviceId: service.id,
-          name:
-            locale === 'am' && service.nameAm
-              ? service.nameAm
-              : service.nameEn || service.name,
+          name: locale === 'am' && service.nameAm ? service.nameAm : service.nameEn || service.name,
           unitPrice: service.currentPrice ?? '0.00',
           qty: 1,
         },
       ];
     });
     setServiceQuery('');
+  }
+
+  function addCustomItem() {
+    setLines((current) => [
+      ...current,
+      {
+        key: newLineKey(),
+        customName: '',
+        name: '',
+        unitPrice: '0.00',
+        qty: 1,
+      },
+    ]);
   }
 
   const failed = !!state && !state.ok;
@@ -158,7 +194,21 @@ export default function NewSaleForm({ services, doctors, locale, prefill }: Prop
       <input
         type="hidden"
         name="lines"
-        value={JSON.stringify(lines.map(({ serviceId, qty }) => ({ serviceId, qty })))}
+        value={JSON.stringify(
+          lines.map((line) =>
+            line.customName !== undefined
+              ? {
+                  customName: line.customName,
+                  qty: line.qty,
+                  unitPrice: line.unitPrice,
+                }
+              : {
+                  serviceId: line.serviceId,
+                  qty: line.qty,
+                  unitPrice: line.unitPrice,
+                },
+          ),
+        )}
       />
 
       <div className="space-y-5 lg:col-span-2">
@@ -264,9 +314,15 @@ export default function NewSaleForm({ services, doctors, locale, prefill }: Prop
                       className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-slate-50"
                       onClick={() => addService(service)}
                     >
-                      <span className="font-medium text-slate-900">{service.nameEn || service.name}</span>
+                      <span className="font-medium text-slate-900">
+                        {service.nameEn || service.name}
+                      </span>
                       <span className="text-xs text-slate-500">
-                        {service.currentPrice === '0' || service.currentPrice === '0.00' ? formatMoney('0') : service.currentPrice ? formatMoney(service.currentPrice) : tc('notSet')}
+                        {service.currentPrice === '0' || service.currentPrice === '0.00'
+                          ? formatMoney('0')
+                          : service.currentPrice
+                            ? formatMoney(service.currentPrice)
+                            : tc('notSet')}
                       </span>
                     </button>
                   </li>
@@ -274,6 +330,10 @@ export default function NewSaleForm({ services, doctors, locale, prefill }: Prop
               </ul>
             ) : null}
           </div>
+
+          <button type="button" className="btn-secondary" onClick={addCustomItem}>
+            + {t('addCustomItem')}
+          </button>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
@@ -295,9 +355,48 @@ export default function NewSaleForm({ services, doctors, locale, prefill }: Prop
                   </tr>
                 ) : (
                   lines.map((line) => (
-                    <tr key={line.serviceId} className="border-b border-slate-100 last:border-0">
-                      <td className="py-2 pr-3 font-medium text-slate-900">{line.name}</td>
-                      <td className="py-2 pr-3 text-slate-600">{formatMoney(line.unitPrice)}</td>
+                    <tr key={line.key} className="border-b border-slate-100 last:border-0">
+                      <td className="py-2 pr-3 font-medium text-slate-900">
+                        {line.customName !== undefined ? (
+                          <input
+                            className="input-field w-44"
+                            type="text"
+                            value={line.customName}
+                            maxLength={MAX_CUSTOM_LINE_NAME}
+                            placeholder={t('customItemName')}
+                            onChange={(event) => {
+                              const name = event.target.value;
+                              setLines((current) =>
+                                current.map((item) =>
+                                  item.key === line.key
+                                    ? { ...item, customName: name, name }
+                                    : item,
+                                ),
+                              );
+                            }}
+                          />
+                        ) : (
+                          line.name
+                        )}
+                      </td>
+                      <td className="py-2 pr-3">
+                        <input
+                          className="input-field w-28"
+                          type="number"
+                          min={0}
+                          step="0.01"
+                          value={line.unitPrice}
+                          aria-label={`${t('unitPrice')} - ${line.name || t('customItem')}`}
+                          onChange={(event) => {
+                            const unitPrice = event.target.value;
+                            setLines((current) =>
+                              current.map((item) =>
+                                item.key === line.key ? { ...item, unitPrice } : item,
+                              ),
+                            );
+                          }}
+                        />
+                      </td>
                       <td className="py-2 pr-3">
                         <input
                           className="input-field w-20"
@@ -312,23 +411,21 @@ export default function NewSaleForm({ services, doctors, locale, prefill }: Prop
                             );
                             setLines((current) =>
                               current.map((item) =>
-                                item.serviceId === line.serviceId ? { ...item, qty } : item,
+                                item.key === line.key ? { ...item, qty } : item,
                               ),
                             );
                           }}
                         />
                       </td>
                       <td className="py-2 pr-3 font-medium text-slate-900">
-                        {formatMoney(multiplyMoney(line.unitPrice, line.qty))}
+                        {formatMoney(multiplyMoney(safeMoney(line.unitPrice), line.qty))}
                       </td>
                       <td className="py-2 text-right">
                         <button
                           type="button"
                           className="text-sm text-red-600 hover:underline"
                           onClick={() =>
-                            setLines((current) =>
-                              current.filter((item) => item.serviceId !== line.serviceId),
-                            )
+                            setLines((current) => current.filter((item) => item.key !== line.key))
                           }
                         >
                           {tc('delete')}

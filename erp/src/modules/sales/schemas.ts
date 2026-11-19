@@ -1,10 +1,35 @@
 import { z } from 'zod';
-import { MAX_QTY, MAX_REASON, MAX_SALE_LINES, PAYMENT_METHODS } from './constants';
+import { isMoneyInRange } from '@/lib/money';
+import {
+  MAX_CUSTOM_LINE_NAME,
+  MAX_QTY,
+  MAX_REASON,
+  MAX_SALE_LINES,
+  PAYMENT_METHODS,
+} from './constants';
 
-export const saleLineSchema = z.object({
-  serviceId: z.string().min(1, 'required').max(64, 'tooLong'),
-  qty: z.number().int('invalidQuantity').min(1, 'minQuantity').max(MAX_QTY, 'tooMany'),
-});
+/** Prices are NUMERIC(12,2): up to 10 integer digits and at most 2 decimals. */
+const PRICE_RE = /^\d{1,10}(\.\d{1,2})?$/;
+
+export const saleLineSchema = z
+  .object({
+    serviceId: z.string().min(1, 'required').max(64, 'tooLong').optional(),
+    customName: z
+      .string()
+      .trim()
+      .min(1, 'required')
+      .max(MAX_CUSTOM_LINE_NAME, 'tooLong')
+      .optional(),
+    qty: z.number().int('invalidQuantity').min(1, 'minQuantity').max(MAX_QTY, 'tooMany'),
+    /** Explicit per-line price. Blank normalizes to 0.00; server validates it. */
+    unitPrice: z
+      .string()
+      .trim()
+      .optional()
+      .transform((value) => value || '0.00')
+      .refine((value) => PRICE_RE.test(value) && isMoneyInRange(value), 'invalidPrice'),
+  })
+  .refine((line) => !!line.serviceId !== !!line.customName, 'invalidLine');
 
 export const saleFormSchema = z.object({
   patientId: z.string().max(64, 'tooLong'),
