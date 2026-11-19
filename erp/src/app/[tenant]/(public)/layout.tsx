@@ -119,7 +119,12 @@ export default async function PublicLayout({ children }: { children: React.React
       >
         {t('skipToContent')}
       </a>
-      <PublicHeader clinicName={clinicName} phoneHref={phoneHref} logoUrl={brand.logoUrl} />
+      <PublicHeader
+        clinicName={clinicName}
+        phoneHref={phoneHref}
+        logoUrl={brand.logoUrl}
+        showClinicName={tenant.slug === 'zemadental'}
+      />
       <main id="main" className="flex-1">
         {showAnnouncement ? <AnnouncementBanner text={announcementText} /> : null}
         {children}

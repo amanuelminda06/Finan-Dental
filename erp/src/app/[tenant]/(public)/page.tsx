@@ -56,6 +56,7 @@ export default async function HomePage() {
     ]);
 
   const heroUrl = tenantBrand.heroUrl ? tenantHref(tenantBrand.heroUrl, tenant.slug) : null;
+  const heroLogoHeight = tenant.slug === 'zemadental' ? 288 : 96;
   const phonePrimary = tenantBrand.phones[0] ?? null;
   const phonePrimaryHref = telLink(phonePrimary);
   const featured = services.slice(0, 6);
@@ -118,7 +119,7 @@ export default async function HomePage() {
           <div>
             <div className="flex flex-wrap items-center gap-4">
               <SiteLogo
-                height={96}
+                height={heroLogoHeight}
                 priority
                 src={tenantBrand.logoUrl}
                 alt={tenantBrand.clinicName}

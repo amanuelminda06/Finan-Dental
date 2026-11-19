@@ -23,9 +23,11 @@ type Props = {
   phoneHref: string | null;
   /** Tenant-owned logo URL (a neutral monogram is rendered when absent). */
   logoUrl?: string | null;
+  /** Zema Dental keeps its clinic name beside the logo in the nav bar. */
+  showClinicName?: boolean;
 };
 
-export default function PublicHeader({ clinicName, phoneHref, logoUrl }: Props) {
+export default function PublicHeader({ clinicName, phoneHref, logoUrl, showClinicName = false }: Props) {
   const t = useTranslations('site');
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -61,6 +63,11 @@ export default function PublicHeader({ clinicName, phoneHref, logoUrl }: Props) 
         <div className="flex h-16 w-full items-center gap-3 rounded-full bg-slate-200 px-5 sm:px-6">
           <Link href="/" className="flex items-center gap-3" aria-label={clinicName}>
             <SiteLogo height={64} priority src={logoUrl} alt={clinicName} label={clinicName} />
+            {showClinicName ? (
+              <span className="hidden text-sm font-bold tracking-tight text-slate-900 sm:block">
+                {clinicName}
+              </span>
+            ) : null}
           </Link>
 
           <nav className="ml-4 hidden items-center gap-0.5 lg:flex" aria-label={t('menuLabel')}>
